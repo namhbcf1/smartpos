@@ -1,0 +1,1 @@
+import{j as r,W as t,T as s,P as n}from"../chunks/mui-core-cd9e8750.js";import"../chunks/react-vendor-9ee90314.js";const o=()=>r.jsxs(t,{sx:{p:3},children:[r.jsx(s,{variant:"h4",gutterBottom:!0,children:"Hồ sơ cá nhân"}),r.jsx(n,{sx:{p:2},children:r.jsx(s,{children:"Trang hồ sơ cá nhân đang được phát triển..."})})]});export{o as default};

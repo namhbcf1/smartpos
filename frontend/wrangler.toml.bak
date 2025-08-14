@@ -1,0 +1,179 @@
+# SmartPOS Frontend - Cloudflare Pages Configuration
+# Production-ready configuration for SmartPOS web application
+name = "smartpos-web"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+# Build Configuration
+[build]
+command = "npm run build"
+cwd = "."
+watch_dir = "src"
+
+# Production Environment Variables
+[env.production]
+vars = {
+  NODE_ENV = "production",
+  VITE_API_URL = "https://smartpos-api.bangachieu2.workers.dev",
+  VITE_APP_NAME = "SmartPOS",
+  VITE_APP_VERSION = "1.0.0",
+  VITE_ENABLE_ANALYTICS = "true",
+  VITE_ENABLE_PWA = "true",
+  VITE_ENABLE_NOTIFICATIONS = "true"
+}
+
+# Preview Environment Variables
+[env.preview]
+vars = {
+  NODE_ENV = "development",
+  VITE_API_URL = "https://smartpos-api.bangachieu2.workers.dev",
+  VITE_APP_NAME = "SmartPOS (Preview)",
+  VITE_APP_VERSION = "1.0.0-preview",
+  VITE_ENABLE_ANALYTICS = "false",
+  VITE_ENABLE_PWA = "false",
+  VITE_ENABLE_NOTIFICATIONS = "false"
+}
+
+# Default Environment Variables (fallback)
+[vars]
+VITE_API_URL = "https://smartpos-api.bangachieu2.workers.dev"
+VITE_APP_NAME = "SmartPOS"
+VITE_APP_VERSION = "1.0.0"
+
+# SPA Routing Configuration
+# Handle client-side routing for React Router
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+# API Proxy Rules (Optional - for CORS handling if needed)
+[[redirects]]
+from = "/api/*"
+to = "https://smartpos-api.bangachieu2.workers.dev/api/:splat"
+status = 200
+
+# Error Page Redirects
+[[redirects]]
+from = "/404"
+to = "/index.html"
+status = 404
+
+# Security Headers for all pages
+[[headers]]
+for = "/*"
+[headers.values]
+X-Frame-Options = "DENY"
+X-Content-Type-Options = "nosniff"
+X-XSS-Protection = "1; mode=block"
+Referrer-Policy = "strict-origin-when-cross-origin"
+Permissions-Policy = "camera=(), microphone=(), geolocation=(self)"
+Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://smartpos-api.bangachieu2.workers.dev"
+
+# Cache Headers for Static Assets (1 year cache)
+[[headers]]
+for = "/assets/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Vary = "Accept-Encoding"
+
+# JavaScript Files Cache
+[[headers]]
+for = "*.js"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Content-Type = "application/javascript"
+
+# CSS Files Cache
+[[headers]]
+for = "*.css"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Content-Type = "text/css"
+
+# Image Files Cache
+[[headers]]
+for = "*.png"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Content-Type = "image/png"
+
+[[headers]]
+for = "*.jpg"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Content-Type = "image/jpeg"
+
+[[headers]]
+for = "*.svg"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Content-Type = "image/svg+xml"
+
+[[headers]]
+for = "*.ico"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Content-Type = "image/x-icon"
+
+# HTML Files Cache (no cache for dynamic content)
+[[headers]]
+for = "*.html"
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
+Content-Type = "text/html; charset=utf-8"
+
+# Service Worker Cache (no cache for updates)
+[[headers]]
+for = "/sw.js"
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
+Content-Type = "application/javascript"
+
+# PWA Manifest Cache (1 day cache)
+[[headers]]
+for = "/manifest.json"
+[headers.values]
+Cache-Control = "public, max-age=86400"
+Content-Type = "application/json"
+
+# Font Files Cache
+[[headers]]
+for = "*.woff2"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Content-Type = "font/woff2"
+
+[[headers]]
+for = "*.woff"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+Content-Type = "font/woff"
+
+# CORS Headers for API proxy
+[[headers]]
+for = "/api/*"
+[headers.values]
+Access-Control-Allow-Origin = "*"
+Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"
+Access-Control-Max-Age = "86400"
+
+# Analytics and Performance Configuration
+[analytics]
+enabled = true
+
+# Custom Error Pages
+[[redirects]]
+from = "/500"
+to = "/index.html"
+status = 500
+
+# Preload important resources
+[[headers]]
+for = "/index.html"
+[headers.values]
+Link = "</assets/index.css>; rel=preload; as=style, </assets/index.js>; rel=preload; as=script"
+
+
+

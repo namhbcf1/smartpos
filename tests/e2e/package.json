@@ -1,0 +1,65 @@
+{
+  "name": "smartpos-e2e-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive E2E tests for SmartPOS application with 100% coverage",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project=\"Mobile Chrome\" --project=\"Mobile Safari\"",
+    "test:auth": "playwright test specs/01-authentication.spec.ts",
+    "test:dashboard": "playwright test specs/02-dashboard.spec.ts",
+    "test:products": "playwright test specs/03-product-management.spec.ts",
+    "test:sales": "playwright test specs/04-sales-pos.spec.ts",
+    "test:inventory": "playwright test specs/05-inventory-management.spec.ts",
+    "test:customers": "playwright test specs/06-customer-management.spec.ts",
+    "test:reports": "playwright test specs/07-reports-analytics.spec.ts",
+    "test:settings": "playwright test specs/08-settings-navigation.spec.ts",
+    "test:api": "playwright test specs/09-api-integration.spec.ts",
+    "test:smoke": "playwright test --grep=\"should display.*with real data\"",
+    "test:critical": "playwright test --grep=\"should login|should display.*page|should verify.*API\"",
+    "test:parallel": "playwright test --workers=4",
+    "test:serial": "playwright test --workers=1",
+    "report": "playwright show-report",
+    "report:html": "playwright show-report test-results/html-report",
+    "install:browsers": "playwright install",
+    "install:deps": "playwright install-deps",
+    "clean": "rm -rf test-results auth-state.json",
+    "test:full": "npm run clean && npm run test && npm run report"
+  },
+  "keywords": [
+    "playwright",
+    "e2e",
+    "testing",
+    "smartpos",
+    "cloudflare",
+    "d1",
+    "react",
+    "pos"
+  ],
+  "author": "SmartPOS Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smartpos/smartpos-web"
+  },
+  "bugs": {
+    "url": "https://github.com/smartpos/smartpos-web/issues"
+  },
+  "homepage": "https://222737d2.smartpos-web.pages.dev",
+  "dependencies": {
+    "@playwright/test": "^1.54.2"
+  }
+}

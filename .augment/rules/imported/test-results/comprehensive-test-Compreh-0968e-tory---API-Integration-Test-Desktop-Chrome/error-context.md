@@ -1,0 +1,107 @@
+---
+type: "manual"
+---
+
+# Page snapshot
+
+```yaml
+- banner:
+  - button "toggle drawer"
+  - text: SmartPOS
+  - textbox "search"
+  - button "Bán hàng"
+  - button "Thông báo": "3"
+  - button "User": A
+- navigation:
+  - text: 📊 DASHBOARD
+  - listitem:
+    - button "Dashboard"
+  - text: 🛒 BÁN HÀNG
+  - listitem:
+    - button "Điểm bán hàng"
+  - listitem:
+    - button "Lịch sử bán hàng"
+  - listitem:
+    - button "Đơn hàng"
+  - listitem:
+    - button "Trả hàng"
+  - text: 📦 KHO HÀNG
+  - listitem:
+    - button "Sản phẩm"
+  - listitem:
+    - button "Danh mục"
+  - listitem:
+    - button "Nhập kho"
+  - listitem:
+    - button "Nhà cung cấp"
+  - listitem:
+    - button "PC Builder"
+  - listitem:
+    - button "Bảo hành"
+  - text: 👥 KHÁCH HÀNG
+  - listitem:
+    - button "Khách hàng"
+  - text: 📈 BÁO CÁO
+  - listitem:
+    - button "Tổng quan"
+  - listitem:
+    - button "Doanh thu"
+  - listitem:
+    - button "Tài chính"
+- separator
+- list:
+  - text: ⚙️ QUẢN TRỊ
+  - listitem:
+    - button "Nhân viên"
+  - listitem:
+    - button "Cài đặt"
+- main:
+  - heading "Lịch sử bán hàng" [level=1]
+  - heading "Lịch sử bán hàng" [level=1]
+  - paragraph: Theo dõi và quản lý tất cả các giao dịch bán hàng
+  - button "Làm mới"
+  - button "Phân tích"
+  - button "Xuất báo cáo"
+  - button "Bán hàng mới"
+  - paragraph: Hôm nay
+  - heading "0 đơn" [level=5]
+  - heading "0 ₫" [level=6]
+  - paragraph: "TB: 0 ₫"
+  - text: 0.0%
+  - paragraph: Tuần này
+  - heading "0 đơn" [level=5]
+  - heading "0 ₫" [level=6]
+  - paragraph: "TB: 0 ₫"
+  - text: 0.0%
+  - paragraph: Tháng này
+  - heading "0 đơn" [level=5]
+  - heading "0 ₫" [level=6]
+  - paragraph: "TB: 0 ₫"
+  - text: 0.0%
+  - separator
+  - textbox "Tìm kiếm theo mã đơn, khách hàng, thu ngân..."
+  - text: Trạng thái thanh toán
+  - combobox: Tất cả
+  - text: Phương thức
+  - combobox: Tất cả
+  - button "Bộ lọc 2"
+  - button "Xóa bộ lọc"
+  - table:
+    - rowgroup:
+      - row "Mã đơn hàng Khách hàng Thu ngân Tổng tiền Sản phẩm Thanh toán Phương thức Thời gian Thao tác":
+        - columnheader "Mã đơn hàng"
+        - columnheader "Khách hàng"
+        - columnheader "Thu ngân"
+        - columnheader "Tổng tiền"
+        - columnheader "Sản phẩm"
+        - columnheader "Thanh toán"
+        - columnheader "Phương thức"
+        - columnheader "Thời gian"
+        - columnheader "Thao tác"
+    - rowgroup
+  - paragraph: "Số dòng mỗi trang:"
+  - 'combobox "Số dòng mỗi trang: 25"': "25"
+  - paragraph: 0-0 của 0
+  - button "Go to previous page" [disabled]
+  - button "Go to next page" [disabled]
+```

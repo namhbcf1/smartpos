@@ -1,0 +1,188 @@
+---
+type: "manual"
+---
+
+# Page snapshot
+
+```yaml
+- banner:
+  - button "toggle drawer"
+  - text: SmartPOS
+  - textbox "search"
+  - button "Bán hàng"
+  - button "Thông báo": "3"
+  - button "User": A
+- navigation:
+  - text: 📊 DASHBOARD
+  - listitem:
+    - button "Dashboard"
+  - text: 🛒 BÁN HÀNG
+  - listitem:
+    - button "Điểm bán hàng"
+  - listitem:
+    - button "Lịch sử bán hàng"
+  - listitem:
+    - button "Đơn hàng"
+  - listitem:
+    - button "Trả hàng"
+  - text: 📦 KHO HÀNG
+  - listitem:
+    - button "Sản phẩm"
+  - listitem:
+    - button "Danh mục"
+  - listitem:
+    - button "Nhập kho"
+  - listitem:
+    - button "Nhà cung cấp"
+  - listitem:
+    - button "PC Builder"
+  - listitem:
+    - button "Bảo hành"
+  - text: 👥 KHÁCH HÀNG
+  - listitem:
+    - button "Khách hàng"
+  - text: 📈 BÁO CÁO
+  - listitem:
+    - button "Tổng quan"
+  - listitem:
+    - button "Doanh thu"
+  - listitem:
+    - button "Tài chính"
+- separator
+- list:
+  - text: ⚙️ QUẢN TRỊ
+  - listitem:
+    - button "Nhân viên"
+  - listitem:
+    - button "Cài đặt"
+- main:
+  - heading "SmartPOS" [level=1]
+  - heading "Xin chào, admin! 👋" [level=4]
+  - paragraph: Thống kê tổng quan - Chủ Nhật, 3 tháng 8, 2025
+  - group:
+    - button "Hôm nay" [pressed]
+    - button "Tuần"
+    - button "Tháng"
+  - button "Làm mới dữ liệu"
+  - button "Chế độ toàn màn hình"
+  - button "Thông báo": "0"
+  - button "Cài đặt"
+  - paragraph: Doanh thu hôm nay
+  - heading "0 ₫" [level=5]
+  - text: +5.2%
+  - button "Chi tiết"
+  - paragraph: Doanh thu tuần
+  - heading "0 ₫" [level=5]
+  - button "Xem báo cáo"
+  - paragraph: Sản phẩm
+  - heading "8" [level=5]
+  - button "Quản lý"
+  - paragraph: Khách hàng
+  - heading "6" [level=5]
+  - button "Xem tất cả"
+  - heading "AI Insights & Recommendations" [level=6]
+  - paragraph: "🎯 Hiệu suất hôm nay: 0 đơn hàng, 0 ₫ doanh thu"
+  - paragraph: Kết nối realtime
+  - button "Làm mới kết nối"
+  - text: "1"
+  - heading "Thông báo trực tiếp" [level=6]
+  - button
+  - button
+  - heading "Thống kê trực tiếp" [level=5]
+  - text: "Cập nhật: 11:30:11 AM"
+  - button "Làm mới"
+  - paragraph: Doanh thu hôm nay
+  - text: 0 ₫
+  - paragraph: 0 đơn hàng
+  - text: +12.5%
+  - paragraph: Đơn hàng hôm nay
+  - text: "0"
+  - paragraph: Đơn hàng mới
+  - text: +8.2%
+  - paragraph: Cảnh báo tồn kho
+  - text: "0"
+  - paragraph: Sản phẩm sắp hết
+  - paragraph: Khách hàng mới
+  - text: "1"
+  - paragraph: Hôm nay
+  - text: +5.1%
+  - paragraph: Điểm thưởng
+  - text: "0"
+  - paragraph: Tổng điểm tích lũy
+  - paragraph: Khách VIP
+  - text: "0"
+  - paragraph: Khách hàng VIP
+  - paragraph: Sản phẩm
+  - text: 1,234
+  - paragraph: Tổng sản phẩm
+  - paragraph: Trung bình đơn hàng
+  - text: 0 ₫
+  - paragraph: Giá trị trung bình
+  - heading "Hiệu suất thời gian thực" [level=6]
+  - paragraph: Người dùng online
+  - heading "38" [level=5]
+  - paragraph: Tải hệ thống
+  - heading "77.6%" [level=5]
+  - heading "🛒 Đơn hàng gần đây" [level=6]
+  - button "Xem tất cả"
+  - list:
+    - listitem:
+      - text: "10 #10"
+      - paragraph: Test Cashier Sale • 01:44 02/08/2025
+      - paragraph: 5.000.000 ₫
+      - text: qr
+    - listitem:
+      - text: "9 #9"
+      - paragraph: Test Manager Sale • 01:44 02/08/2025
+      - paragraph: 4.990.000 ₫
+      - text: card
+    - listitem:
+      - text: "8 #8"
+      - paragraph: Test Customer • 16:45 01/08/2025
+      - paragraph: 4.990.000 ₫
+      - text: cash
+    - listitem:
+      - text: "7 #7"
+      - paragraph: Khách lẻ • 13:49 01/08/2025
+      - paragraph: 5.489.000 ₫
+      - text: cash
+    - listitem:
+      - text: "6 #6"
+      - paragraph: Nguyễn Văn Test • 12:56 01/08/2025
+      - paragraph: 5.489.000 ₫
+      - text: cash
+  - heading "⚠️ Sản phẩm sắp hết" [level=6]
+  - button "Quản lý kho"
+  - list:
+    - listitem:
+      - text: Test Product API
+      - paragraph: TEST-API-001
+      - paragraph: 0 còn lại
+      - text: "Giá: 1.000.000 ₫"
+    - listitem:
+      - text: PSU Corsair RM750x 750W 80+ Gold
+      - paragraph: PSU-CORSAIR-RM750X
+      - paragraph: 0 còn lại
+      - text: "Giá: 3.490.000 ₫"
+    - listitem:
+      - text: CPU R7 7800X3D
+      - paragraph: CPU-R7-7800X3D-6459
+      - paragraph: 0 còn lại
+      - text: "Giá: 8.600.000 ₫"
+    - listitem:
+      - text: CPU Intel Core i5-13400F
+      - paragraph: CPU-I5-13400F
+      - paragraph: 0 còn lại
+      - text: "Giá: 4.990.000 ₫"
+    - listitem:
+      - text: RAM Kingston Fury 16GB DDR4
+      - paragraph: RAM-KF-16GB-DDR4
+      - paragraph: 0 còn lại
+      - text: "Giá: 1.590.000 ₫"
+  - button "Quick Actions"
+  - menu:
+    - menuitem "Bán hàng mới"
+    - menuitem "Thêm sản phẩm"
+    - menuitem "Xem báo cáo"
+    - menuitem "Cài đặt"
+```

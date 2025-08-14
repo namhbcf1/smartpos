@@ -1,0 +1,1213 @@
+<testsuites id="" name="" tests="35" failures="27" skipped="0" errors="0" time="109.172658">
+<testsuite name="10-employees-management.spec.ts" timestamp="2025-08-04T02:02:48.177Z" hostname="chromium" tests="7" failures="5" skipped="0" time="105.147" errors="0">
+<testcase name="Employee Management Tests › should access employees page and display employee list" classname="10-employees-management.spec.ts" time="12.356">
+<failure message="10-employees-management.spec.ts:45:7 should access employees page and display employee list" type="FAILURE">
+<![CDATA[  [chromium] › 10-employees-management.spec.ts:45:7 › Employee Management Tests › should access employees page and display employee list 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1, h4') resolved to 6 elements:
+        1) <h1 class="MuiTypography-root MuiTypography-h4 css-644yj">Nhân viên & Hoa hồng</h1> aka locator('h1')
+        2) <h4 class="MuiTypography-root MuiTypography-h4 css-1dc7y7n">…</h4> aka locator('h4').filter({ hasText: 'Nhân viên & Hoa hồng' })
+        3) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).first()
+        4) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).nth(1)
+        5) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">46.500.000 ₫</h4> aka getByRole('heading', { name: '₫' })
+        6) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">2.9%</h4> aka getByRole('heading', { name: '%' })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1, h4')
+
+
+      58 |
+      59 |     // Check page title and content
+    > 60 |     await expect(page.locator('h1, h4')).toContainText(/nhân viên|employee/i);
+         |                                          ^
+      61 |
+      62 |     // Check for employee management elements
+      63 |     await expect(page.locator('button:has-text("Thêm nhân viên")')).toBeVisible();
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:60:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-chromium\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should login and logout successfully" classname="10-employees-management.spec.ts" time="15.025">
+<failure message="10-employees-management.spec.ts:76:7 should login and logout successfully" type="FAILURE">
+<![CDATA[  [chromium] › 10-employees-management.spec.ts:76:7 › Employee Management Tests › should login and logout successfully 
+
+    Error: Timed out 10000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('button:has-text("User")')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('button:has-text("User")')
+
+
+      81 |
+      82 |     // Check for user info
+    > 83 |     await expect(page.locator('button:has-text("User")')).toBeVisible({ timeout: 10000 });
+         |                                                           ^
+      84 |
+      85 |     // Test logout
+      86 |     await page.click('button:has-text("User")');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:83:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-chromium\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee search functionality" classname="10-employees-management.spec.ts" time="12.344">
+<failure message="10-employees-management.spec.ts:94:7 should test employee search functionality" type="FAILURE">
+<![CDATA[  [chromium] › 10-employees-management.spec.ts:94:7 › Employee Management Tests › should test employee search functionality 
+
+    Error: locator.isVisible: Error: strict mode violation: locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]') resolved to 2 elements:
+        1) <input value="" type="text" aria-label="search" class="MuiInputBase-input css-mnn31" placeholder="Tìm kiếm sản phẩm, đơn hàng..."/> aka getByRole('textbox', { name: 'search' })
+        2) <input value="" id=":r7:" type="text" aria-invalid="false" placeholder="Tìm kiếm nhân viên..." class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall MuiInputBase-inputAdornedStart css-162edyi"/> aka getByRole('textbox', { name: 'Tìm kiếm nhân viên...' })
+
+    Call log:
+        - checking visibility of locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]')
+
+
+      102 |     // Test search functionality
+      103 |     const searchBox = page.locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]');
+    > 104 |     if (await searchBox.isVisible()) {
+          |                         ^
+      105 |       await searchBox.fill('Admin');
+      106 |       await page.waitForTimeout(2000);
+      107 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:104:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-chromium\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee statistics display" classname="10-employees-management.spec.ts" time="12.129">
+<failure message="10-employees-management.spec.ts:115:7 should test employee statistics display" type="FAILURE">
+<![CDATA[  [chromium] › 10-employees-management.spec.ts:115:7 › Employee Management Tests › should test employee statistics display 
+
+    Error: expect.toBeVisible: Error: strict mode violation: locator('text=Đang hoạt động') resolved to 2 elements:
+        1) <p class="MuiTypography-root MuiTypography-body1 MuiTypography-gutterBottom css-1rfywr4">Đang hoạt động</p> aka getByRole('paragraph').filter({ hasText: 'Đang hoạt động' })
+        2) <div tabindex="0" role="combobox" aria-controls=":r9:" aria-expanded="false" aria-haspopup="listbox" class="MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall css-bwabot">Đang hoạt động</div> aka getByRole('combobox').filter({ hasText: 'Đang hoạt động' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=Đang hoạt động')
+
+
+      123 |     // Check statistics cards
+      124 |     await expect(page.locator('text=Tổng nhân viên')).toBeVisible();
+    > 125 |     await expect(page.locator('text=Đang hoạt động')).toBeVisible();
+          |                                                       ^
+      126 |
+      127 |     // Check if statistics show correct numbers
+      128 |     const totalEmployees = page.locator('text=Tổng nhân viên').locator('..').locator('h4');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:125:55
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-chromium\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should handle login failures gracefully" classname="10-employees-management.spec.ts" time="5.493">
+</testcase>
+<testcase name="Employee Management Tests › should test employee table interactions" classname="10-employees-management.spec.ts" time="12.422">
+<system-out>
+<![CDATA[Found 6 employees with 12 action buttons
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test navigation between pages" classname="10-employees-management.spec.ts" time="35.378">
+<failure message="10-employees-management.spec.ts:176:7 should test navigation between pages" type="FAILURE">
+<![CDATA[  [chromium] › 10-employees-management.spec.ts:176:7 › Employee Management Tests › should test navigation between pages 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Nhân viên")')
+
+
+      181 |
+      182 |     // Navigate to employees
+    > 183 |     await page.click('button:has-text("Nhân viên")');
+          |                ^
+      184 |     await page.waitForLoadState('networkidle');
+      185 |     await expect(page).toHaveURL(/\/employees/);
+      186 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:183:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-chromium\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="10-employees-management.spec.ts" timestamp="2025-08-04T02:02:48.177Z" hostname="firefox" tests="7" failures="7" skipped="0" time="194.18" errors="0">
+<testcase name="Employee Management Tests › should access employees page and display employee list" classname="10-employees-management.spec.ts" time="15.855">
+<failure message="10-employees-management.spec.ts:45:7 should access employees page and display employee list" type="FAILURE">
+<![CDATA[  [firefox] › 10-employees-management.spec.ts:45:7 › Employee Management Tests › should access employees page and display employee list 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1, h4') resolved to 6 elements:
+        1) <h1 class="MuiTypography-root MuiTypography-h4 css-644yj">Nhân viên & Hoa hồng</h1> aka locator('h1')
+        2) <h4 class="MuiTypography-root MuiTypography-h4 css-1dc7y7n">…</h4> aka locator('h4').filter({ hasText: 'Nhân viên & Hoa hồng' })
+        3) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).first()
+        4) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).nth(1)
+        5) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">46.500.000 ₫</h4> aka getByRole('heading', { name: '₫' })
+        6) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">2.9%</h4> aka getByRole('heading', { name: '%' })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1, h4')
+
+
+      58 |
+      59 |     // Check page title and content
+    > 60 |     await expect(page.locator('h1, h4')).toContainText(/nhân viên|employee/i);
+         |                                          ^
+      61 |
+      62 |     // Check for employee management elements
+      63 |     await expect(page.locator('button:has-text("Thêm nhân viên")')).toBeVisible();
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:60:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-firefox\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should login and logout successfully" classname="10-employees-management.spec.ts" time="16.458">
+<failure message="10-employees-management.spec.ts:76:7 should login and logout successfully" type="FAILURE">
+<![CDATA[  [firefox] › 10-employees-management.spec.ts:76:7 › Employee Management Tests › should login and logout successfully 
+
+    Error: Timed out 10000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('button:has-text("User")')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('button:has-text("User")')
+
+
+      81 |
+      82 |     // Check for user info
+    > 83 |     await expect(page.locator('button:has-text("User")')).toBeVisible({ timeout: 10000 });
+         |                                                           ^
+      84 |
+      85 |     // Test logout
+      86 |     await page.click('button:has-text("User")');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:83:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-firefox\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee search functionality" classname="10-employees-management.spec.ts" time="33.372">
+<failure message="10-employees-management.spec.ts:94:7 should test employee search functionality" type="FAILURE">
+<![CDATA[  [firefox] › 10-employees-management.spec.ts:94:7 › Employee Management Tests › should test employee search functionality 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[type="submit"], button:has-text("Sign In")')
+        - locator resolved to <button tabindex="0" type="submit" aria-label="Sign in button" class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth css-1jq1hqs">…</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - performing click action
+
+
+      23 |
+      24 |   // Submit login
+    > 25 |   await page.click('button[type="submit"], button:has-text("Sign In")');
+         |              ^
+      26 |
+      27 |   // Wait for navigation or success
+      28 |   await page.waitForTimeout(3000);
+        at login (C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:25:14)
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:95:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-firefox\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee statistics display" classname="10-employees-management.spec.ts" time="24.715">
+<failure message="10-employees-management.spec.ts:115:7 should test employee statistics display" type="FAILURE">
+<![CDATA[  [firefox] › 10-employees-management.spec.ts:115:7 › Employee Management Tests › should test employee statistics display 
+
+    Error: expect.toBeVisible: Error: strict mode violation: locator('text=Đang hoạt động') resolved to 2 elements:
+        1) <p class="MuiTypography-root MuiTypography-body1 MuiTypography-gutterBottom css-1rfywr4">Đang hoạt động</p> aka getByRole('paragraph').filter({ hasText: 'Đang hoạt động' })
+        2) <div tabindex="0" role="combobox" aria-controls=":r9:" aria-expanded="false" aria-haspopup="listbox" class="MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall css-bwabot">Đang hoạt động</div> aka getByRole('combobox').filter({ hasText: 'Đang hoạt động' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=Đang hoạt động')
+
+
+      123 |     // Check statistics cards
+      124 |     await expect(page.locator('text=Tổng nhân viên')).toBeVisible();
+    > 125 |     await expect(page.locator('text=Đang hoạt động')).toBeVisible();
+          |                                                       ^
+      126 |
+      127 |     // Check if statistics show correct numbers
+      128 |     const totalEmployees = page.locator('text=Tổng nhân viên').locator('..').locator('h4');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:125:55
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-firefox\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should handle login failures gracefully" classname="10-employees-management.spec.ts" time="33.508">
+<failure message="10-employees-management.spec.ts:135:7 should handle login failures gracefully" type="FAILURE">
+<![CDATA[  [firefox] › 10-employees-management.spec.ts:135:7 › Employee Management Tests › should handle login failures gracefully 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[type="submit"], button:has-text("Sign In")')
+        - locator resolved to <button tabindex="0" type="submit" aria-label="Sign in button" class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth css-1jq1hqs">…</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - performing click action
+
+
+      140 |     await page.fill('input[name="username"], input[type="text"]', 'invalid');
+      141 |     await page.fill('input[name="password"], input[type="password"]', 'invalid');
+    > 142 |     await page.click('button[type="submit"], button:has-text("Sign In")');
+          |                ^
+      143 |
+      144 |     // Should stay on login page or show error
+      145 |     await page.waitForTimeout(3000);
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:142:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-0b23e-e-login-failures-gracefully-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-0b23e-e-login-failures-gracefully-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-0b23e-e-login-failures-gracefully-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-0b23e-e-login-failures-gracefully-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-0b23e-e-login-failures-gracefully-firefox\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-0b23e-e-login-failures-gracefully-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee table interactions" classname="10-employees-management.spec.ts" time="33.565">
+<failure message="10-employees-management.spec.ts:150:7 should test employee table interactions" type="FAILURE">
+<![CDATA[  [firefox] › 10-employees-management.spec.ts:150:7 › Employee Management Tests › should test employee table interactions 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button[type="submit"], button:has-text("Sign In")')
+        - locator resolved to <button tabindex="0" type="submit" aria-label="Sign in button" class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-fullWidth css-1jq1hqs">…</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+
+
+      23 |
+      24 |   // Submit login
+    > 25 |   await page.click('button[type="submit"], button:has-text("Sign In")');
+         |              ^
+      26 |
+      27 |   // Wait for navigation or success
+      28 |   await page.waitForTimeout(3000);
+        at login (C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:25:14)
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:151:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-dcfec-employee-table-interactions-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-dcfec-employee-table-interactions-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-dcfec-employee-table-interactions-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-dcfec-employee-table-interactions-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-dcfec-employee-table-interactions-firefox\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-dcfec-employee-table-interactions-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test navigation between pages" classname="10-employees-management.spec.ts" time="36.707">
+<failure message="10-employees-management.spec.ts:176:7 should test navigation between pages" type="FAILURE">
+<![CDATA[  [firefox] › 10-employees-management.spec.ts:176:7 › Employee Management Tests › should test navigation between pages 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Nhân viên")')
+
+
+      181 |
+      182 |     // Navigate to employees
+    > 183 |     await page.click('button:has-text("Nhân viên")');
+          |                ^
+      184 |     await page.waitForLoadState('networkidle');
+      185 |     await expect(page).toHaveURL(/\/employees/);
+      186 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:183:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-firefox\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-firefox\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-firefox\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="10-employees-management.spec.ts" timestamp="2025-08-04T02:02:48.177Z" hostname="webkit" tests="7" failures="5" skipped="0" time="116.388" errors="0">
+<testcase name="Employee Management Tests › should access employees page and display employee list" classname="10-employees-management.spec.ts" time="14.223">
+<failure message="10-employees-management.spec.ts:45:7 should access employees page and display employee list" type="FAILURE">
+<![CDATA[  [webkit] › 10-employees-management.spec.ts:45:7 › Employee Management Tests › should access employees page and display employee list 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1, h4') resolved to 6 elements:
+        1) <h1 class="MuiTypography-root MuiTypography-h4 css-644yj">Nhân viên & Hoa hồng</h1> aka locator('h1')
+        2) <h4 class="MuiTypography-root MuiTypography-h4 css-1dc7y7n">…</h4> aka locator('h4').filter({ hasText: 'Nhân viên & Hoa hồng' })
+        3) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).first()
+        4) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).nth(1)
+        5) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">46.500.000 ₫</h4> aka getByRole('heading', { name: '₫' })
+        6) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">2.9%</h4> aka getByRole('heading', { name: '%' })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1, h4')
+
+
+      58 |
+      59 |     // Check page title and content
+    > 60 |     await expect(page.locator('h1, h4')).toContainText(/nhân viên|employee/i);
+         |                                          ^
+      61 |
+      62 |     // Check for employee management elements
+      63 |     await expect(page.locator('button:has-text("Thêm nhân viên")')).toBeVisible();
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:60:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-webkit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-webkit\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-webkit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should login and logout successfully" classname="10-employees-management.spec.ts" time="16.63">
+<failure message="10-employees-management.spec.ts:76:7 should login and logout successfully" type="FAILURE">
+<![CDATA[  [webkit] › 10-employees-management.spec.ts:76:7 › Employee Management Tests › should login and logout successfully 
+
+    Error: Timed out 10000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('button:has-text("User")')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('button:has-text("User")')
+
+
+      81 |
+      82 |     // Check for user info
+    > 83 |     await expect(page.locator('button:has-text("User")')).toBeVisible({ timeout: 10000 });
+         |                                                           ^
+      84 |
+      85 |     // Test logout
+      86 |     await page.click('button:has-text("User")');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:83:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-webkit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-webkit\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-webkit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee search functionality" classname="10-employees-management.spec.ts" time="14.42">
+<failure message="10-employees-management.spec.ts:94:7 should test employee search functionality" type="FAILURE">
+<![CDATA[  [webkit] › 10-employees-management.spec.ts:94:7 › Employee Management Tests › should test employee search functionality 
+
+    Error: locator.isVisible: Error: strict mode violation: locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]') resolved to 2 elements:
+        1) <input value="" type="text" aria-label="search" class="MuiInputBase-input css-mnn31" placeholder="Tìm kiếm sản phẩm, đơn hàng..."/> aka getByRole('textbox', { name: 'search' })
+        2) <input value="" id=":r7:" type="text" aria-invalid="false" placeholder="Tìm kiếm nhân viên..." class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall MuiInputBase-inputAdornedStart css-162edyi"/> aka getByRole('textbox', { name: 'Tìm kiếm nhân viên...' })
+
+    Call log:
+        - checking visibility of locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]')
+
+
+      102 |     // Test search functionality
+      103 |     const searchBox = page.locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]');
+    > 104 |     if (await searchBox.isVisible()) {
+          |                         ^
+      105 |       await searchBox.fill('Admin');
+      106 |       await page.waitForTimeout(2000);
+      107 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:104:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-webkit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-webkit\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-webkit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee statistics display" classname="10-employees-management.spec.ts" time="15.004">
+<failure message="10-employees-management.spec.ts:115:7 should test employee statistics display" type="FAILURE">
+<![CDATA[  [webkit] › 10-employees-management.spec.ts:115:7 › Employee Management Tests › should test employee statistics display 
+
+    Error: expect.toBeVisible: Error: strict mode violation: locator('text=Đang hoạt động') resolved to 2 elements:
+        1) <p class="MuiTypography-root MuiTypography-body1 MuiTypography-gutterBottom css-1rfywr4">Đang hoạt động</p> aka getByRole('paragraph').filter({ hasText: 'Đang hoạt động' })
+        2) <div tabindex="0" role="combobox" aria-controls=":r9:" aria-expanded="false" aria-haspopup="listbox" class="MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall css-bwabot">Đang hoạt động</div> aka getByRole('combobox').filter({ hasText: 'Đang hoạt động' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=Đang hoạt động')
+
+
+      123 |     // Check statistics cards
+      124 |     await expect(page.locator('text=Tổng nhân viên')).toBeVisible();
+    > 125 |     await expect(page.locator('text=Đang hoạt động')).toBeVisible();
+          |                                                       ^
+      126 |
+      127 |     // Check if statistics show correct numbers
+      128 |     const totalEmployees = page.locator('text=Tổng nhân viên').locator('..').locator('h4');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:125:55
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-webkit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-webkit\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-webkit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should handle login failures gracefully" classname="10-employees-management.spec.ts" time="5.411">
+</testcase>
+<testcase name="Employee Management Tests › should test employee table interactions" classname="10-employees-management.spec.ts" time="14.514">
+<system-out>
+<![CDATA[Found 6 employees with 12 action buttons
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test navigation between pages" classname="10-employees-management.spec.ts" time="36.186">
+<failure message="10-employees-management.spec.ts:176:7 should test navigation between pages" type="FAILURE">
+<![CDATA[  [webkit] › 10-employees-management.spec.ts:176:7 › Employee Management Tests › should test navigation between pages 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Nhân viên")')
+
+
+      181 |
+      182 |     // Navigate to employees
+    > 183 |     await page.click('button:has-text("Nhân viên")');
+          |                ^
+      184 |     await page.waitForLoadState('networkidle');
+      185 |     await expect(page).toHaveURL(/\/employees/);
+      186 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:183:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-webkit\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-webkit\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-webkit\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="10-employees-management.spec.ts" timestamp="2025-08-04T02:02:48.177Z" hostname="Mobile Chrome" tests="7" failures="5" skipped="0" time="102.552" errors="0">
+<testcase name="Employee Management Tests › should access employees page and display employee list" classname="10-employees-management.spec.ts" time="12.056">
+<failure message="10-employees-management.spec.ts:45:7 should access employees page and display employee list" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › 10-employees-management.spec.ts:45:7 › Employee Management Tests › should access employees page and display employee list 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1, h4') resolved to 6 elements:
+        1) <h1 class="MuiTypography-root MuiTypography-h4 css-644yj">Nhân viên & Hoa hồng</h1> aka locator('h1')
+        2) <h4 class="MuiTypography-root MuiTypography-h4 css-1dc7y7n">…</h4> aka locator('h4').filter({ hasText: 'Nhân viên & Hoa hồng' })
+        3) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).first()
+        4) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).nth(1)
+        5) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">46.500.000 ₫</h4> aka getByRole('heading', { name: '₫' })
+        6) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">2.9%</h4> aka getByRole('heading', { name: '%' })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1, h4')
+
+
+      58 |
+      59 |     // Check page title and content
+    > 60 |     await expect(page.locator('h1, h4')).toContainText(/nhân viên|employee/i);
+         |                                          ^
+      61 |
+      62 |     // Check for employee management elements
+      63 |     await expect(page.locator('button:has-text("Thêm nhân viên")')).toBeVisible();
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:60:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Chrome\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should login and logout successfully" classname="10-employees-management.spec.ts" time="15.055">
+<failure message="10-employees-management.spec.ts:76:7 should login and logout successfully" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › 10-employees-management.spec.ts:76:7 › Employee Management Tests › should login and logout successfully 
+
+    Error: Timed out 10000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('button:has-text("User")')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('button:has-text("User")')
+
+
+      81 |
+      82 |     // Check for user info
+    > 83 |     await expect(page.locator('button:has-text("User")')).toBeVisible({ timeout: 10000 });
+         |                                                           ^
+      84 |
+      85 |     // Test logout
+      86 |     await page.click('button:has-text("User")');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:83:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Chrome\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee search functionality" classname="10-employees-management.spec.ts" time="11.932">
+<failure message="10-employees-management.spec.ts:94:7 should test employee search functionality" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › 10-employees-management.spec.ts:94:7 › Employee Management Tests › should test employee search functionality 
+
+    Error: locator.isVisible: Error: strict mode violation: locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]') resolved to 2 elements:
+        1) <input value="" type="text" aria-label="search" class="MuiInputBase-input css-mnn31" placeholder="Tìm kiếm sản phẩm, đơn hàng..."/> aka getByRole('textbox', { name: 'search' })
+        2) <input value="" id=":r7:" type="text" aria-invalid="false" placeholder="Tìm kiếm nhân viên..." class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall MuiInputBase-inputAdornedStart css-162edyi"/> aka getByRole('textbox', { name: 'Tìm kiếm nhân viên...' })
+
+    Call log:
+        - checking visibility of locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]')
+
+
+      102 |     // Test search functionality
+      103 |     const searchBox = page.locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]');
+    > 104 |     if (await searchBox.isVisible()) {
+          |                         ^
+      105 |       await searchBox.fill('Admin');
+      106 |       await page.waitForTimeout(2000);
+      107 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:104:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Chrome\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee statistics display" classname="10-employees-management.spec.ts" time="12.063">
+<failure message="10-employees-management.spec.ts:115:7 should test employee statistics display" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › 10-employees-management.spec.ts:115:7 › Employee Management Tests › should test employee statistics display 
+
+    Error: expect.toBeVisible: Error: strict mode violation: locator('text=Đang hoạt động') resolved to 2 elements:
+        1) <p class="MuiTypography-root MuiTypography-body1 MuiTypography-gutterBottom css-1rfywr4">Đang hoạt động</p> aka getByRole('paragraph').filter({ hasText: 'Đang hoạt động' })
+        2) <div tabindex="0" role="combobox" aria-controls=":r9:" aria-expanded="false" aria-haspopup="listbox" class="MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall css-bwabot">Đang hoạt động</div> aka getByRole('combobox').filter({ hasText: 'Đang hoạt động' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=Đang hoạt động')
+
+
+      123 |     // Check statistics cards
+      124 |     await expect(page.locator('text=Tổng nhân viên')).toBeVisible();
+    > 125 |     await expect(page.locator('text=Đang hoạt động')).toBeVisible();
+          |                                                       ^
+      126 |
+      127 |     // Check if statistics show correct numbers
+      128 |     const totalEmployees = page.locator('text=Tổng nhân viên').locator('..').locator('h4');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:125:55
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Chrome\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should handle login failures gracefully" classname="10-employees-management.spec.ts" time="4.86">
+</testcase>
+<testcase name="Employee Management Tests › should test employee table interactions" classname="10-employees-management.spec.ts" time="11.651">
+<system-out>
+<![CDATA[Found 6 employees with 12 action buttons
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test navigation between pages" classname="10-employees-management.spec.ts" time="34.935">
+<failure message="10-employees-management.spec.ts:176:7 should test navigation between pages" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › 10-employees-management.spec.ts:176:7 › Employee Management Tests › should test navigation between pages 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Nhân viên")')
+
+
+      181 |
+      182 |     // Navigate to employees
+    > 183 |     await page.click('button:has-text("Nhân viên")');
+          |                ^
+      184 |     await page.waitForLoadState('networkidle');
+      185 |     await expect(page).toHaveURL(/\/employees/);
+      186 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:183:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Chrome\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Chrome\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Chrome\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="10-employees-management.spec.ts" timestamp="2025-08-04T02:02:48.177Z" hostname="Mobile Safari" tests="7" failures="5" skipped="0" time="114.395" errors="0">
+<testcase name="Employee Management Tests › should access employees page and display employee list" classname="10-employees-management.spec.ts" time="14.49">
+<failure message="10-employees-management.spec.ts:45:7 should access employees page and display employee list" type="FAILURE">
+<![CDATA[  [Mobile Safari] › 10-employees-management.spec.ts:45:7 › Employee Management Tests › should access employees page and display employee list 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('h1, h4') resolved to 6 elements:
+        1) <h1 class="MuiTypography-root MuiTypography-h4 css-644yj">Nhân viên & Hoa hồng</h1> aka locator('h1')
+        2) <h4 class="MuiTypography-root MuiTypography-h4 css-1dc7y7n">…</h4> aka locator('h4').filter({ hasText: 'Nhân viên & Hoa hồng' })
+        3) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).first()
+        4) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">6</h4> aka getByRole('heading', { name: '6' }).nth(1)
+        5) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">46.500.000 ₫</h4> aka getByRole('heading', { name: '₫' })
+        6) <h4 class="MuiTypography-root MuiTypography-h4 css-1otc9ha">2.9%</h4> aka getByRole('heading', { name: '%' })
+
+    Call log:
+      - Expect "toContainText" with timeout 10000ms
+      - waiting for locator('h1, h4')
+
+
+      58 |
+      59 |     // Check page title and content
+    > 60 |     await expect(page.locator('h1, h4')).toContainText(/nhân viên|employee/i);
+         |                                          ^
+      61 |
+      62 |     // Check for employee management elements
+      63 |     await expect(page.locator('button:has-text("Thêm nhân viên")')).toBeVisible();
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:60:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Safari\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Safari\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-531bc-e-and-display-employee-list-Mobile-Safari\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should login and logout successfully" classname="10-employees-management.spec.ts" time="16.228">
+<failure message="10-employees-management.spec.ts:76:7 should login and logout successfully" type="FAILURE">
+<![CDATA[  [Mobile Safari] › 10-employees-management.spec.ts:76:7 › Employee Management Tests › should login and logout successfully 
+
+    Error: Timed out 10000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('button:has-text("User")')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('button:has-text("User")')
+
+
+      81 |
+      82 |     // Check for user info
+    > 83 |     await expect(page.locator('button:has-text("User")')).toBeVisible({ timeout: 10000 });
+         |                                                           ^
+      84 |
+      85 |     // Test logout
+      86 |     await page.click('button:has-text("User")');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:83:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Safari\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Safari\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-05630-gin-and-logout-successfully-Mobile-Safari\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee search functionality" classname="10-employees-management.spec.ts" time="13.771">
+<failure message="10-employees-management.spec.ts:94:7 should test employee search functionality" type="FAILURE">
+<![CDATA[  [Mobile Safari] › 10-employees-management.spec.ts:94:7 › Employee Management Tests › should test employee search functionality 
+
+    Error: locator.isVisible: Error: strict mode violation: locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]') resolved to 2 elements:
+        1) <input value="" type="text" aria-label="search" class="MuiInputBase-input css-mnn31" placeholder="Tìm kiếm sản phẩm, đơn hàng..."/> aka getByRole('textbox', { name: 'search' })
+        2) <input value="" id=":r7:" type="text" aria-invalid="false" placeholder="Tìm kiếm nhân viên..." class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall MuiInputBase-inputAdornedStart css-162edyi"/> aka getByRole('textbox', { name: 'Tìm kiếm nhân viên...' })
+
+    Call log:
+        - checking visibility of locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]')
+
+
+      102 |     // Test search functionality
+      103 |     const searchBox = page.locator('input[placeholder*="Tìm kiếm"], input[placeholder*="search"]');
+    > 104 |     if (await searchBox.isVisible()) {
+          |                         ^
+      105 |       await searchBox.fill('Admin');
+      106 |       await page.waitForTimeout(2000);
+      107 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:104:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Safari\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Safari\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-fd8ce-ployee-search-functionality-Mobile-Safari\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test employee statistics display" classname="10-employees-management.spec.ts" time="13.722">
+<failure message="10-employees-management.spec.ts:115:7 should test employee statistics display" type="FAILURE">
+<![CDATA[  [Mobile Safari] › 10-employees-management.spec.ts:115:7 › Employee Management Tests › should test employee statistics display 
+
+    Error: expect.toBeVisible: Error: strict mode violation: locator('text=Đang hoạt động') resolved to 2 elements:
+        1) <p class="MuiTypography-root MuiTypography-body1 MuiTypography-gutterBottom css-1rfywr4">Đang hoạt động</p> aka getByRole('paragraph').filter({ hasText: 'Đang hoạt động' })
+        2) <div tabindex="0" role="combobox" aria-controls=":r9:" aria-expanded="false" aria-haspopup="listbox" class="MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall css-bwabot">Đang hoạt động</div> aka getByRole('combobox').filter({ hasText: 'Đang hoạt động' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('text=Đang hoạt động')
+
+
+      123 |     // Check statistics cards
+      124 |     await expect(page.locator('text=Tổng nhân viên')).toBeVisible();
+    > 125 |     await expect(page.locator('text=Đang hoạt động')).toBeVisible();
+          |                                                       ^
+      126 |
+      127 |     // Check if statistics show correct numbers
+      128 |     const totalEmployees = page.locator('text=Tổng nhân viên').locator('..').locator('h4');
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:125:55
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Safari\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Safari\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-9bab3-employee-statistics-display-Mobile-Safari\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should handle login failures gracefully" classname="10-employees-management.spec.ts" time="5.855">
+</testcase>
+<testcase name="Employee Management Tests › should test employee table interactions" classname="10-employees-management.spec.ts" time="13.664">
+<system-out>
+<![CDATA[Found 6 employees with 12 action buttons
+]]>
+</system-out>
+</testcase>
+<testcase name="Employee Management Tests › should test navigation between pages" classname="10-employees-management.spec.ts" time="36.665">
+<failure message="10-employees-management.spec.ts:176:7 should test navigation between pages" type="FAILURE">
+<![CDATA[  [Mobile Safari] › 10-employees-management.spec.ts:176:7 › Employee Management Tests › should test navigation between pages 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Nhân viên")')
+
+
+      181 |
+      182 |     // Navigate to employees
+    > 183 |     await page.click('button:has-text("Nhân viên")');
+          |                ^
+      184 |     await page.waitForLoadState('networkidle');
+      185 |     await expect(page).toHaveURL(/\/employees/);
+      186 |
+        at C:\Users\ADMIN\Desktop\pos\tests\e2e\specs\10-employees-management.spec.ts:183:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Safari\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Safari\video.webm]]
+
+[[ATTACHMENT|10-employees-management-Em-3de03-st-navigation-between-pages-Mobile-Safari\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

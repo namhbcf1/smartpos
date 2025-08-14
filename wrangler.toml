@@ -1,0 +1,91 @@
+name = "smartpos-api-bangachieu2"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[build]
+command = "echo 'Skipping build for deployment'"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "smartpos-db"
+database_id = "99530d3c-63df-41b8-9cc3-8295f24b08c8"
+
+# KV Namespaces
+[[kv_namespaces]]
+binding = "CACHE"
+id = "46b31b2c6ca449aaa3114d0ebb4fe645"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "b4966461e07a48e981c78cf9f374fe4c"
+
+[[kv_namespaces]]
+binding = "SMARTPOS_DATA"
+id = "a78f493edba44eae937cba4d56a8489b"
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"
+API_VERSION = "v1"
+DEFAULT_LANGUAGE = "vi"
+DEFAULT_TIMEZONE = "Asia/Ho_Chi_Minh"
+DEFAULT_CURRENCY = "VND"
+BUSINESS_COUNTRY = "VN"
+TAX_RATE = "0.1"
+CURRENCY_SYMBOL = "₫"
+BUSINESS_HOURS_START = "8"
+BUSINESS_HOURS_END = "18"
+CORS_ORIGINS = "https://smartpos-web.pages.dev,https://23c8e94b.smartpos-web.pages.dev,https://a31953ab.smartpos-web.pages.dev,https://9217f6a0.smartpos-web.pages.dev,https://fe85a479.smartpos-web.pages.dev,https://fa3e42bb.smartpos-web.pages.dev"
+WORKER_API_URL = "https://smartpos-api-bangachieu2.bangachieu2.workers.dev"
+
+# Payment Gateway Configuration
+VNPAY_TMN_CODE = "VNPAY_SANDBOX"
+VNPAY_HASH_SECRET = "VNPAY_SECRET_KEY"
+VNPAY_URL = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+MOMO_PARTNER_CODE = "MOMO_PARTNER"
+MOMO_ACCESS_KEY = "MOMO_ACCESS_KEY"
+ZALOPAY_APP_ID = "ZALOPAY_APP_ID"
+
+# Advanced Features Configuration
+ENABLE_WARRANTY_SYSTEM = "true"
+ENABLE_EMPLOYEE_MANAGEMENT = "true"
+ENABLE_DEBT_TRACKING = "true"
+ENABLE_MOBILE_PWA = "true"
+ENABLE_ANALYTICS = "true"
+ENABLE_INVENTORY_FORECASTING = "true"
+ENABLE_BUSINESS_INTELLIGENCE = "true"
+ENABLE_SYSTEM_MONITORING = "true"
+ENABLE_REALTIME_COLLABORATION = "true"
+ENABLE_ADVANCED_CACHING = "true"
+ENABLE_ERROR_TRACKING = "true"
+
+# Monitoring & Alerting Configuration
+ALERT_WEBHOOK_URL = "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+MONITORING_ENABLED = "true"
+METRICS_RETENTION_DAYS = "30"
+ALERT_COOLDOWN_MINUTES = "10"
+HEALTH_CHECK_INTERVAL_SECONDS = "60"
+
+# Caching Configuration
+CACHE_DEFAULT_TTL_SECONDS = "3600"
+CACHE_MAX_MEMORY_ENTRIES = "1000"
+CACHE_COMPRESSION_ENABLED = "false"
+
+# Circuit Breaker Configuration
+CIRCUIT_BREAKER_FAILURE_THRESHOLD = "5"
+CIRCUIT_BREAKER_RECOVERY_TIMEOUT_SECONDS = "60"
+CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS = "3"
+
+# System Configuration
+MAX_REQUEST_SIZE = "10485760"
+RATE_LIMIT_PER_MINUTE = "1000"
+SESSION_TIMEOUT_HOURS = "24"
+JWT_EXPIRY_HOURS = "24"
+
+# Database Configuration
+DB_TIMEOUT = "30000"
+DB_RETRY_ATTEMPTS = "3"
+DB_CONNECTION_POOL_SIZE = "10"
+ENABLE_DB_LOGGING = "false"

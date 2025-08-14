@@ -1,0 +1,179 @@
+---
+type: "manual"
+---
+
+# Page snapshot
+
+```yaml
+- banner:
+  - button "toggle drawer"
+  - text: SmartPOS
+  - textbox "search"
+  - button "Bán hàng"
+  - button
+  - button "Thông báo": "3"
+  - button "User": A
+- navigation:
+  - text: 📊 DASHBOARD
+  - listitem:
+    - button "Dashboard"
+  - text: 🛒 BÁN HÀNG
+  - listitem:
+    - button "Điểm bán hàng"
+  - listitem:
+    - button "Lịch sử bán hàng"
+  - listitem:
+    - button "Đơn hàng"
+  - listitem:
+    - button "Trả hàng"
+  - text: 📦 KHO HÀNG
+  - listitem:
+    - button "Sản phẩm"
+  - listitem:
+    - button "Danh mục"
+  - listitem:
+    - button "Nhập kho"
+  - listitem:
+    - button "Nhà cung cấp"
+  - listitem:
+    - button "PC Builder"
+  - listitem:
+    - button "Bảo hành"
+  - text: 👥 KHÁCH HÀNG
+  - listitem:
+    - button "Khách hàng"
+  - text: 📈 BÁO CÁO
+  - listitem:
+    - button "Tổng quan"
+  - listitem:
+    - button "Doanh thu"
+  - listitem:
+    - button "Tài chính"
+- separator
+- list:
+  - text: ⚙️ QUẢN TRỊ
+  - listitem:
+    - button "Nhân viên"
+  - listitem:
+    - button "Cài đặt"
+- main:
+  - heading "Nhân viên & Hoa hồng" [level=1]
+  - heading "Nhân viên & Hoa hồng" [level=4]
+  - paragraph: Quản lý nhân viên bán hàng và hệ thống hoa hồng
+  - button "Làm mới"
+  - button "Thêm nhân viên"
+  - paragraph: Tổng nhân viên
+  - heading "6" [level=4]
+  - paragraph: Đang hoạt động
+  - heading "6" [level=4]
+  - paragraph: Tổng lương cơ bản
+  - heading "46.500.000 ₫" [level=4]
+  - paragraph: Hoa hồng TB
+  - heading "2.9%" [level=4]
+  - textbox "Tìm kiếm nhân viên..."
+  - text: Vai trò
+  - combobox
+  - text: Trạng thái
+  - combobox: Đang hoạt động
+  - button "Xóa bộ lọc"
+  - table:
+    - rowgroup:
+      - row "Nhân viên Vai trò Lương cơ bản Hoa hồng Trạng thái Thao tác":
+        - columnheader "Nhân viên"
+        - columnheader "Vai trò"
+        - columnheader "Lương cơ bản"
+        - columnheader "Hoa hồng"
+        - columnheader "Trạng thái"
+        - columnheader "Thao tác"
+    - rowgroup:
+      - row "J John Smith john.smith2@smartpos.vn 0967890123 Nhân viên kinh doanh 9.000.000 ₫ 5% Hoạt động":
+        - cell "J John Smith john.smith2@smartpos.vn 0967890123":
+          - text: J
+          - heading "John Smith" [level=6]
+          - paragraph: john.smith2@smartpos.vn
+          - paragraph: "0967890123"
+        - cell "Nhân viên kinh doanh"
+        - cell "9.000.000 ₫":
+          - paragraph: 9.000.000 ₫
+        - cell "5%":
+          - paragraph: 5%
+        - cell "Hoạt động"
+        - cell:
+          - button
+          - button
+      - row "P Ph?m Van �?c duc.pham@smartpos.vn 0956789012 Thu ngân 8.500.000 ₫ 3.5% Hoạt động":
+        - cell "P Ph?m Van �?c duc.pham@smartpos.vn 0956789012":
+          - text: P
+          - heading "Ph?m Van �?c" [level=6]
+          - paragraph: duc.pham@smartpos.vn
+          - paragraph: "0956789012"
+        - cell "Thu ngân"
+        - cell "8.500.000 ₫":
+          - paragraph: 8.500.000 ₫
+        - cell "3.5%":
+          - paragraph: 3.5%
+        - cell "Hoạt động"
+        - cell:
+          - button
+          - button
+      - row "L Lê Thị Hoa hoa@smartpos.vn 0934567890 Cộng tác viên 0 ₫ 5% Hoạt động":
+        - cell "L Lê Thị Hoa hoa@smartpos.vn 0934567890":
+          - text: L
+          - heading "Lê Thị Hoa" [level=6]
+          - paragraph: hoa@smartpos.vn
+          - paragraph: "0934567890"
+        - cell "Cộng tác viên"
+        - cell "0 ₫":
+          - paragraph: 0 ₫
+        - cell "5%":
+          - paragraph: 5%
+        - cell "Hoạt động"
+        - cell:
+          - button
+          - button
+      - row "A Admin User admin@smartpos.vn 0123456789 Quản trị viên 15.000.000 ₫ 0% Hoạt động":
+        - cell "A Admin User admin@smartpos.vn 0123456789":
+          - text: A
+          - heading "Admin User" [level=6]
+          - paragraph: admin@smartpos.vn
+          - paragraph: "0123456789"
+        - cell "Quản trị viên"
+        - cell "15.000.000 ₫":
+          - paragraph: 15.000.000 ₫
+        - cell "0%":
+          - paragraph: 0%
+        - cell "Hoạt động"
+        - cell:
+          - button
+          - button
+      - row "N Nguyễn Thị Thu thu@smartpos.vn 0987654321 Thu ngân 8.000.000 ₫ 1% Hoạt động":
+        - cell "N Nguyễn Thị Thu thu@smartpos.vn 0987654321":
+          - text: "N"
+          - heading "Nguyễn Thị Thu" [level=6]
+          - paragraph: thu@smartpos.vn
+          - paragraph: "0987654321"
+        - cell "Thu ngân"
+        - cell "8.000.000 ₫":
+          - paragraph: 8.000.000 ₫
+        - cell "1%":
+          - paragraph: 1%
+        - cell "Hoạt động"
+        - cell:
+          - button
+          - button
+      - row "T Trần Văn Nam nam@smartpos.vn 0912345678 Nhân viên kinh doanh 6.000.000 ₫ 3% Hoạt động":
+        - cell "T Trần Văn Nam nam@smartpos.vn 0912345678":
+          - text: T
+          - heading "Trần Văn Nam" [level=6]
+          - paragraph: nam@smartpos.vn
+          - paragraph: "0912345678"
+        - cell "Nhân viên kinh doanh"
+        - cell "6.000.000 ₫":
+          - paragraph: 6.000.000 ₫
+        - cell "3%":
+          - paragraph: 3%
+        - cell "Hoạt động"
+        - cell:
+          - button
+          - button
+```

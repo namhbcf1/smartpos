@@ -1,0 +1,142 @@
+---
+type: "manual"
+---
+
+# Page snapshot
+
+```yaml
+- banner:
+  - button "toggle drawer"
+  - text: SmartPOS
+  - textbox "search"
+  - button "Bán hàng"
+  - button "0"
+  - button "Thông báo": "3"
+  - button "User": A
+- navigation:
+  - text: 📊 DASHBOARD
+  - listitem:
+    - button "Dashboard"
+  - text: 🛒 BÁN HÀNG
+  - listitem:
+    - button "Điểm bán hàng"
+  - listitem:
+    - button "Lịch sử bán hàng"
+  - listitem:
+    - button "Đơn hàng"
+  - listitem:
+    - button "Trả hàng"
+  - text: 📦 KHO HÀNG
+  - listitem:
+    - button "Sản phẩm"
+  - listitem:
+    - button "Danh mục"
+  - listitem:
+    - button "Nhập kho"
+  - listitem:
+    - button "Nhà cung cấp"
+  - listitem:
+    - button "PC Builder"
+  - listitem:
+    - button "Bảo hành"
+  - text: 👥 KHÁCH HÀNG
+  - listitem:
+    - button "Khách hàng"
+  - text: 📈 BÁO CÁO
+  - listitem:
+    - button "Tổng quan"
+  - listitem:
+    - button "Doanh thu"
+  - listitem:
+    - button "Tài chính"
+- separator
+- list:
+  - text: ⚙️ QUẢN TRỊ
+  - listitem:
+    - button "Nhân viên"
+  - listitem:
+    - button "Cài đặt"
+- main:
+  - heading "SmartPOS" [level=1]
+  - heading "Xin chào, admin! 👋" [level=4]
+  - paragraph: Thống kê tổng quan - Thứ Hai, 4 tháng 8, 2025
+  - group:
+    - button "Hôm nay" [pressed]
+    - button "Tuần"
+    - button "Tháng"
+  - button "Làm mới dữ liệu"
+  - button "Chế độ toàn màn hình"
+  - button "Thông báo": "0"
+  - button "Cài đặt"
+  - paragraph: Doanh thu hôm nay
+  - heading "0 ₫" [level=5]
+  - button "Chi tiết"
+  - paragraph: Doanh thu tuần
+  - heading "0 ₫" [level=5]
+  - button "Xem báo cáo"
+  - paragraph: Sản phẩm
+  - heading "8" [level=5]
+  - button "Quản lý"
+  - paragraph: Khách hàng
+  - heading "6" [level=5]
+  - button "Xem tất cả"
+  - heading "AI Insights & Recommendations" [level=6]
+  - paragraph: "🎯 Hiệu suất hôm nay: 0 đơn hàng, 0 ₫ doanh thu"
+  - paragraph: Kết nối realtime
+  - button "Làm mới kết nối"
+  - text: "0"
+  - heading "Thông báo trực tiếp" [level=6]
+  - button
+  - heading "Thống kê trực tiếp" [level=5]
+  - text: "Cập nhật: 9:02:54 AM"
+  - button "Làm mới"
+  - paragraph: Doanh thu hôm nay
+  - text: 0 ₫
+  - paragraph: 0 đơn hàng
+  - text: +12.5%
+  - paragraph: Đơn hàng hôm nay
+  - text: "0"
+  - paragraph: Đơn hàng mới
+  - text: +8.2%
+  - paragraph: Cảnh báo tồn kho
+  - text: "0"
+  - paragraph: Sản phẩm sắp hết
+  - paragraph: Khách hàng mới
+  - text: "0"
+  - paragraph: Hôm nay
+  - text: +5.1%
+  - paragraph: Điểm thưởng
+  - text: "0"
+  - paragraph: Tổng điểm tích lũy
+  - paragraph: Khách VIP
+  - text: "0"
+  - paragraph: Khách hàng VIP
+  - paragraph: Sản phẩm
+  - text: 1,234
+  - paragraph: Tổng sản phẩm
+  - paragraph: Trung bình đơn hàng
+  - text: 0 ₫
+  - paragraph: Giá trị trung bình
+  - heading "📈 Biểu đồ doanh thu" [level=6]
+  - img
+  - heading "🎯 Phân bố theo danh mục" [level=6]
+  - img
+  - heading "🛒 Đơn hàng gần đây" [level=6]
+  - button "Xem tất cả"
+  - list:
+    - listitem:
+      - text: Chưa có đơn hàng nào
+      - paragraph: Các đơn hàng gần đây sẽ hiển thị ở đây
+  - heading "⚠️ Sản phẩm sắp hết" [level=6]
+  - button "Quản lý kho"
+  - list:
+    - listitem:
+      - text: Tất cả sản phẩm đều có đủ hàng
+      - paragraph: Các sản phẩm sắp hết hàng sẽ hiển thị ở đây
+  - button "Quick Actions"
+  - menu:
+    - menuitem "Bán hàng mới"
+    - menuitem "Thêm sản phẩm"
+    - menuitem "Xem báo cáo"
+    - menuitem "Cài đặt"
+```

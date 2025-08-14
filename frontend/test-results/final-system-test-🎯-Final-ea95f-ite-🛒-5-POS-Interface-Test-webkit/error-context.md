@@ -1,0 +1,60 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - button "toggle drawer"
+  - text: SmartPOS
+  - textbox "search"
+  - button "Bán hàng"
+  - button
+  - button "Thông báo": "3"
+  - button "User": A
+- navigation:
+  - text: 📊 DASHBOARD
+  - listitem:
+    - button "Dashboard"
+  - text: 🛒 BÁN HÀNG
+  - listitem:
+    - button "Điểm bán hàng"
+  - listitem:
+    - button "Lịch sử bán hàng"
+  - listitem:
+    - button "Đơn hàng"
+  - listitem:
+    - button "Trả hàng"
+  - text: 📦 KHO HÀNG
+  - listitem:
+    - button "Sản phẩm"
+  - listitem:
+    - button "Danh mục"
+  - listitem:
+    - button "Nhập kho"
+  - listitem:
+    - button "Nhà cung cấp"
+  - listitem:
+    - button "Serial Numbers"
+  - listitem:
+    - button "PC Builder"
+  - listitem:
+    - button "Bảo hành"
+  - text: 👥 KHÁCH HÀNG
+  - listitem:
+    - button "Khách hàng"
+  - text: 📈 BÁO CÁO
+  - listitem:
+    - button "Tổng quan"
+  - listitem:
+    - button "Doanh thu"
+  - listitem:
+    - button "Tài chính"
+- separator
+- list:
+  - text: ⚙️ QUẢN TRỊ
+  - listitem:
+    - button "Nhân viên"
+  - listitem:
+    - button "Cài đặt"
+- main:
+  - heading "SmartPOS" [level=1]
+  - alert: Không có dữ liệu dashboard
+```

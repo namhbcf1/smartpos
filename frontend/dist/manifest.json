@@ -1,0 +1,55 @@
+{
+  "name": "SmartPOS - Intelligent Point of Sale",
+  "short_name": "SmartPOS",
+  "description": "AI-powered Point of Sale system with smart serial number tracking and warranty management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1976d2",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "vi-VN",
+  "categories": ["business", "productivity", "retail"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Sale",
+      "short_name": "Sale",
+      "description": "Start a new sale transaction",
+      "url": "/pos"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View dashboard and analytics",
+      "url": "/dashboard"
+    }
+  ],
+  "screenshots": [],
+  "features": [
+    "AI-powered analytics",
+    "Real-time serial number tracking",
+    "Smart warranty management",
+    "Offline capability",
+    "Voice commands",
+    "Barcode scanning",
+    "Multi-store support"
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "capture_links": "existing-client-navigate"
+}

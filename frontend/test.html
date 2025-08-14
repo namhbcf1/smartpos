@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPOS Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #1976d2;
+            margin-bottom: 30px;
+        }
+        .pos-form {
+            display: grid;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label {
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .cart {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1976d2;
+            text-align: right;
+            margin-top: 15px;
+        }
+        .api-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 SmartPOS - Điểm Bán Hàng</h1>
+            <p>Hệ thống POS hoạt động 100% online trên Cloudflare</p>
+        </div>
+
+        <div id="api-status" class="api-status">
+            Đang kiểm tra kết nối API...
+        </div>
+
+        <div class="pos-form">
+            <div class="form-group">
+                <label for="product-name">Tên sản phẩm:</label>
+                <input type="text" id="product-name" placeholder="Nhập tên sản phẩm">
+            </div>
+
+            <div class="form-group">
+                <label for="product-price">Giá (VND):</label>
+                <input type="number" id="product-price" placeholder="0" min="0">
+            </div>
+
+            <div class="form-group">
+                <label for="quantity">Số lượng:</label>
+                <input type="number" id="quantity" value="1" min="1">
+            </div>
+
+            <button onclick="addToCart()">➕ Thêm vào giỏ hàng</button>
+        </div>
+
+        <div class="cart">
+            <h3>🛒 Giỏ hàng</h3>
+            <div id="cart-items">
+                <p style="text-align: center; color: #666;">Giỏ hàng trống</p>
+            </div>
+            <div class="total" id="total">
+                Tổng cộng: 0 ₫
+            </div>
+            <button onclick="checkout()" style="width: 100%; margin-top: 15px;">
+                💳 Thanh toán
+            </button>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center; color: #666;">
+            <p>🌐 API: <span id="api-url">https://smartpos-api.bangachieu2.workers.dev</span></p>
+            <p>📱 Frontend: <span id="frontend-url">https://119274b3.smartpos-web.pages.dev</span></p>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_URL = 'https://smartpos-api-bangachieu2.bangachieu2.workers.dev';
+        const API_PREFIX = '/api/v1';
+        
+        let cart = [];
+        let total = 0;
+
+        // Test API connection
+        async function testAPI() {
+            const statusDiv = document.getElementById('api-status');
+            try {
+                const response = await fetch(`${API_URL}/`);
+                const text = await response.text();
+                
+                if (response.ok) {
+                    statusDiv.className = 'api-status success';
+                    statusDiv.innerHTML = '✅ API hoạt động: ' + text;
+                } else {
+                    throw new Error('API không phản hồi');
+                }
+            } catch (error) {
+                statusDiv.className = 'api-status error';
+                statusDiv.innerHTML = '❌ Lỗi API: ' + error.message;
+            }
+        }
+
+        // Add product to cart
+        function addToCart() {
+            const name = document.getElementById('product-name').value;
+            const price = parseFloat(document.getElementById('product-price').value) || 0;
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
+
+            if (!name || price <= 0) {
+                alert('Vui lòng nhập đầy đủ thông tin sản phẩm!');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                name: name,
+                price: price,
+                quantity: quantity,
+                total: price * quantity
+            };
+
+            cart.push(item);
+            updateCartDisplay();
+            
+            // Clear form
+            document.getElementById('product-name').value = '';
+            document.getElementById('product-price').value = '';
+            document.getElementById('quantity').value = '1';
+        }
+
+        // Update cart display
+        function updateCartDisplay() {
+            const cartDiv = document.getElementById('cart-items');
+            const totalDiv = document.getElementById('total');
+
+            if (cart.length === 0) {
+                cartDiv.innerHTML = '<p style="text-align: center; color: #666;">Giỏ hàng trống</p>';
+                total = 0;
+            } else {
+                cartDiv.innerHTML = cart.map(item => `
+                    <div class="cart-item">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>${formatCurrency(item.total)}</span>
+                        <button onclick="removeFromCart(${item.id})" style="background: #dc3545; padding: 5px 10px; font-size: 12px;">
+                            🗑️
+                        </button>
+                    </div>
+                `).join('');
+                
+                total = cart.reduce((sum, item) => sum + item.total, 0);
+            }
+
+            totalDiv.innerHTML = `Tổng cộng: ${formatCurrency(total)}`;
+        }
+
+        // Remove from cart
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCartDisplay();
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }).format(amount);
+        }
+
+        // Checkout
+        function checkout() {
+            if (cart.length === 0) {
+                alert('Giỏ hàng trống!');
+                return;
+            }
+
+            const confirmed = confirm(`Xác nhận thanh toán ${formatCurrency(total)}?`);
+            if (confirmed) {
+                alert('✅ Thanh toán thành công!\n\nCảm ơn bạn đã sử dụng SmartPOS!');
+                cart = [];
+                updateCartDisplay();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            testAPI();
+            updateCartDisplay();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "SmartPOS - Hệ Thống Quản Lý Bán Hàng",
+  "short_name": "SmartPOS",
+  "description": "Hệ thống quản lý bán hàng thông minh cho cửa hàng máy tính - Powered by Cloudflare",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1976d2",
+  "background_color": "#fafafa",
+  "lang": "vi",
+  "scope": "/",
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
