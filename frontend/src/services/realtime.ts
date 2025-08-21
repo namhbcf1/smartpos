@@ -95,7 +95,7 @@ class RealtimeService extends EventEmitter {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 3; // Reduced to limit spam
-  private reconnectDelay = 5000; // Increased delay to reduce frequency
+  private reconnectDelay = 30000; // 30 seconds to reduce frequency significantly
   private isConnecting = false;
   private isManuallyDisconnected = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -108,7 +108,7 @@ class RealtimeService extends EventEmitter {
   private pollingInterval: NodeJS.Timeout | null = null;
   private lastDataHash: string = '';
   private usePollingFallback = false;
-  private pollingDelay = 5000; // 5 seconds
+  private pollingDelay = 30000; // 30 seconds to reduce log spam
 
   constructor() {
     super();
@@ -135,7 +135,6 @@ class RealtimeService extends EventEmitter {
     try {
       // Try WebSocket first, fallback to polling if needed
       const wsUrl = this.getWebSocketUrl();
-      console.log('🔌 Attempting WebSocket connection to:', wsUrl);
 
       try {
         this.ws = new WebSocket(wsUrl);
@@ -149,7 +148,6 @@ class RealtimeService extends EventEmitter {
 
           this.ws!.onopen = () => {
             clearTimeout(timeout);
-            console.log('✅ WebSocket connected successfully');
             this.usePollingFallback = false;
             this.emit('connected');
             resolve();
@@ -162,17 +160,9 @@ class RealtimeService extends EventEmitter {
         });
 
       } catch (wsError) {
-        // Only log WebSocket failures occasionally to reduce spam
-        if (Math.random() < 0.05) {
-          console.warn('⚠️ WebSocket failed, falling back to polling');
-        }
         this.usePollingFallback = true;
         this.startPollingFallback();
         this.emit('connected');
-        // Only log successful polling fallback occasionally
-        if (Math.random() < 0.1) {
-          console.log('✅ Realtime service connected via polling fallback');
-        }
       }
 
     } catch (error) {
@@ -201,7 +191,6 @@ class RealtimeService extends EventEmitter {
     this.stopPollingFallback();
 
     this.emit('disconnected');
-    console.log('🔌 Realtime service disconnected');
   }
 
   // Subscribe to specific event types
@@ -214,10 +203,7 @@ class RealtimeService extends EventEmitter {
     const wasEmpty = listeners.size === 0;
     listeners.add(callback);
 
-    // Only log when first subscriber for this event type
-    if (wasEmpty) {
-      console.log(`📡 Subscribed to ${eventType} events`);
-    }
+    // Silent subscription
   }
 
   // Unsubscribe from event types
@@ -340,8 +326,9 @@ class RealtimeService extends EventEmitter {
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
     this.reconnectAttempts++;
 
-    // Only log reconnection attempts occasionally to reduce spam
-    if (this.reconnectAttempts <= 3 || this.reconnectAttempts % 5 === 0) {
+    // Only log reconnection attempts in development mode and occasionally to reduce spam
+    if (process.env.NODE_ENV === 'development' &&
+        (this.reconnectAttempts <= 2 || this.reconnectAttempts % 10 === 0)) {
       console.log(`🔄 Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
     }
 
@@ -355,7 +342,7 @@ class RealtimeService extends EventEmitter {
   // Get WebSocket URL based on environment - PRODUCTION ONLY (rules.md compliance)
   private getWebSocketUrl(): string {
     // ALWAYS use production Cloudflare Workers - NO localhost (violates rules.md)
-    const apiUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'https://smartpos-api-bangachieu2.bangachieu2.workers.dev/api/v1';
+    const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://pos-backend-bangachieu2.bangachieu2.workers.dev';
 
     // Extract host from API URL and remove /api/v1 path
     const apiHost = new URL(apiUrl).host;
@@ -372,12 +359,17 @@ class RealtimeService extends EventEmitter {
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('📨 Received WebSocket message:', data);
+        // Only log WebSocket messages in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📨 Received WebSocket message:', data);
+        }
 
         // Handle different message types
         switch (data.type) {
           case 'connected':
-            console.log('✅ WebSocket connected:', data.data?.message);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ WebSocket connected:', data.data?.message);
+            }
             this.emit('connected', data);
             break;
 
@@ -436,8 +428,8 @@ class RealtimeService extends EventEmitter {
     };
 
     this.ws.onclose = (event) => {
-      // Only log WebSocket close occasionally to reduce spam
-      if (Math.random() < 0.1) {
+      // Only log WebSocket close in development mode and occasionally to reduce spam
+      if (process.env.NODE_ENV === 'development' && Math.random() < 0.2) {
         console.log('🔌 WebSocket connection closed:', event.code, event.reason);
       }
       this.ws = null;
@@ -494,7 +486,6 @@ class RealtimeService extends EventEmitter {
       clearInterval(this.pollingInterval);
     }
 
-    console.log('🔄 Starting polling fallback for real-time updates');
     this.emit('connected'); // Emit connected event for UI
 
     // Poll for updates every 60 seconds (much less frequent to reduce spam)
@@ -532,8 +523,8 @@ class RealtimeService extends EventEmitter {
         if (dataHash !== this.lastDataHash) {
           this.lastDataHash = dataHash;
 
-          // Only log occasionally to reduce console spam
-          if (Math.random() < 0.1) { // Log only 10% of the time
+          // Only log in development mode and occasionally to reduce console spam
+          if (process.env.NODE_ENV === 'development' && Math.random() < 0.05) { // Log only 5% of the time in dev
             console.log('📊 Dashboard data updated via polling:', data.data);
           }
 

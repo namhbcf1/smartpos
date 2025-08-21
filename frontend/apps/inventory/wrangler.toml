@@ -6,7 +6,7 @@ pages_build_output_dir = "dist"
 name = "smartpos-inventory-app"
 
 [env.production.vars]
-VITE_API_URL = "https://smartpos-api.bangachieu2.workers.dev"
+VITE_API_URL = "https://pos-backend-bangachieu2.bangachieu2.workers.dev"
 VITE_APP_NAME = "SmartPOS - Quản Lý Kho"
 VITE_APP_VERSION = "1.0.0"
 

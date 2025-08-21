@@ -1,6 +1,5 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { CircularProgress, Box, Alert, Typography } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProtectedRouteProps {
@@ -22,16 +21,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (isLoading) {
     console.log('ProtectedRoute: Showing loading spinner');
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh'
-        }}
-      >
-        <CircularProgress size={60} />
-      </Box>
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
     );
   }
 
@@ -52,23 +44,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       });
 
       return (
-        <Box p={3}>
-          <Alert severity="error">
-            <Typography variant="h6" gutterBottom>
-              Không có quyền truy cập
-            </Typography>
-            <Typography>
-              Bạn không có quyền truy cập vào trang này.
-              Vui lòng liên hệ quản trị viên để được cấp quyền.
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              Quyền yêu cầu: {requiredRoles.join(', ')}
-            </Typography>
-            <Typography variant="body2">
-              Quyền hiện tại: {user.role}
-            </Typography>
-          </Alert>
-        </Box>
+        <div className="min-h-screen flex flex-col items-center justify-center p-4">
+          <div className="alert alert-error max-w-md mb-4">
+            <div>
+              <h3 className="font-bold">Không có quyền truy cập</h3>
+              <div className="text-xs">
+                Bạn không có quyền truy cập vào trang này. Vui lòng liên hệ quản trị viên để được cấp quyền.
+              </div>
+              <div className="text-sm mt-2">
+                Vai trò hiện tại: {user.role} | Vai trò yêu cầu: {requiredRoles.join(', ')}
+              </div>
+            </div>
+          </div>
+        </div>
       );
     }
   }

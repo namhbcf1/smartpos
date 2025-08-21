@@ -2,7 +2,7 @@
 // Follows rules: Online-only, no offline functionality, performance optimization only
 
 const CACHE_NAME = `smartpos-v${Date.now()}`;
-const API_BASE = 'https://smartpos-api-bangachieu2.bangachieu2.workers.dev';
+const API_BASE = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev';
 
 // Cache static assets only (no offline functionality)
 const STATIC_CACHE_URLS = [

@@ -251,7 +251,7 @@ const EnhancedAnalyticsDashboard: React.FC<EnhancedAnalyticsDashboardProps> = ({
                         Giao dịch
                       </Typography>
                       <Typography variant="h5">
-                        {dashboardData.overview.total_transactions.toLocaleString()}
+                        {(dashboardData.overview.total_transactions || 0).toLocaleString()}
                       </Typography>
                     </Box>
                   </Box>
@@ -287,7 +287,7 @@ const EnhancedAnalyticsDashboard: React.FC<EnhancedAnalyticsDashboardProps> = ({
                         Khách hàng
                       </Typography>
                       <Typography variant="h5">
-                        {dashboardData.overview.customer_count.toLocaleString()}
+                        {(dashboardData.overview.customer_count || 0).toLocaleString()}
                       </Typography>
                     </Box>
                   </Box>

@@ -122,7 +122,7 @@ class EnhancedRealtimeService extends EventEmitter {
    */
   private async tryServerSentEvents(): Promise<boolean> {
     try {
-      const sseUrl = `${import.meta.env.VITE_API_BASE_URL || 'https://smartpos-api-bangachieu2.bangachieu2.workers.dev'}${API_ENDPOINTS.REALTIME.STREAM}`;
+      const sseUrl = `${import.meta.env.VITE_API_BASE_URL || 'https://pos-backend-bangachieu2.bangachieu2.workers.dev'}${API_ENDPOINTS.REALTIME.STREAM}`;
       this.eventSource = new EventSource(sseUrl, { withCredentials: true });
 
       return new Promise<boolean>((resolve) => {
@@ -401,7 +401,7 @@ class EnhancedRealtimeService extends EventEmitter {
    * Get WebSocket URL
    */
   private getWebSocketUrl(): string {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://smartpos-api-bangachieu2.bangachieu2.workers.dev';
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://pos-backend-bangachieu2.bangachieu2.workers.dev';
     const protocol = apiUrl.startsWith('https:') ? 'wss:' : 'ws:';
     const host = new URL(apiUrl).host;
     return `${protocol}//${host}${API_ENDPOINTS.REALTIME.WEBSOCKET}`;

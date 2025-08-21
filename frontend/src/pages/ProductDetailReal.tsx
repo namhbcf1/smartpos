@@ -66,7 +66,7 @@ const ProductDetailReal = () => {
       
       // DIRECT API CALL - Get product from D1 Cloudflare
       console.log('📡 Calling SmartPOS API...');
-      const response = await fetch('https://smartpos-api.bangachieu2.workers.dev/api/v1/products?limit=100');
+      const response = await fetch('https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/products?limit=100');
       const data = await response.json();
       
       console.log('📦 D1 Database response:', data);

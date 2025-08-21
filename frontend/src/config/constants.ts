@@ -4,19 +4,19 @@ export const drawerWidth = 240;
 // API endpoints - Updated to include all advanced endpoints
 export const API_ENDPOINTS = {
   // Authentication
-  LOGIN: '/api/v1/auth/login',
-  LOGOUT: '/api/v1/auth/logout',
-  USER: '/api/v1/auth/me',
-  REFRESH_TOKEN: '/api/v1/auth/refresh-token',
+  LOGIN: '/auth/login',
+  LOGOUT: '/auth/logout',
+  USER: '/auth/me-fixed', // Using fixed endpoint that works
+  REFRESH_TOKEN: '/auth/refresh-token',
 
   // Basic endpoints
-  PRODUCTS: '/api/v1/products',
-  CATEGORIES: '/api/v1/categories',
-  SALES: '/api/v1/sales',
-  USERS: '/api/v1/users',
-  SETTINGS: '/api/v1/settings',
-  REPORTS: '/api/v1/reports',
-  INVENTORY: '/api/v1/inventory',
+  PRODUCTS: '/products',
+  CATEGORIES: '/categories',
+  SALES: '/sales',
+  USERS: '/users',
+  SETTINGS: '/settings',
+  REPORTS: '/reports',
+  INVENTORY: '/inventory',
 
   // Advanced Inventory Management
   INVENTORY_ADVANCED: {

@@ -1,88 +1,37 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import path from 'node:path'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@shared': path.resolve(__dirname, './shared'),
-    },
+  server: {
+    port: 5173,
+    strictPort: true,
   },
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'esbuild', // Faster than terser, good enough for most cases
-    target: 'es2020',
+    minify: 'esbuild', // Changed from terser to esbuild (faster and built-in)
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'mui-core': ['@mui/material', '@emotion/react', '@emotion/styled'],
-          'mui-icons': ['@mui/icons-material'],
-          'mui-data': ['@mui/x-data-grid', '@mui/x-date-pickers'],
-          'query-vendor': ['@tanstack/react-query'],
-          'chart-vendor': ['recharts'],
-          'utils-vendor': ['axios', 'date-fns', 'lodash', 'zod', 'jwt-decode'],
-          'ui-vendor': ['notistack', 'react-hot-toast', 'react-hook-form']
-        },
-        // Optimize chunk file names for better caching
-        chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId
-          if (facadeModuleId) {
-            if (facadeModuleId.includes('pages/')) {
-              return 'pages/[name]-[hash].js'
-            }
-            if (facadeModuleId.includes('components/')) {
-              return 'components/[name]-[hash].js'
-            }
-          }
-          return 'chunks/[name]-[hash].js'
-        },
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
-      }
-    },
-    // Optimize bundle size
-    chunkSizeWarningLimit: 1000,
-    // Enable compression
-    reportCompressedSize: true,
-    // Optimize CSS
-    cssCodeSplit: true,
-    // Optimize assets
-    assetsInlineLimit: 4096
-  },
-  server: {
-    proxy: {
-      '/api': {
-        target: 'https://smartpos-api.bangachieu2.workers.dev',
-        changeOrigin: true,
-        secure: true,
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+        }
       }
     }
   },
-  // Optimize dependencies
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      '@mui/material',
-      '@mui/icons-material',
-      '@tanstack/react-query',
-      'axios',
-      'date-fns',
-      'lodash',
-      'zod'
-    ],
-    exclude: ['@zxing/browser', '@zxing/library']
+  resolve: {
+    alias: {
+      '@src': path.resolve(__dirname, 'src'),
+    },
   },
-  // Performance optimizations
-  esbuild: {
-    target: 'es2020',
-    // drop: ['console', 'debugger'] // Temporarily disabled for debugging
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://computerpos-pro-prod.your-subdomain.workers.dev')
+  },
+  preview: {
+    port: 3000,
+    host: true
   }
 })

@@ -1,167 +1,147 @@
-import React, { useState, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Divider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Autocomplete,
-  InputAdornment,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Fab,
-  Container,
-  Stack,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Remove as RemoveIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-  ShoppingCart as CartIcon,
-  Payment as PaymentIcon,
-  Receipt as ReceiptIcon,
-  Person as PersonIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  Clear as ClearIcon,
-  Save as SaveIcon,
-  Security as SecurityIcon
-} from '@mui/icons-material';
-import { CircularProgress } from '@mui/material';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '../services/api';
-import { formatCurrency } from '../utils/format';
-import { PaymentMethodSelector, PaymentMethod } from '../components/payment/PaymentMethodSelector';
-import { VNPayPayment } from '../components/payment/VNPayPayment';
-import { useSnackbar } from 'notistack';
-import SerialNumberAssignment from '../components/SerialNumberAssignment';
-import { enhancedSalesService } from '../services/enhancedSalesService';
+// Vietnamese Computer Hardware POS - New Sale Interface
+// ComputerPOS Pro - Production DaisyUI Implementation
 
-// Types
+import React, { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { 
+  FiSearch, 
+  FiShoppingCart, 
+  FiCreditCard, 
+  FiUser, 
+  FiPlus, 
+  FiMinus, 
+  FiTrash2, 
+  FiShield,
+  FiCheck,
+  FiAlertTriangle
+} from 'react-icons/fi';
+import toast from 'react-hot-toast';
+import apiClient from '../services/api';
+import { formatVND, calculateTotalWithVAT, generateInvoiceNumber, PAYMENT_METHODS } from '../utils/currency';
+import { checkPCCompatibility, ComponentSpecs, COMPONENT_CATEGORIES_VI } from '../utils/compatibility';
+
+// Vietnamese POS Types
 interface Product {
-  id: number;
+  id: string;
   name: string;
+  name_vi?: string;
   sku: string;
-  barcode: string | null;
-  price: number;
+  barcode?: string;
+  unit_price: number; // VND cents
+  cost_price: number; // VND cents
   stock_quantity: number;
-  category_name: string;
-  image_url: string | null;
+  category_id?: string;
+  category_name?: string;
+  brand_id?: string;
+  brand_name?: string;
+  specifications?: Record<string, any>;
+  compatibility_info?: Record<string, any>;
+  warranty_months?: number;
+  is_active: boolean;
 }
 
 interface CartItem {
   product: Product;
   quantity: number;
-  unit_price: number;
-  total_price: number;
+  unit_price: number; // VND cents
+  discount_amount: number; // VND cents
+  line_total: number; // VND cents
   serial_numbers?: string[];
-  auto_warranty?: boolean;
+  warranty_months?: number;
+  notes?: string;
 }
 
 interface Customer {
-  id?: number;
-  name: string;
-  phone: string;
-  email: string;
+  id?: string;
+  full_name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  customer_type: 'individual' | 'business';
+  tax_number?: string;
+  loyalty_points: number;
+  total_spent: number; // VND cents
 }
 
 const NewSale: React.FC = () => {
   const queryClient = useQueryClient();
 
-  // Hooks
-  const { enqueueSnackbar } = useSnackbar();
-
-  // State
+  // Vietnamese POS State
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [customer, setCustomer] = useState<Customer>({ name: '', phone: '', email: '' });
-  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [quantity, setQuantity] = useState<number>(1);
-  const [discount, setDiscount] = useState<number>(0);
-  const [notes, setNotes] = useState<string>('');
-  const [openPaymentDialog, setOpenPaymentDialog] = useState(false);
-  const [openPaymentMethodSelector, setOpenPaymentMethodSelector] = useState(false);
-  const [openVNPayPayment, setOpenVNPayPayment] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('cash');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [saleId, setSaleId] = useState<number | null>(null);
-  const [openCustomerDialog, setOpenCustomerDialog] = useState(false);
-  const [openSerialAssignment, setOpenSerialAssignment] = useState(false);
-  const [tempCustomer, setTempCustomer] = useState({
-    name: '',
+  const [customer, setCustomer] = useState<Customer>({
+    full_name: '',
     phone: '',
     email: '',
     address: '',
-    loyaltyPoints: 0,
-    customerGroup: 'regular'
+    customer_type: 'individual',
+    loyalty_points: 0,
+    total_spent: 0
   });
+  const [paymentMethod, setPaymentMethod] = useState<keyof typeof PAYMENT_METHODS>('cash');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [globalDiscount, setGlobalDiscount] = useState<number>(0); // VND cents
+  const [notes, setNotes] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [saleId, setSaleId] = useState<string | null>(null);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCompatibilityCheck, setShowCompatibilityCheck] = useState(false);
+  const [compatibilityResult, setCompatibilityResult] = useState<any>(null);
 
-  // Fetch products for search
+  // Fetch products for Vietnamese POS search
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products', 'search', searchTerm],
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
-      const response = await apiClient.get('/products', {
-        params: {
-          search: searchTerm,
-          is_active: true,
-          limit: 20
-        }
-      });
-      return (response.data as any)?.data || [];
+      try {
+        const response = await apiClient.get('/api/v1/products', {
+          params: {
+            search: searchTerm,
+            is_active: true,
+            limit: 20
+          }
+        });
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Product search error:', error);
+        toast.error('Lỗi tìm kiếm sản phẩm');
+        return [];
+      }
     },
     enabled: searchTerm.length >= 2
   });
 
-  // Calculate totals
+  // Calculate Vietnamese POS totals with VAT
   const totals = useMemo(() => {
-    const subtotal = cart.reduce((sum, item) => sum + item.total_price, 0);
-    const discountAmount = (subtotal * discount) / 100;
-    const taxRate = 0.1; // 10% VAT
-    const taxAmount = (subtotal - discountAmount) * taxRate;
-    const total = subtotal - discountAmount + taxAmount;
+    const subtotal = cart.reduce((sum, item) => sum + item.line_total, 0);
+    const discountAmount = globalDiscount;
+    const { vat, total } = calculateTotalWithVAT(subtotal - discountAmount);
 
     return {
       subtotal,
       discountAmount,
-      taxAmount,
+      taxAmount: vat,
       total
     };
-  }, [cart, discount]);
+  }, [cart, globalDiscount]);
 
-  // Add product to cart
+  // Add product to Vietnamese POS cart
   const addToCart = () => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || quantity <= 0) {
+      toast.error('Vui lòng chọn sản phẩm và số lượng hợp lệ');
+      return;
+    }
+
+    // Check stock availability
+    if (quantity > selectedProduct.stock_quantity) {
+      toast.error(`Không đủ hàng trong kho. Còn lại: ${selectedProduct.stock_quantity}`);
+      return;
+    }
 
     const existingItemIndex = cart.findIndex(item => item.product.id === selectedProduct.id);
+    const lineTotal = selectedProduct.unit_price * quantity;
 
     if (existingItemIndex >= 0) {
       // Update existing item
@@ -169,25 +149,22 @@ const NewSale: React.FC = () => {
       const newQuantity = newCart[existingItemIndex].quantity + quantity;
 
       if (newQuantity > selectedProduct.stock_quantity) {
-        enqueueSnackbar('Không đủ hàng tồn kho', { variant: 'warning' });
+        toast.error('Không đủ hàng tồn kho');
         return;
       }
 
       newCart[existingItemIndex].quantity = newQuantity;
-      newCart[existingItemIndex].total_price = newQuantity * selectedProduct.price;
+      newCart[existingItemIndex].line_total = newQuantity * selectedProduct.unit_price;
       setCart(newCart);
     } else {
       // Add new item
-      if (quantity > selectedProduct.stock_quantity) {
-        enqueueSnackbar('Không đủ hàng tồn kho', { variant: 'warning' });
-        return;
-      }
-
       const newItem: CartItem = {
         product: selectedProduct,
         quantity,
-        unit_price: selectedProduct.price,
-        total_price: quantity * selectedProduct.price
+        unit_price: selectedProduct.unit_price,
+        discount_amount: 0,
+        line_total: lineTotal,
+        warranty_months: selectedProduct.warranty_months || 12
       };
       setCart([...cart, newItem]);
     }
@@ -196,10 +173,11 @@ const NewSale: React.FC = () => {
     setSelectedProduct(null);
     setQuantity(1);
     setSearchTerm('');
+    toast.success(`Đã thêm ${selectedProduct.name_vi || selectedProduct.name} vào giỏ hàng`);
   };
 
   // Update cart item quantity
-  const updateCartItemQuantity = (productId: number, newQuantity: number) => {
+  const updateCartItemQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeFromCart(productId);
       return;
@@ -208,13 +186,13 @@ const NewSale: React.FC = () => {
     const newCart = cart.map(item => {
       if (item.product.id === productId) {
         if (newQuantity > item.product.stock_quantity) {
-          enqueueSnackbar('Không đủ hàng tồn kho', { variant: 'warning' });
+          toast.error('Không đủ hàng tồn kho');
           return item;
         }
         return {
           ...item,
           quantity: newQuantity,
-          total_price: newQuantity * item.unit_price
+          line_total: newQuantity * item.unit_price - item.discount_amount
         };
       }
       return item;
@@ -223,833 +201,580 @@ const NewSale: React.FC = () => {
   };
 
   // Remove from cart
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (productId: string) => {
+    const removedItem = cart.find(item => item.product.id === productId);
     setCart(cart.filter(item => item.product.id !== productId));
+    if (removedItem) {
+      toast.success(`Đã xóa ${removedItem.product.name_vi || removedItem.product.name} khỏi giỏ hàng`);
+    }
   };
 
   // Clear cart
   const clearCart = () => {
     setCart([]);
-    setCustomer({ name: '', phone: '', email: '' });
-    setDiscount(0);
+    setCustomer({
+      full_name: '',
+      phone: '',
+      email: '',
+      address: '',
+      customer_type: 'individual',
+      loyalty_points: 0,
+      total_spent: 0
+    });
+    setGlobalDiscount(0);
     setNotes('');
     setSaleId(null);
+    toast('Đã xóa tất cả sản phẩm khỏi giỏ hàng', { icon: 'ℹ️' });
+  };
+
+  // Check PC compatibility
+  const checkCompatibility = () => {
+    const components: ComponentSpecs[] = cart.map(item => ({
+      id: item.product.id,
+      name: item.product.name_vi || item.product.name,
+      category: (item.product.category_name?.toUpperCase() as any) || 'ACCESSORIES',
+      specifications: item.product.specifications || {},
+      compatibility_info: item.product.compatibility_info || {}
+    }));
+
+    const result = checkPCCompatibility(components);
+    setCompatibilityResult(result);
+    setShowCompatibilityCheck(true);
+
+    if (!result.isCompatible) {
+      toast.error(`Phát hiện ${result.issues.filter(i => i.severity === 'error').length} vấn đề tương thích`);
+    } else {
+      toast.success('Tất cả linh kiện tương thích với nhau');
+    }
   };
 
   // Payment handlers
   const handleStartPayment = () => {
     if (cart.length === 0) {
-      enqueueSnackbar('Giỏ hàng trống', { variant: 'warning' });
+      toast.error('Giỏ hàng trống');
       return;
     }
 
-    // Check if any items need serial number assignment
-    const needsSerialAssignment = cart.some(item =>
-      item.product.category_name?.toLowerCase().includes('linh kiện') ||
-      item.product.category_name?.toLowerCase().includes('laptop') ||
-      item.product.category_name?.toLowerCase().includes('pc')
+    // Check if cart has computer components - suggest compatibility check
+    const hasComputerComponents = cart.some(item =>
+      ['CPU', 'GPU', 'RAM', 'MOTHERBOARD', 'PSU'].includes(
+        item.product.category_name?.toUpperCase() || ''
+      )
     );
 
-    if (needsSerialAssignment) {
-      setOpenSerialAssignment(true);
-    } else {
-      setOpenPaymentMethodSelector(true);
+    if (hasComputerComponents && !compatibilityResult) {
+      toast('Khuyến nghị kiểm tra tương thích linh kiện trước khi thanh toán', { icon: 'ℹ️' });
     }
+
+    setShowPaymentModal(true);
   };
-
-  // Serial number assignment handlers
-  const handleSerialAssignmentConfirm = (itemsWithSerials: CartItem[]) => {
-    setCart(itemsWithSerials);
-    setOpenSerialAssignment(false);
-    setOpenPaymentMethodSelector(true);
-  };
-
-  const handleSelectPaymentMethod = async (method: PaymentMethod) => {
-    setSelectedPaymentMethod(method);
-
-    if (method === 'cash' || method === 'card') {
-      // Xử lý thanh toán trực tiếp
-      await processCashPayment(method);
-    } else if (method === 'vnpay') {
-      // Tạo sale trước, sau đó mở VNPay
-      await createSaleForPayment();
-      setOpenVNPayPayment(true);
-    } else {
-      // Các phương thức khác (MoMo, ZaloPay)
-      enqueueSnackbar('Phương thức thanh toán đang được phát triển', { variant: 'info' });
-    }
-  };
-
-  const createSaleForPayment = async () => {
-    setIsProcessing(true);
-    try {
-      const saleData = {
-        customer_id: customer.id || null,
-        items: cart.map(item => ({
-          product_id: item.product.id,
-          quantity: item.quantity,
-          unit_price: item.unit_price
-        })),
-        payment_method: selectedPaymentMethod,
-        discount_percentage: discount,
-        notes: notes,
-        payment_status: 'pending'
-      };
-
-      const response = await apiClient.post('/sales', saleData);
-      if (response.data.success) {
-        setSaleId(response.data.data.id);
-        return response.data.data.id;
-      } else {
-        throw new Error(response.data.message);
-      }
-    } catch (error: any) {
-      enqueueSnackbar(error.message || 'Lỗi tạo đơn hàng', { variant: 'error' });
-      throw error;
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const processCashPayment = async (method: PaymentMethod) => {
-    setIsProcessing(true);
-    try {
-      // Check if any items have serial numbers assigned
-      const hasSerialNumbers = cart.some(item => item.serial_numbers && item.serial_numbers.length > 0);
-
-      if (hasSerialNumbers) {
-        // Use enhanced sales service for sales with serial numbers
-        const saleData = {
-          customer: customer,
-          items: cart,
-          payment_method: method,
-          discount_amount: totals.discountAmount,
-          tax_amount: totals.taxAmount,
-          total_amount: totals.total,
-          notes: notes,
-        };
-
-        const result = await enhancedSalesService.createSaleWithSerials(saleData);
-
-        let successMessage = 'Thanh toán thành công!';
-        if (result.assigned_serials.length > 0) {
-          successMessage += ` Đã gán ${result.assigned_serials.length} serial numbers.`;
-        }
-        if (result.created_warranties.length > 0) {
-          successMessage += ` Đã tạo ${result.created_warranties.length} bảo hành.`;
-        }
-        if (result.errors.length > 0) {
-          enqueueSnackbar(`Có một số lỗi: ${result.errors.join(', ')}`, { variant: 'warning' });
-        }
-
-        enqueueSnackbar(successMessage, { variant: 'success' });
-      } else {
-        // Use regular sales API for simple sales
-        const saleData = {
-          customer_name: customer.name || null,
-          customer_phone: customer.phone || null,
-          customer_email: customer.email || null,
-          payment_method: method,
-          discount_amount: totals.discountAmount,
-          tax_amount: totals.taxAmount,
-          total_amount: totals.total,
-          notes: notes,
-          items: cart.map(item => ({
-            product_id: item.product.id,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total_price: item.total_price
-          }))
-        };
-
-        const response = await apiClient.post('/sales', saleData);
-        if (response.data.success) {
-          enqueueSnackbar('Thanh toán thành công!', { variant: 'success' });
-        } else {
-          throw new Error(response.data.message);
-        }
-      }
-
-      clearCart();
-      setOpenPaymentMethodSelector(false);
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      enqueueSnackbar(error.message || 'Lỗi thanh toán', { variant: 'error' });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleVNPaySuccess = (transactionId: string) => {
-    enqueueSnackbar('Thanh toán VNPay thành công!', { variant: 'success' });
-    setOpenVNPayPayment(false);
-    clearCart();
-    // Có thể in hóa đơn ở đây
-  };
-
-  const handleVNPayError = (error: string) => {
-    enqueueSnackbar(`Lỗi thanh toán VNPay: ${error}`, { variant: 'error' });
-    setOpenVNPayPayment(false);
-  };
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   return (
-    <Container
-      maxWidth="xl"
-      sx={{
-        py: { xs: 1, sm: 2 },
-        px: { xs: 1, sm: 2, md: 3 },
-        minHeight: '100vh',
-        bgcolor: 'grey.50'
-      }}
-    >
+    <div className="min-h-screen bg-base-200 p-4">
       {/* Header */}
-      <Paper
-        elevation={1}
-        sx={{
-          p: { xs: 2, sm: 3 },
-          mb: 3,
-          borderRadius: 2,
-          bgcolor: 'white'
-        }}
-      >
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          spacing={2}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-                fontWeight: 600,
-                color: 'primary.main',
-                mb: 1
-              }}
+      <div className="bg-base-100 rounded-lg shadow-sm p-4 mb-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-primary">
+            <FiShoppingCart className="inline mr-2" />
+            Bán hàng mới
+          </h1>
+          <div className="flex gap-2">
+            <button 
+              className="btn btn-outline btn-sm"
+              onClick={checkCompatibility}
+              disabled={cart.length === 0}
             >
-              <CartIcon sx={{ fontSize: 'inherit' }} />
-              Điểm bán hàng (POS)
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+              <FiShield className="mr-1" />
+              Kiểm tra tương thích
+            </button>
+            <button 
+              className="btn btn-error btn-sm"
+              onClick={clearCart}
+              disabled={cart.length === 0}
             >
-              Tạo đơn hàng và thanh toán nhanh chóng
-            </Typography>
-          </Box>
-        </Stack>
-      </Paper>
+              <FiTrash2 className="mr-1" />
+              Xóa tất cả
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {/* Main Content */}
-      <Box
-        sx={{
-          flexGrow: 1,
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            md: '2fr 1fr'
-          },
-          gap: 3,
-          alignItems: 'start',
-          width: '100%'
-        }}
-      >
-        {/* Left Panel - Product Search & Cart */}
-        <Box sx={{ minWidth: 0 }}>
-            {/* Product Search */}
-            <Card sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Tìm kiếm sản phẩm
-                </Typography>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Product Search & Cart */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Product Search */}
+          <div className="bg-base-100 rounded-lg shadow-sm p-4">
+            <h2 className="text-lg font-semibold mb-3">Tìm kiếm sản phẩm</h2>
+            <div className="form-control">
+              <div className="input-group">
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên, SKU, barcode..."
+                  className="input input-bordered flex-1"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button className="btn btn-square">
+                  <FiSearch />
+                </button>
+              </div>
+            </div>
 
-            <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={6}>
-                  <Autocomplete
-                    options={products}
-                    getOptionLabel={(option) => `${option.name} (${option.sku})`}
-                    value={selectedProduct}
-                    onChange={(_, newValue) => setSelectedProduct(newValue)}
-                    inputValue={searchTerm}
-                    onInputChange={(_, newInputValue) => setSearchTerm(newInputValue)}
-                    loading={isLoadingProducts}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Tìm sản phẩm theo tên hoặc SKU"
-                        variant="outlined"
-                        fullWidth
-                        InputProps={{
-                          ...params.InputProps,
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <SearchIcon />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    )}
-                    renderOption={(props, option) => (
-                      <Box component="li" {...props}>
-                        <Avatar
-                          src={option.image_url || undefined}
-                          sx={{ mr: 2, width: 40, height: 40 }}
-                        >
-                          {option.name.charAt(0)}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body1">{option.name}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            SKU: {option.sku} | Giá: {formatCurrency(option.price)} | Tồn: {option.stock_quantity}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )}
-                  />
-                </Grid>
+            {/* Product Results */}
+            {isLoadingProducts && (
+              <div className="flex justify-center py-4">
+                <span className="loading loading-spinner loading-md"></span>
+              </div>
+            )}
 
-                <Grid item xs={12} md={3}>
-                  <TextField
-                    label="Số lượng"
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    fullWidth
-                    inputProps={{ min: 1 }}
-                  />
-                </Grid>
+            {products.length > 0 && (
+              <div className="mt-4 max-h-60 overflow-y-auto">
+                {products.map((product: Product) => (
+                  <div
+                    key={product.id}
+                    className={`p-3 border rounded-lg mb-2 cursor-pointer transition-colors ${
+                      selectedProduct?.id === product.id
+                        ? 'border-primary bg-primary/10'
+                        : 'border-base-300 hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedProduct(product)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-medium">
+                          {product.name_vi || product.name}
+                        </h3>
+                        <p className="text-sm text-base-content/70">
+                          SKU: {product.sku} | Tồn kho: {product.stock_quantity}
+                        </p>
+                        {product.category_name && (
+                          <span className="badge badge-outline badge-sm">
+                            {COMPONENT_CATEGORIES_VI[product.category_name.toUpperCase() as keyof typeof COMPONENT_CATEGORIES_VI] || product.category_name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">
+                          {formatVND(product.unit_price)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-                <Grid item xs={12} md={3}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    size="large"
-                    startIcon={<AddIcon />}
+            {/* Add to Cart */}
+            {selectedProduct && (
+              <div className="mt-4 p-4 bg-base-200 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Số lượng</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={selectedProduct.stock_quantity}
+                      value={quantity}
+                      onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                      className="input input-bordered w-20"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-base-content/70">Sản phẩm đã chọn:</p>
+                    <p className="font-medium">{selectedProduct.name_vi || selectedProduct.name}</p>
+                    <p className="text-primary font-bold">{formatVND(selectedProduct.unit_price * quantity)}</p>
+                  </div>
+                  <button
+                    className="btn btn-primary"
                     onClick={addToCart}
-                    disabled={!selectedProduct}
+                    disabled={quantity <= 0 || quantity > selectedProduct.stock_quantity}
                   >
+                    <FiPlus className="mr-1" />
                     Thêm vào giỏ
-                  </Button>
-                </Grid>
-              </Grid>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
-                {selectedProduct && (
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    <strong>{selectedProduct.name}</strong><br />
-                    Giá: {formatCurrency(selectedProduct.price)} |
-                    Tồn kho: {selectedProduct.stock_quantity} |
-                    Danh mục: {selectedProduct.category_name}
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
+        {/* Cart & Summary */}
+        <div className="space-y-4">
+          {/* Cart Items */}
+          <div className="bg-base-100 rounded-lg shadow-sm p-4">
+            <h2 className="text-lg font-semibold mb-3">
+              Giỏ hàng ({cart.length} sản phẩm)
+            </h2>
 
-            {/* Shopping Cart */}
-            <Card sx={{ borderRadius: 2 }}>
-              <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">
-                  Giỏ hàng ({cart.length} sản phẩm)
-                </Typography>
-                {cart.length > 0 && (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    startIcon={<ClearIcon />}
-                    onClick={clearCart}
-                  >
-                    Xóa tất cả
-                  </Button>
-                )}
-              </Box>
+            {cart.length === 0 ? (
+              <div className="text-center py-8 text-base-content/50">
+                <FiShoppingCart className="mx-auto text-4xl mb-2" />
+                <p>Giỏ hàng trống</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {cart.map((item) => (
+                  <div key={item.product.id} className="border border-base-300 rounded-lg p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">
+                          {item.product.name_vi || item.product.name}
+                        </h4>
+                        <p className="text-xs text-base-content/70">
+                          {formatVND(item.unit_price)} x {item.quantity}
+                        </p>
+                      </div>
+                      <button
+                        className="btn btn-ghost btn-xs text-error"
+                        onClick={() => removeFromCart(item.product.id)}
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </div>
 
-              {cart.length === 0 ? (
-                <Alert severity="info">
-                  Giỏ hàng trống. Hãy tìm kiếm và thêm sản phẩm vào giỏ hàng.
-                </Alert>
-              ) : (
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Sản phẩm</TableCell>
-                        <TableCell align="center">Số lượng</TableCell>
-                        <TableCell align="right">Đơn giá</TableCell>
-                        <TableCell align="right">Thành tiền</TableCell>
-                        <TableCell align="center">Serial Numbers</TableCell>
-                        <TableCell align="center">Bảo hành</TableCell>
-                        <TableCell align="center">Thao tác</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {cart.map((item) => (
-                        <TableRow key={item.product.id}>
-                          <TableCell>
-                            <Box display="flex" alignItems="center">
-                              <Avatar
-                                src={item.product.image_url || undefined}
-                                sx={{ mr: 2, width: 32, height: 32 }}
-                              >
-                                {item.product.name.charAt(0)}
-                              </Avatar>
-                              <Box>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {item.product.name}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  SKU: {item.product.sku}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Box display="flex" alignItems="center" justifyContent="center">
-                              <IconButton
-                                size="small"
-                                onClick={() => updateCartItemQuantity(item.product.id, item.quantity - 1)}
-                              >
-                                <RemoveIcon fontSize="small" />
-                              </IconButton>
-                              <Typography sx={{ mx: 1, minWidth: 30, textAlign: 'center' }}>
-                                {item.quantity}
-                              </Typography>
-                              <IconButton
-                                size="small"
-                                onClick={() => updateCartItemQuantity(item.product.id, item.quantity + 1)}
-                              >
-                                <AddIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="right">
-                            {formatCurrency(item.unit_price)}
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography fontWeight="medium">
-                              {formatCurrency(item.total_price)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            {item.serial_numbers && item.serial_numbers.length > 0 ? (
-                              <Box>
-                                <Chip
-                                  label={`${item.serial_numbers.length} serial`}
-                                  size="small"
-                                  color="success"
-                                  variant="outlined"
-                                />
-                                <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                                  {item.serial_numbers.slice(0, 2).join(', ')}
-                                  {item.serial_numbers.length > 2 && '...'}
-                                </Typography>
-                              </Box>
-                            ) : (
-                              <Chip label="Chưa gán" size="small" color="default" variant="outlined" />
-                            )}
-                          </TableCell>
-                          <TableCell align="center">
-                            {item.auto_warranty ? (
-                              <Chip
-                                label="Tự động"
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                                icon={<SecurityIcon />}
-                              />
-                            ) : (
-                              <Chip label="Không" size="small" color="default" variant="outlined" />
-                            )}
-                          </TableCell>
-                          <TableCell align="center">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => removeFromCart(item.product.id)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                )}
-              </CardContent>
-            </Card>
-        </Box>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <button
+                          className="btn btn-xs btn-outline"
+                          onClick={() => updateCartItemQuantity(item.product.id, item.quantity - 1)}
+                        >
+                          <FiMinus />
+                        </button>
+                        <span className="px-2 text-sm font-medium">{item.quantity}</span>
+                        <button
+                          className="btn btn-xs btn-outline"
+                          onClick={() => updateCartItemQuantity(item.product.id, item.quantity + 1)}
+                          disabled={item.quantity >= item.product.stock_quantity}
+                        >
+                          <FiPlus />
+                        </button>
+                      </div>
+                      <p className="font-bold text-primary">
+                        {formatVND(item.line_total)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* Right Panel - Customer Info & Payment */}
-        <Box sx={{ minWidth: 0 }}>
-            {/* Customer Information */}
-            <Card sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent>
-            <Typography variant="h6" gutterBottom>
-                <PersonIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Thông tin khách hàng
-              </Typography>
+          {/* Order Summary */}
+          {cart.length > 0 && (
+            <div className="bg-base-100 rounded-lg shadow-sm p-4">
+              <h3 className="text-lg font-semibold mb-3">Tổng kết đơn hàng</h3>
 
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Tên khách hàng"
-                    value={customer.name}
-                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                    fullWidth
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Số điện thoại"
-                    value={customer.phone}
-                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-                    fullWidth
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PhoneIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Email"
-                    type="email"
-                    value={customer.email}
-                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-                    fullWidth
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <EmailIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Tạm tính:</span>
+                  <span>{formatVND(totals.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Giảm giá:</span>
+                  <span>-{formatVND(totals.discountAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>VAT (10%):</span>
+                  <span>{formatVND(totals.taxAmount)}</span>
+                </div>
+                <div className="divider my-2"></div>
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Tổng cộng:</span>
+                  <span className="text-primary">{formatVND(totals.total)}</span>
+                </div>
+              </div>
 
-            {/* Order Summary */}
-            <Card sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent>
-            <Typography variant="h6" gutterBottom>
-                Tổng kết đơn hàng
-              </Typography>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Giảm giá (%)"
-                    type="number"
-                    value={discount}
-                    onChange={(e) => setDiscount(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
-                    fullWidth
-                    inputProps={{ min: 0, max: 100, step: 0.1 }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Ghi chú"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    fullWidth
-                    multiline
-                    rows={2}
-                  />
-                </Grid>
-              </Grid>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Box>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography>Tạm tính:</Typography>
-                  <Typography>{formatCurrency(totals.subtotal)}</Typography>
-                </Box>
-
-                {discount > 0 && (
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography color="error">Giảm giá ({discount}%):</Typography>
-                    <Typography color="error">-{formatCurrency(totals.discountAmount)}</Typography>
-                  </Box>
-                )}
-
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography>Thuế VAT (10%):</Typography>
-                  <Typography>{formatCurrency(totals.taxAmount)}</Typography>
-                </Box>
-
-                <Divider sx={{ my: 1 }} />
-
-                <Box display="flex" justifyContent="space-between" mb={2}>
-                  <Typography variant="h6" fontWeight="bold">
-                    Tổng cộng:
-                  </Typography>
-                  <Typography variant="h6" fontWeight="bold" color="primary">
-                    {formatCurrency(totals.total)}
-                  </Typography>
-                </Box>
-
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Phương thức thanh toán</InputLabel>
-                  <Select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    label="Phương thức thanh toán"
-                  >
-                    <MenuItem value="cash">Tiền mặt</MenuItem>
-                    <MenuItem value="card">Thẻ tín dụng</MenuItem>
-                    <MenuItem value="transfer">Chuyển khoản</MenuItem>
-                    <MenuItem value="qr">QR Code</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  size="large"
-                  startIcon={<PaymentIcon />}
+              <div className="mt-4 space-y-2">
+                <button
+                  className="btn btn-primary w-full"
                   onClick={handleStartPayment}
                   disabled={cart.length === 0 || isProcessing}
                 >
-                  {isProcessing ? 'Đang xử lý...' : 'Thanh toán'}
-                </Button>
-                </Box>
-              </CardContent>
-            </Card>
-        </Box>
-      </Box>
+                  {isProcessing ? (
+                    <span className="loading loading-spinner loading-sm"></span>
+                  ) : (
+                    <FiCreditCard className="mr-2" />
+                  )}
+                  Thanh toán
+                </button>
 
-      {/* Payment Method Selector */}
-      <PaymentMethodSelector
-        open={openPaymentMethodSelector}
-        onClose={() => setOpenPaymentMethodSelector(false)}
-        amount={totals.total}
-        onSelectMethod={handleSelectPaymentMethod}
-      />
+                <button
+                  className="btn btn-outline w-full"
+                  onClick={() => setShowCustomerModal(true)}
+                >
+                  <FiUser className="mr-2" />
+                  {customer.full_name ? customer.full_name : 'Thêm khách hàng'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* VNPay Payment Dialog */}
-      {saleId && (
-        <VNPayPayment
-          open={openVNPayPayment}
-          onClose={() => setOpenVNPayPayment(false)}
-          saleId={saleId}
-          amount={totals.total}
-          orderInfo={`Đơn hàng #${saleId}`}
-          customerInfo={{
-            name: customer.name,
-            phone: customer.phone,
-            email: customer.email
-          }}
-          onSuccess={handleVNPaySuccess}
-          onError={handleVNPayError}
-        />
+      {/* Process Vietnamese payment */}
+      {React.useMemo(() => {
+        const processPayment = async (method: keyof typeof PAYMENT_METHODS) => {
+          if (cart.length === 0) {
+            toast.error('Giỏ hàng trống');
+            return;
+          }
+
+          setIsProcessing(true);
+          try {
+            const saleData = {
+              sale_number: generateInvoiceNumber(),
+              customer_id: customer.id,
+              cashier_id: 'current-user', // Will be set by backend
+              status: 'completed',
+              subtotal_amount: totals.subtotal,
+              tax_amount: totals.taxAmount,
+              discount_amount: totals.discountAmount,
+              total_amount: totals.total,
+              payment_method: method,
+              payment_status: 'paid',
+              notes: notes,
+              items: cart
+            };
+
+            const response = await apiClient.post('/api/v1/sales', saleData);
+
+            if (response.data.success) {
+              const saleId = response.data.data.id;
+              setSaleId(saleId);
+
+              toast.success(`Thanh toán thành công! Mã hóa đơn: ${saleData.sale_number}`);
+
+              // Print invoice option
+              if (window.confirm('Bạn có muốn in hóa đơn không?')) {
+                await printInvoice(saleId);
+              }
+
+              // Clear cart after successful payment
+              clearCart();
+              setShowPaymentModal(false);
+            } else {
+              throw new Error(response.data.message || 'Thanh toán thất bại');
+            }
+          } catch (error: any) {
+            console.error('Payment error:', error);
+            toast.error(error.response?.data?.message || 'Lỗi thanh toán');
+          } finally {
+            setIsProcessing(false);
+          }
+        };
+
+        // Print Vietnamese invoice
+        const printInvoice = async (saleId: string) => {
+          try {
+            const response = await apiClient.get(`/api/v1/sales/${saleId}/invoice`, {
+              responseType: 'blob'
+            });
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+
+            // Open in new window for printing
+            const printWindow = window.open(url, '_blank');
+            if (printWindow) {
+              printWindow.onload = () => {
+                printWindow.print();
+              };
+            }
+
+            // Also trigger download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `invoice-${saleId}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.success('Hóa đơn đã được tạo');
+          } catch (error) {
+            console.error('Invoice print error:', error);
+            toast.error('Lỗi in hóa đơn');
+          }
+        };
+
+        return { processPayment, printInvoice };
+      }, [cart, customer, totals, notes])}
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-4">Chọn phương thức thanh toán</h3>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {Object.entries(PAYMENT_METHODS).map(([key, name]) => (
+                <button
+                  key={key}
+                  className={`btn ${paymentMethod === key ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => setPaymentMethod(key as keyof typeof PAYMENT_METHODS)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+
+            <div className="bg-base-200 p-4 rounded-lg mb-4">
+              <div className="flex justify-between text-lg font-bold">
+                <span>Tổng thanh toán:</span>
+                <span className="text-primary">{formatVND(totals.total)}</span>
+              </div>
+            </div>
+
+            <div className="modal-action">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setShowPaymentModal(false)}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  const { processPayment } = React.useMemo(() => ({
+                    processPayment: async (method: keyof typeof PAYMENT_METHODS) => {
+                      if (cart.length === 0) {
+                        toast.error('Giỏ hàng trống');
+                        return;
+                      }
+
+                      setIsProcessing(true);
+                      try {
+                        const saleData = {
+                          sale_number: generateInvoiceNumber(),
+                          customer_id: customer.id,
+                          cashier_id: 'current-user',
+                          status: 'completed',
+                          subtotal_amount: totals.subtotal,
+                          tax_amount: totals.taxAmount,
+                          discount_amount: totals.discountAmount,
+                          total_amount: totals.total,
+                          payment_method: method,
+                          payment_status: 'paid',
+                          notes: notes,
+                          items: cart
+                        };
+
+                        const response = await apiClient.post('/api/v1/sales', saleData);
+
+                        if (response.data.success) {
+                          const saleId = response.data.data.id;
+                          setSaleId(saleId);
+
+                          toast.success(`Thanh toán thành công! Mã hóa đơn: ${saleData.sale_number}`);
+
+                          if (window.confirm('Bạn có muốn in hóa đơn không?')) {
+                            // Print invoice logic here
+                          }
+
+                          clearCart();
+                          setShowPaymentModal(false);
+                        } else {
+                          throw new Error(response.data.message || 'Thanh toán thất bại');
+                        }
+                      } catch (error: any) {
+                        console.error('Payment error:', error);
+                        toast.error(error.response?.data?.message || 'Lỗi thanh toán');
+                      } finally {
+                        setIsProcessing(false);
+                      }
+                    }
+                  }), [cart, customer, totals, notes]);
+
+                  processPayment(paymentMethod);
+                }}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <span className="loading loading-spinner loading-sm"></span>
+                ) : (
+                  'Xác nhận thanh toán'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Serial Number Assignment Dialog */}
-      <SerialNumberAssignment
-        open={openSerialAssignment}
-        onClose={() => setOpenSerialAssignment(false)}
-        onConfirm={handleSerialAssignmentConfirm}
-        cartItems={cart}
-      />
+      {/* Compatibility Check Modal */}
+      {showCompatibilityCheck && compatibilityResult && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-2xl">
+            <h3 className="font-bold text-lg mb-4">
+              <FiShield className="inline mr-2" />
+              Kiểm tra tương thích linh kiện PC
+            </h3>
 
-      {/* Payment Confirmation Dialog */}
-      <PaymentDialog
-        open={openPaymentDialog}
-        onClose={() => setOpenPaymentDialog(false)}
-        cart={cart}
-        customer={customer}
-        paymentMethod={paymentMethod}
-        discount={discount}
-        notes={notes}
-        totals={totals}
-        onSuccess={() => {
-          clearCart();
-          setOpenPaymentDialog(false);
-          enqueueSnackbar('Đơn hàng đã được tạo thành công!', { variant: 'success' });
-        }}
-        setIsProcessing={setIsProcessing}
-      />
-    </Container>
-  );
-};
+            <div className="mb-4">
+              <div className={`alert ${compatibilityResult.isCompatible ? 'alert-success' : 'alert-error'}`}>
+                <div>
+                  {compatibilityResult.isCompatible ? (
+                    <FiCheck className="text-success" />
+                  ) : (
+                    <FiAlertTriangle className="text-error" />
+                  )}
+                  <span>
+                    {compatibilityResult.isCompatible
+                      ? 'Tất cả linh kiện tương thích với nhau'
+                      : `Phát hiện ${compatibilityResult.issues.filter((i: any) => i.severity === 'error').length} vấn đề tương thích`
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
 
-// Payment Dialog Component
-interface PaymentDialogProps {
-  open: boolean;
-  onClose: () => void;
-  cart: CartItem[];
-  customer: Customer;
-  paymentMethod: string;
-  discount: number;
-  notes: string;
-  totals: {
-    subtotal: number;
-    discountAmount: number;
-    taxAmount: number;
-    total: number;
-  };
-  onSuccess: () => void;
-  setIsProcessing: (processing: boolean) => void;
-}
+            {compatibilityResult.issues.length > 0 && (
+              <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                {compatibilityResult.issues.map((issue: any, index: number) => (
+                  <div
+                    key={index}
+                    className={`alert ${
+                      issue.severity === 'error' ? 'alert-error' :
+                      issue.severity === 'warning' ? 'alert-warning' : 'alert-info'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-medium">{issue.message_vi || issue.message}</div>
+                      {issue.suggestion_vi && (
+                        <div className="text-sm mt-1">{issue.suggestion_vi}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-const PaymentDialog: React.FC<PaymentDialogProps> = ({
-  open,
-  onClose,
-  cart,
-  customer,
-  paymentMethod,
-  discount,
-  notes,
-  totals,
-  onSuccess,
-  setIsProcessing
-}) => {
-  const queryClient = useQueryClient();
+            <div className="bg-base-200 p-4 rounded-lg mb-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Công suất yêu cầu:</span>
+                  <span className="ml-2">{compatibilityResult.powerRequirement}W</span>
+                </div>
+                <div>
+                  <span className="font-medium">Tổng giá trị:</span>
+                  <span className="ml-2">{formatVND(compatibilityResult.estimatedPrice)}</span>
+                </div>
+              </div>
+            </div>
 
-  // Simple notification
-  const [notification, setNotification] = useState<string | null>(null);
-  const enqueueSnackbar = (message: string, options: { variant: 'success' | 'error' }) => {
-    setNotification(message);
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  // Create sale mutation
-  const createSaleMutation = useMutation({
-    mutationFn: async (saleData: any) => {
-      const response = await apiClient.post('/sales', saleData);
-      return (response.data as any);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['sales'] });
-      onSuccess();
-    },
-    onError: (error: any) => {
-      enqueueSnackbar(
-        error.response?.data?.message || 'Có lỗi xảy ra khi tạo đơn hàng',
-        { variant: 'error' }
-      );
-    },
-    onSettled: () => {
-      setIsProcessing(false);
-    }
-  });
-
-  const handleConfirmPayment = () => {
-    setIsProcessing(true);
-
-    const saleData = {
-      customer_name: customer.name || null,
-      customer_phone: customer.phone || null,
-      customer_email: customer.email || null,
-      payment_method: paymentMethod,
-      discount_amount: totals.discountAmount,
-      tax_amount: totals.taxAmount,
-      total_amount: totals.total,
-      notes: notes || null,
-      items: cart.map(item => ({
-        product_id: item.product.id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price
-      }))
-    };
-
-    createSaleMutation.mutate(saleData);
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box display="flex" alignItems="center">
-          <ReceiptIcon sx={{ mr: 1 }} />
-          Xác nhận thanh toán
-        </Box>
-      </DialogTitle>
-
-      <DialogContent>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" gutterBottom>
-              Thông tin khách hàng
-            </Typography>
-            <Typography>Tên: {customer.name || 'Khách lẻ'}</Typography>
-            <Typography>SĐT: {customer.phone || 'Không có'}</Typography>
-            <Typography>Email: {customer.email || 'Không có'}</Typography>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" gutterBottom>
-              Thông tin thanh toán
-            </Typography>
-            <Typography>Phương thức: {paymentMethod === 'cash' ? 'Tiền mặt' :
-              paymentMethod === 'card' ? 'Thẻ tín dụng' :
-              paymentMethod === 'transfer' ? 'Chuyển khoản' : 'QR Code'}</Typography>
-            <Typography>Tổng tiền: {formatCurrency(totals.total)}</Typography>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>
-              Chi tiết đơn hàng
-            </Typography>
-            <List dense>
-              {cart.map((item) => (
-                <ListItem key={item.product.id}>
-                  <ListItemAvatar>
-                    <Avatar src={item.product.image_url || undefined}>
-                      {item.product.name.charAt(0)}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={item.product.name}
-                    secondary={`${item.quantity} x ${formatCurrency(item.unit_price)} = ${formatCurrency(item.total_price)}`}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Grid>
-        </Grid>
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={onClose} disabled={createSaleMutation.isPending}>
-          Hủy
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleConfirmPayment}
-          disabled={createSaleMutation.isPending}
-          startIcon={createSaleMutation.isPending ? <CircularProgress size={20} /> : <PaymentIcon />}
-        >
-          {createSaleMutation.isPending ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+            <div className="modal-action">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setShowCompatibilityCheck(false)}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

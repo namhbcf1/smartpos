@@ -113,15 +113,15 @@ export interface StockTransaction {
 
 // App URLs for navigation between micro-apps
 export const APP_URLS = {
-  pos: 'https://smartpos-web.pages.dev',
-  inventory: 'https://smartpos-web.pages.dev/inventory',
-  reports: 'https://smartpos-web.pages.dev/reports',
-  admin: 'https://smartpos-web.pages.dev/admin',
-  customers: 'https://smartpos-web.pages.dev/customers',
-  settings: 'https://smartpos-web.pages.dev/settings'
+  pos: 'https://pos-frontend-bangachieu2.pages.dev',
+  inventory: 'https://pos-frontend-bangachieu2.pages.dev/inventory',
+  reports: 'https://pos-frontend-bangachieu2.pages.dev/reports',
+  admin: 'https://pos-frontend-bangachieu2.pages.dev/admin',
+  customers: 'https://pos-frontend-bangachieu2.pages.dev/customers',
+  settings: 'https://pos-frontend-bangachieu2.pages.dev/settings'
 } as const;
 
-export const MAIN_HUB_URL = 'https://smartpos-web.pages.dev';
+export const MAIN_HUB_URL = 'https://pos-frontend-bangachieu2.pages.dev';
 
 // API Response types
 export interface ApiResponse<T = any> {

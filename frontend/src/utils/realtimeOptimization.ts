@@ -74,7 +74,7 @@ export const optimizedLog = {
   },
   
   polling: (data: any) => {
-    if (logRateLimiter.shouldLog('polling-update')) {
+    if (process.env.NODE_ENV === 'development' && logRateLimiter.shouldLog('polling-update')) {
       console.log('📊 Dashboard data updated via polling:', data);
     }
   },

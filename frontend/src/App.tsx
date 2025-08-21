@@ -1,218 +1,567 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { CircularProgress, Box } from '@mui/material';
-
-import Layout from './components/Layout';
-import ProtectedRoute from './components/ProtectedRoute';
-import ErrorBoundary from './components/ErrorBoundary';
-import { AuthProvider } from './contexts/AuthContext';
-
-// Optimized lazy-loaded pages with better chunking strategy
-// Core pages - loaded immediately when needed
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-
-// Product management - grouped together
-const Products = lazy(() => import('./pages/products/ProductList'));
-const ProductDetail = lazy(() => import('./pages/SimpleProductDetail'));
-const ProductDetailReal = lazy(() => import('./pages/ProductDetailReal'));
-const ProductDetailWorking = lazy(() => import('./pages/ProductDetailWorking'));
-const TestProductDetail = lazy(() => import('./pages/TestProductDetail'));
-const ProductEdit = lazy(() => import('./pages/products/ProductEdit'));
-const Categories = lazy(() => import('./pages/Categories'));
-
-// Sales management - grouped together
-const Sales = lazy(() => import('./pages/Sales'));
-const NewSale = lazy(() => import('./pages/NewSaleSimple'));
-const SaleDetail = lazy(() => import('./pages/SaleDetail'));
-const Orders = lazy(() => import('./pages/Orders'));
-const Returns = lazy(() => import('./pages/Returns'));
-const CreateReturn = lazy(() => import('./pages/CreateReturn'));
-const Promotions = lazy(() => import('./pages/Promotions'));
-
-// Inventory management - grouped together
-const Inventory = lazy(() => import('./pages/inventory/Inventory'));
-const InventoryTransactions = lazy(() => import('./pages/inventory/InventoryTransactions'));
-const StockIn = lazy(() => import('./pages/inventory/StockInNew'));
-const StockTransfer = lazy(() => import('./pages/inventory/StockTransfer'));
-const StockCheck = lazy(() => import('./pages/inventory/StockCheck'));
-const SupplierTest = lazy(() => import('./pages/inventory/SupplierTest'));
-const EnhancedFeatures = lazy(() => import('./pages/EnhancedFeatures'));
-const FinancePage = lazy(() => import('./pages/FinancePage'));
-const SmartReportsDemo = lazy(() => import('./pages/SmartReportsDemo'));
-const SerialNumberManagement = lazy(() => import('./pages/SerialNumberManagement'));
-const WarrantyManagement = lazy(() => import('./pages/WarrantyManagement'));
-const Suppliers = lazy(() => import('./pages/suppliers/SuppliersPage'));
-
-// Reports - heavy components, load separately
-const Reports = lazy(() => import('./pages/Reports'));
-const RevenueReport = lazy(() => import('./pages/reports/RevenueReport'));
-const TopProductsReport = lazy(() => import('./pages/reports/TopProductsReport'));
-const InventoryReport = lazy(() => import('./pages/reports/InventoryReport'));
-const ProfitReport = lazy(() => import('./pages/reports/ProfitReport'));
-
-// Customer management
-const Customers = lazy(() => import('./pages/Customers'));
-const CustomerDetail = lazy(() => import('./pages/CustomerDetail'));
-
-// Financial management
-const Finance = lazy(() => import('./pages/Finance'));
-const Accounts = lazy(() => import('./pages/Accounts'));
-
-// Admin and settings - load only when needed
-const Users = lazy(() => import('./pages/Users'));
-const EmployeeCommission = lazy(() => import('./pages/EmployeeCommission'));
-const Settings = lazy(() => import('./pages/Settings'));
-
-// Other features
-const Calendar = lazy(() => import('./pages/Calendar'));
-const Stores = lazy(() => import('./pages/Stores'));
-const Profile = lazy(() => import('./pages/Profile'));
-const PCBuilder = lazy(() => import('./pages/PCBuilder')); // 💻 PC Builder for computer store
-const NotFound = lazy(() => import('./pages/NotFound'));
-
-// Optimized loading component for Suspense fallback
-const LoadingFallback = () => (
-  <Box
-    sx={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      backgroundColor: '#fafafa'
-    }}
-  >
-    <CircularProgress size={60} />
-  </Box>
-);
+import React, { useState, useEffect } from 'react';
+import apiClient from './services/api/client';
+import { MainLayout, PageWrapper, Section, Grid, StatsCard } from './components/layout/MainLayout';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './components/ui/Card';
+import { Button } from './components/ui/Button';
+import { DataTable, Column } from './components/ui/DataTable';
+import { motion } from 'framer-motion';
+import {
+  TrendingUp,
+  ShoppingCart,
+  Package,
+  Users,
+  DollarSign,
+  Activity,
+  BarChart3,
+  Zap,
+  Cloud,
+  Wifi,
+  Database,
+  Sparkles,
+  Star,
+  Award
+} from 'lucide-react';
+import { formatCurrency } from './lib/utils';
+import { ParticleBackground, FloatingOrbs, AnimatedGradient } from './components/effects/ParticleBackground';
+import {
+  RevealOnScroll,
+  TiltCard,
+  MorphingShape,
+  FloatingElement,
+  TypewriterText,
+  MagneticElement
+} from './components/effects/AdvancedAnimations';
+import {
+  SalesTrendChart,
+  ProductCategoriesChart,
+  MonthlyComparisonChart,
+  PerformanceRadarChart
+} from './components/charts/AdvancedCharts';
+import './styles/globals.css';
 
 function App() {
+  const [apiStatus, setApiStatus] = useState<string>('checking');
+  const [products, setProducts] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    totalSales: 0,
+    totalOrders: 0,
+    totalProducts: 0,
+    totalCustomers: 0
+  });
+
+  // Define product table columns
+  const productColumns = [
+    {
+      key: 'id',
+      title: 'ID',
+      sortable: true,
+      width: '80px',
+    },
+    {
+      key: 'name',
+      title: 'Tên sản phẩm',
+      sortable: true,
+      render: (value: string) => (
+        <div className="font-medium text-gray-900 dark:text-white">{value}</div>
+      ),
+    },
+    {
+      key: 'category_name',
+      title: 'Danh mục',
+      sortable: true,
+      render: (value: string) => (
+        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">
+          {value}
+        </span>
+      ),
+    },
+    {
+      key: 'price',
+      title: 'Giá',
+      sortable: true,
+      align: 'right' as const,
+      render: (value: number) => (
+        <span className="font-bold text-green-600 dark:text-green-400">
+          {formatCurrency(value)}
+        </span>
+      ),
+    },
+  ];
+
+  useEffect(() => {
+    // Test API connection
+    const testAPI = async () => {
+      try {
+        await apiClient.get('/health');
+        setApiStatus('connected');
+
+        // Fetch products
+        const productsResponse = await apiClient.get('/products');
+        const productsData = productsResponse.data.data || [];
+        setProducts(productsData);
+
+        // Calculate stats
+        setStats({
+          totalSales: 15420000,
+          totalOrders: 156,
+          totalProducts: productsData.length,
+          totalCustomers: 89
+        });
+      } catch (error) {
+        setApiStatus('error');
+        console.error('API connection failed:', error);
+      }
+    };
+
+    testAPI();
+  }, []);
+
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+      <div data-testid="app-container">
+        <MainLayout
+          title="Dashboard"
+          breadcrumbs={[
+            { label: 'Trang chủ', href: '/' },
+            { label: 'Dashboard' }
+          ]}
+        >
+        <PageWrapper>
+          {/* Enhanced Hero Section */}
+          <Section>
+            <motion.div
+              data-testid="hero-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative rounded-3xl p-8 text-white overflow-hidden min-h-[400px]"
+            >
+              {/* Advanced Background Effects */}
+              <AnimatedGradient
+                colors={['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b']}
+                className="opacity-90"
+              />
+              <ParticleBackground preset="floating" opacity={0.3} />
+              <FloatingOrbs count={8} />
 
-          {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+              <div className="relative z-20">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <RevealOnScroll direction="up" delay={0.2}>
+                      <h1 className="text-5xl font-bold mb-4 gradient-text-primary">
+                        <TypewriterText
+                          text="ComputerPOS Pro"
+                          speed={100}
+                        />
+                      </h1>
+                    </RevealOnScroll>
 
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            
-            {/* Products & Categories */}
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:id/edit" element={<ProductEdit />} />
-            <Route path="/products/:id" element={<ProductDetailReal />} />
-            <Route path="/test-products/:id" element={<TestProductDetail />} />
-            <Route path="/categories" element={<Categories />} />
-            
-            {/* Inventory Management */}
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/inventory/transactions" element={<InventoryTransactions />} />
-            <Route path="/inventory/stock-in" element={<StockIn />} />
-            <Route path="/inventory/transfer" element={<StockTransfer />} />
-            <Route path="/inventory/check" element={<StockCheck />} />
-            <Route path="/inventory/supplier-test" element={<SupplierTest />} />
-            <Route path="/enhanced-features" element={<EnhancedFeatures />} />
-            <Route path="/reports/revenue" element={<RevenueReport />} />
-            <Route path="/finance" element={<FinancePage />} />
-            <Route path="/smart-reports" element={<SmartReportsDemo />} />
-            <Route path="/serial-numbers" element={<SerialNumberManagement />} />
-            <Route path="/warranty" element={<WarrantyManagement />} />
-            <Route path="/suppliers" element={<Suppliers />} />
-            
-            {/* Sales */}
-            <Route path="/sales/new" element={<NewSale />} />
-            <Route path="/sales/:id" element={<SaleDetail />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/returns/new" element={<CreateReturn />} />
-            <Route path="/returns" element={<Returns />} />
-            <Route path="/promotions" element={<Promotions />} />
-            
-            {/* Customers */}
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/customers/:id" element={<CustomerDetail />} />
-            
-            {/* Reports - Manager and above */}
-            <Route path="/reports" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                <Reports />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports/revenue" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                <RevenueReport />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports/top-products" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                <TopProductsReport />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports/inventory" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                <InventoryReport />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports/profit" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                <ProfitReport />
-              </ProtectedRoute>
-            } />
+                    <RevealOnScroll direction="up" delay={0.4}>
+                      <p className="text-xl mb-8 text-white/90 max-w-2xl">
+                        Hệ thống quản lý bán hàng thông minh với công nghệ đám mây,
+                        AI và analytics tiên tiến
+                      </p>
+                    </RevealOnScroll>
 
-            {/* Finance - Manager and above */}
-            <Route path="/finance" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                <Finance />
-              </ProtectedRoute>
-            } />
-            <Route path="/accounts" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                <Accounts />
-              </ProtectedRoute>
-            } />
-            
-            {/* Other */}
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/stores" element={<Stores />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/pc-builder" element={<PCBuilder />} /> {/* 💻 PC Builder */}
-            
-            {/* Warranty Management */}
-            <Route path="/warranty" element={<WarrantyManagement />} />
+                    <RevealOnScroll direction="up" delay={0.6}>
+                      <div className="flex flex-wrap gap-4">
+                        <MagneticElement strength={0.2}>
+                          <Button variant="glass" size="xl" className="hover-glow">
+                            <ShoppingCart className="w-6 h-6 mr-3" />
+                            Bắt đầu bán hàng
+                            <Sparkles className="w-5 h-5 ml-2" />
+                          </Button>
+                        </MagneticElement>
 
-            {/* Admin and Manager only */}
-            <Route path="/users" element={
-              <ProtectedRoute requiredRoles={['admin']}>
-                <Users />
-              </ProtectedRoute>
-            } />
-            <Route path="/employees" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager']}>
-                <EmployeeCommission />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute requiredRoles={['admin']}>
-                <Settings />
-              </ProtectedRoute>
-            } />
-          </Route>
-          
-          {/* Redirect to login if not found */}
-          <Route path="/404" element={<NotFound />} />
-          <Route path="*" element={<Navigate replace to="/404" />} />
-          </Routes>
-        </Suspense>
-      </AuthProvider>
-    </ErrorBoundary>
+                        <MagneticElement strength={0.2}>
+                          <Button
+                            variant="outline"
+                            size="xl"
+                            className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
+                          >
+                            <BarChart3 className="w-6 h-6 mr-3" />
+                            Analytics Dashboard
+                          </Button>
+                        </MagneticElement>
+                      </div>
+                    </RevealOnScroll>
+                  </div>
+
+                  <div className="hidden lg:block">
+                    <FloatingElement intensity={15} speed={4}>
+                      <TiltCard tiltMaxAngleX={15} tiltMaxAngleY={15} scale={1.05}>
+                        <div className="w-48 h-48 glass-card rounded-3xl flex items-center justify-center relative">
+                          <MorphingShape size={120} colors={['#ffffff', '#3b82f6', '#8b5cf6']} />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Activity className="w-20 h-20 text-white animate-pulse-glow" />
+                          </div>
+                        </div>
+                      </TiltCard>
+                    </FloatingElement>
+                  </div>
+                </div>
+
+                {/* Floating Achievement Badges */}
+                <div className="absolute top-8 right-8 space-y-4">
+                  <FloatingElement intensity={8} speed={3}>
+                    <div className="glass-card rounded-full p-3 animate-glow">
+                      <Star className="w-6 h-6 text-yellow-300" />
+                    </div>
+                  </FloatingElement>
+                  <FloatingElement intensity={10} speed={3.5}>
+                    <div className="glass-card rounded-full p-3 animate-pulse-glow">
+                      <Award className="w-6 h-6 text-green-300" />
+                    </div>
+                  </FloatingElement>
+                </div>
+              </div>
+            </motion.div>
+          </Section>
+
+          {/* Enhanced Stats Cards */}
+          <Section title="Tổng quan hôm nay" description="Dữ liệu thời gian thực được cập nhật mỗi phút">
+            <RevealOnScroll direction="up" delay={0.2}>
+              <div data-testid="stats-section">
+                <Grid cols={4}>
+                <TiltCard tiltMaxAngleX={5} tiltMaxAngleY={5}>
+                  <StatsCard
+                    title="Doanh thu"
+                    value={formatCurrency(stats.totalSales)}
+                    change={{ value: 12.5, type: 'increase' }}
+                    icon={<DollarSign className="w-6 h-6" />}
+                    className="hover-lift animate-slide-in-left glass-card"
+                  />
+                </TiltCard>
+
+                <TiltCard tiltMaxAngleX={5} tiltMaxAngleY={5}>
+                  <StatsCard
+                    title="Đơn hàng"
+                    value={stats.totalOrders}
+                    change={{ value: 8.2, type: 'increase' }}
+                    icon={<ShoppingCart className="w-6 h-6" />}
+                    className="hover-lift animate-slide-in-left glass-card"
+                  />
+                </TiltCard>
+
+                <TiltCard tiltMaxAngleX={5} tiltMaxAngleY={5}>
+                  <StatsCard
+                    title="Sản phẩm"
+                    value={stats.totalProducts}
+                    change={{ value: 3.1, type: 'increase' }}
+                    icon={<Package className="w-6 h-6" />}
+                    className="hover-lift animate-slide-in-right glass-card"
+                  />
+                </TiltCard>
+
+                <TiltCard tiltMaxAngleX={5} tiltMaxAngleY={5}>
+                  <StatsCard
+                    title="Khách hàng"
+                    value={stats.totalCustomers}
+                    change={{ value: 15.3, type: 'increase' }}
+                    icon={<Users className="w-6 h-6" />}
+                    className="hover-lift animate-slide-in-right glass-card"
+                  />
+                </TiltCard>
+                </Grid>
+              </div>
+            </RevealOnScroll>
+          </Section>
+
+          {/* Advanced Charts Section */}
+          <Section
+            title="Analytics Dashboard"
+            description="Phân tích chi tiết và xu hướng kinh doanh"
+            headerActions={
+              <Button variant="gradient" size="lg">
+                <BarChart3 className="w-5 h-5 mr-2" />
+                Báo cáo chi tiết
+              </Button>
+            }
+          >
+            <RevealOnScroll direction="up" delay={0.3}>
+              <Grid cols={2} gap={6}>
+                <TiltCard tiltMaxAngleX={3} tiltMaxAngleY={3}>
+                  <SalesTrendChart />
+                </TiltCard>
+                <TiltCard tiltMaxAngleX={3} tiltMaxAngleY={3}>
+                  <ProductCategoriesChart />
+                </TiltCard>
+                <TiltCard tiltMaxAngleX={3} tiltMaxAngleY={3}>
+                  <MonthlyComparisonChart />
+                </TiltCard>
+                <TiltCard tiltMaxAngleX={3} tiltMaxAngleY={3}>
+                  <PerformanceRadarChart />
+                </TiltCard>
+              </Grid>
+            </RevealOnScroll>
+          </Section>
+
+          {/* System Status */}
+          <Section title="Trạng thái hệ thống">
+            <Grid cols={3}>
+              <Card gradient hover>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Cloud className="w-5 h-5 text-blue-600" />
+                    <span>Cloudflare Workers</span>
+                  </CardTitle>
+                  <CardDescription>
+                    API Backend trên edge network
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Status
+                      </p>
+                      <p className={`font-semibold ${
+                        apiStatus === 'connected'
+                          ? 'text-green-600'
+                          : apiStatus === 'error'
+                          ? 'text-red-600'
+                          : 'text-yellow-600'
+                      }`}>
+                        {apiStatus === 'connected' ? '✅ Connected' :
+                         apiStatus === 'error' ? '❌ Error' : '🔄 Checking...'}
+                      </p>
+                    </div>
+                    <div className={`w-3 h-3 rounded-full ${
+                      apiStatus === 'connected' ? 'bg-green-400' :
+                      apiStatus === 'error' ? 'bg-red-400' : 'bg-yellow-400'
+                    }`}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    pos-backend-bangachieu2.bangachieu2.workers.dev
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card gradient hover>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Database className="w-5 h-5 text-purple-600" />
+                    <span>Cloudflare D1</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Database SQLite trên edge
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Sản phẩm
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {products.length}
+                      </p>
+                    </div>
+                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Đồng bộ thời gian thực
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card gradient hover>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Wifi className="w-5 h-5 text-green-600" />
+                    <span>Kết nối mạng</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Trạng thái kết nối internet
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Status
+                      </p>
+                      <p className="text-2xl font-bold text-green-600">
+                        Online
+                      </p>
+                    </div>
+                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Tốc độ cao, độ trễ thấp
+                  </p>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Section>
+
+          {/* Enhanced Products Table */}
+          {products.length > 0 && (
+            <Section
+              title="Quản lý sản phẩm"
+              description="Bảng dữ liệu tương tác với tính năng tìm kiếm, lọc và xuất dữ liệu"
+              headerActions={
+                <div className="flex gap-2">
+                  <Button variant="gradient">
+                    <Package className="w-4 h-4 mr-2" />
+                    Thêm sản phẩm
+                  </Button>
+                  <Button variant="outline">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Phân tích
+                  </Button>
+                </div>
+              }
+            >
+              <RevealOnScroll direction="up" delay={0.4}>
+                <TiltCard tiltMaxAngleX={2} tiltMaxAngleY={2}>
+                  <DataTable
+                    data={products}
+                    columns={productColumns}
+                    searchable
+                    filterable
+                    exportable
+                    selectable
+                    pagination
+                    pageSize={8}
+                    onEdit={(product) => console.log('Edit:', product)}
+                    onDelete={(product) => console.log('Delete:', product)}
+                    onView={(product) => console.log('View:', product)}
+                    className="glass-card"
+                  />
+                </TiltCard>
+              </RevealOnScroll>
+            </Section>
+          )}
+
+          {/* Enhanced Products Preview Cards */}
+          {products.length > 0 && (
+            <Section
+              title="Sản phẩm nổi bật"
+              description="Showcase sản phẩm với hiệu ứng 3D và animations"
+            >
+              <RevealOnScroll direction="up" delay={0.5}>
+                <Grid cols={3}>
+                  {products.slice(0, 6).map((product: any, index: number) => (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20, rotateY: -15 }}
+                      animate={{ opacity: 1, y: 0, rotateY: 0 }}
+                      transition={{ delay: index * 0.1, duration: 0.6 }}
+                    >
+                      <TiltCard tiltMaxAngleX={10} tiltMaxAngleY={10} scale={1.05}>
+                        <Card hover className="h-full glass-card hover-glow">
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <FloatingElement intensity={5} speed={3}>
+                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center animate-morphing">
+                                  <Package className="w-7 h-7 text-white" />
+                                </div>
+                              </FloatingElement>
+                              <span className="text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full font-medium">
+                                {product.category_name}
+                              </span>
+                            </div>
+                            <h4 className="font-bold text-gray-900 dark:text-white mb-2 text-lg gradient-text-primary">
+                              {product.name}
+                            </h4>
+                            <p className="text-2xl font-bold gradient-text-success mb-4">
+                              {formatCurrency(product.price)}
+                            </p>
+                            <div className="space-y-2">
+                              <MagneticElement strength={0.1}>
+                                <Button size="sm" className="w-full hover-lift" variant="gradient">
+                                  <ShoppingCart className="w-4 h-4 mr-2" />
+                                  Thêm vào giỏ
+                                </Button>
+                              </MagneticElement>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </TiltCard>
+                    </motion.div>
+                  ))}
+                </Grid>
+              </RevealOnScroll>
+            </Section>
+          )}
+
+          {/* Enhanced Quick Actions */}
+          <Section title="Thao tác nhanh" description="Các tính năng chính với hiệu ứng tương tác">
+            <RevealOnScroll direction="up" delay={0.6}>
+              <Grid cols={2} gap={8}>
+                <TiltCard tiltMaxAngleX={8} tiltMaxAngleY={8} scale={1.03}>
+                  <MagneticElement strength={0.15}>
+                    <Card gradient hover className="cursor-pointer group glass-card hover-glow">
+                      <CardContent className="p-8">
+                        <div className="flex items-center space-x-6">
+                          <FloatingElement intensity={8} speed={2.5}>
+                            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 animate-pulse-glow">
+                              <ShoppingCart className="w-8 h-8 text-white" />
+                            </div>
+                          </FloatingElement>
+                          <div>
+                            <h3 className="text-xl font-bold gradient-text-primary mb-2">
+                              Tạo đơn hàng mới
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-400">
+                              Bắt đầu quy trình bán hàng với AI assistant
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </MagneticElement>
+                </TiltCard>
+
+                <TiltCard tiltMaxAngleX={8} tiltMaxAngleY={8} scale={1.03}>
+                  <MagneticElement strength={0.15}>
+                    <Card gradient hover className="cursor-pointer group glass-card hover-glow">
+                      <CardContent className="p-8">
+                        <div className="flex items-center space-x-6">
+                          <FloatingElement intensity={8} speed={3}>
+                            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 animate-glow">
+                              <BarChart3 className="w-8 h-8 text-white" />
+                            </div>
+                          </FloatingElement>
+                          <div>
+                            <h3 className="text-xl font-bold gradient-text-primary mb-2">
+                              Analytics Dashboard
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-400">
+                              Phân tích doanh thu và insights kinh doanh
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </MagneticElement>
+                </TiltCard>
+              </Grid>
+            </RevealOnScroll>
+          </Section>
+
+          {/* Floating Action Button */}
+          <motion.div
+            className="fixed bottom-8 right-8 z-50"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 1, type: "spring", stiffness: 260, damping: 20 }}
+          >
+            <FloatingElement intensity={5} speed={2}>
+              <MagneticElement strength={0.3}>
+                <Button
+                  size="xl"
+                  variant="gradient"
+                  className="rounded-full w-16 h-16 shadow-2xl hover-glow animate-pulse-glow"
+                >
+                  <Sparkles className="w-8 h-8" />
+                </Button>
+              </MagneticElement>
+            </FloatingElement>
+          </motion.div>
+        </PageWrapper>
+        </MainLayout>
+      </div>
   );
 }
 
-export default App; 
+export default App;

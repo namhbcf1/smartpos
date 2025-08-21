@@ -47,8 +47,8 @@ export const usePaginatedQuery = <T>(
         if (response && typeof response === 'object') {
           const responseData = response as any; // Type assertion for API response
 
-          // Debug logging for employees endpoint
-          if (endpoint.includes('employees')) {
+          // Debug logging for employees endpoint (development only)
+          if (process.env.NODE_ENV === 'development' && endpoint.includes('employees')) {
             console.log('🐛 usePaginatedQuery employees response:', responseData);
             console.log('🐛 responseData.data:', responseData.data);
             console.log('🐛 responseData.data.data:', responseData.data?.data);
@@ -57,12 +57,18 @@ export const usePaginatedQuery = <T>(
           // Check for API response structure: { data: { success: true, data: { data: [...], pagination: {...} } } }
           if (responseData.data && responseData.data.success && responseData.data.data && responseData.data.data.data && Array.isArray(responseData.data.data.data)) {
             // API format: { data: { success: true, data: { data: [...], pagination: {...} } } }
-            console.log('🐛 Using API format, data length:', responseData.data.data.data.length);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🐛 Using API format, data length:', responseData.data.data.data.length);
+            }
             setData(responseData.data.data.data || []);
             setPagination(responseData.data.data.pagination || null);
           } else if (responseData.data && responseData.data.data && Array.isArray(responseData.data.data)) {
             // Nested format: { data: { data: [...], pagination: {...} } }
-            console.log('🐛 Using nested format, data length:', responseData.data.data.length);
+            if (process.env.NODE_ENV === 'development') {
+              if (process.env.NODE_ENV === 'development') {
+              console.log('🐛 Using nested format, data length:', responseData.data.data.length);
+            }
+            }
             setData(responseData.data.data || []);
             setPagination(responseData.data.pagination || null);
           } else if (responseData.data && Array.isArray(responseData.data)) {
@@ -82,7 +88,9 @@ export const usePaginatedQuery = <T>(
             setPagination(null);
           }
         } else {
-          console.log('🐛 Response is not object, using empty array');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🐛 Response is not object, using empty array');
+          }
           setData([]);
           setPagination(null);
         }
@@ -262,7 +270,7 @@ export const useMutation = <T, R = any>() => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'https://smartpos-api.bangachieu2.workers.dev/api/v1';
+      const API_URL = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
       const fullUrl = `${API_URL}${endpoint || ''}`;
 
       let response: any;
@@ -322,7 +330,7 @@ export const useDeleteMutation = () => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'https://smartpos-api.bangachieu2.workers.dev/api/v1';
+      const API_URL = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
       const fullUrl = `${API_URL}${endpoint}`;
 
       const response = await axios.delete(fullUrl, {
@@ -357,7 +365,7 @@ export const useCreateMutation = <T, R = any>() => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'https://smartpos-api.bangachieu2.workers.dev/api/v1';
+      const API_URL = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
       const fullUrl = `${API_URL}${endpoint}`;
 
       const response = await axios.post(fullUrl, data, {
@@ -392,7 +400,7 @@ export const useUpdateMutation = <T, R = any>() => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'https://smartpos-api.bangachieu2.workers.dev/api/v1';
+      const API_URL = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
       const fullUrl = `${API_URL}${endpoint}`;
 
       const response = await axios.put(fullUrl, data, {

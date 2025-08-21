@@ -1,0 +1,6 @@
+# Cloudflare Pages redirects for SPA
+# API calls should go to the worker
+/api/v1/* https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/:splat 200
+
+# All other routes should serve the React app
+/* /index.html 200

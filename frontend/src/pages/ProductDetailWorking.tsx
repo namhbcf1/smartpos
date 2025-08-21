@@ -24,7 +24,10 @@ import {
 } from '@mui/icons-material';
 
 // Temporary formatCurrency function
-const formatCurrency = (amount: number) => {
+const formatCurrency = (amount: number | null | undefined) => {
+  if (amount == null || isNaN(amount)) {
+    return '0 ₫';
+  }
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND'
@@ -70,7 +73,7 @@ const ProductDetailWorking = () => {
       
       // DIRECT API CALL - Get product from products list API (working API)
       console.log('📡 Calling products API directly...');
-      const response = await fetch('https://smartpos-api.bangachieu2.workers.dev/api/v1/products?limit=100');
+      const response = await fetch('https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/products?limit=100');
       const data = await response.json();
       
       console.log('📦 Products API response:', data);

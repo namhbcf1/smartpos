@@ -9,7 +9,7 @@ import axios, { AxiosError } from 'axios';
 
 // Optimized API configuration
 const API_CONFIG = {
-  baseURL: 'https://smartpos-api.bangachieu2.workers.dev/api/v1',
+  baseURL: 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

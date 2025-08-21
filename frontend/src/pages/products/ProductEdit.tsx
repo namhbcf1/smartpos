@@ -241,9 +241,8 @@ const ProductEdit: React.FC = () => {
 
         console.log('🔍 Fetching product with ID:', id);
 
-        // CRITICAL FIX: Using working test endpoint while backend deployment is pending
-        // Backend authentication bypass fixes are ready but not deployed yet
-        const response = await fetch(`https://smartpos-api.bangachieu2.workers.dev/test-product/${id}`, {
+        // Use standard products endpoint with authentication
+        const response = await fetch(`https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/products/${id}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
             'Content-Type': 'application/json',

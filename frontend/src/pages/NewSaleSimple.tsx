@@ -104,7 +104,7 @@ const PointOfSale = () => {
 
       // Use direct fetch to avoid API service complications
       const queryParams = new URLSearchParams(filteredParams).toString();
-      const url = `https://smartpos-api.bangachieu2.workers.dev/api/v1/products?${queryParams}`;
+      const url = `https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/products?${queryParams}`;
       console.log('🌐 Fetching from URL:', url);
 
       const response = await fetch(url);
@@ -237,7 +237,7 @@ const PointOfSale = () => {
       console.log('🚀 Loading products directly...');
       setProductsLoading(true);
 
-      const response = await fetch('https://smartpos-api.bangachieu2.workers.dev/api/v1/products?in_stock_only=true&sort_by=name&sort_order=asc&limit=50');
+      const response = await fetch('https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/products?in_stock_only=true&sort_by=name&sort_order=asc&limit=50');
       const data = await response.json();
 
       console.log('📦 Direct API response:', data);

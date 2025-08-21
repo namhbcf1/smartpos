@@ -184,7 +184,7 @@
 
             async pollForUpdates() {
                 try {
-                    const response = await fetch('https://smartpos-api.bangachieu2.workers.dev/api/v1/dashboard/stats');
+                    const response = await fetch('https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/dashboard/stats');
                     if (response.ok) {
                         const data = await response.json();
                         this.emit('dashboard_updated', data);

@@ -37,16 +37,19 @@ class PermissionService {
       // Use the new /permissions/me endpoint for current user's permissions
       const response = await apiClient.get('/permissions/me');
 
-      if (response.success && response.data) {
+      if (response.data && response.data.success && response.data.data) {
         this.permissions = {};
-        response.data.forEach((permission: Permission) => {
-          this.permissions[permission.permission_key] = permission.has_permission;
-        });
+        
+        // Parse permissions from the new API format
+        if (response.data.data && response.data.data.permissions && Array.isArray(response.data.data.permissions)) {
+          response.data.data.permissions.forEach((permission: any) => {
+            // Use permission name as key and set to true (since they are granted permissions)
+            this.permissions[permission.name] = true;
+          });
+        }
 
         this.permissionsLoaded = true;
         this.currentUserId = userId;
-
-        console.log('🔐 User permissions loaded:', Object.keys(this.permissions).length, 'permissions');
       }
     } catch (error) {
       console.error('Error loading user permissions:', error);
@@ -60,7 +63,6 @@ class PermissionService {
    */
   hasPermission(permissionKey: string): boolean {
     if (!this.permissionsLoaded) {
-      console.warn('Permissions not loaded yet, defaulting to false for:', permissionKey);
       return false;
     }
 

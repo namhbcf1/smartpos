@@ -37,6 +37,10 @@ import {
   Tab,
   LinearProgress
 } from '@mui/material';
+import WarrantyDashboard from '../components/WarrantyDashboard';
+import WarrantyWorkflow from '../components/WarrantyWorkflow';
+import WarrantyReporting from '../components/WarrantyReporting';
+import WarrantyNotifications from '../components/WarrantyNotifications';
 import {
   Security as WarrantyIcon,
   Add as AddIcon,
@@ -60,7 +64,10 @@ import {
   Store as ProductIcon,
   CalendarToday as DateIcon,
   Phone as PhoneIcon,
-  Email as EmailIcon
+  Email as EmailIcon,
+  Timeline as TimelineIcon,
+  Assessment as AssessmentIcon,
+  Notifications as NotificationsIcon
 } from '@mui/icons-material';
 import api from '../services/api';
 
@@ -483,7 +490,31 @@ const WarrantyManagement: React.FC = () => {
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TrendIcon />
-                Thống kê
+                Dashboard
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TimelineIcon />
+                Workflow
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AssessmentIcon />
+                Báo cáo
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <NotificationsIcon />
+                Thông báo
               </Box>
             }
           />
@@ -683,6 +714,23 @@ const WarrantyManagement: React.FC = () => {
             }
           />
         </Paper>
+      )}
+
+      {/* New Advanced Features Tabs */}
+      {currentTab === 2 && (
+        <WarrantyDashboard />
+      )}
+
+      {currentTab === 3 && (
+        <WarrantyWorkflow />
+      )}
+
+      {currentTab === 4 && (
+        <WarrantyReporting />
+      )}
+
+      {currentTab === 5 && (
+        <WarrantyNotifications />
       )}
 
       {/* Detail Dialog */}

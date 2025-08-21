@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -16,6 +16,7 @@ import {
   Switch,
   Chip,
   Alert,
+  AlertTitle,
   CircularProgress,
   Grid,
   Card,
@@ -137,13 +138,7 @@ import {
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import apiClient from '../services/api';
-
-interface Employee {
-  id: number;
-  full_name: string;
-  email: string;
-  role: string;
-}
+import { Employee } from '../services/employeeApi';
 
 interface Permission {
   permission_key: string;
@@ -291,115 +286,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-// Mock data for demonstration when backend is not available
-const mockPermissionCategories: PermissionCategory[] = [
-  {
-    id: 'dashboard',
-    name: 'dashboard',
-    display_name: 'Dashboard',
-    icon: <DashboardIcon />,
-    color: 'primary',
-    description: 'Truy cập và xem thông tin tổng quan hệ thống'
-  },
-  {
-    id: 'sales',
-    name: 'sales',
-    display_name: 'Bán hàng',
-    icon: <StoreIcon />,
-    color: 'success',
-    description: 'Quản lý điểm bán hàng, đơn hàng và giao dịch'
-  },
-  {
-    id: 'inventory',
-    name: 'inventory',
-    display_name: 'Kho hàng',
-    icon: <InventoryIcon />,
-    color: 'warning',
-    description: 'Quản lý sản phẩm, danh mục và nhập kho'
-  },
-  {
-    id: 'customers',
-    name: 'customers',
-    display_name: 'Khách hàng',
-    icon: <PeopleIcon />,
-    color: 'info',
-    description: 'Quản lý thông tin và lịch sử khách hàng'
-  },
-  {
-    id: 'reports',
-    name: 'reports',
-    display_name: 'Báo cáo',
-    icon: <ReportsIcon />,
-    color: 'secondary',
-    description: 'Xem và tạo các báo cáo kinh doanh'
-  },
-  {
-    id: 'administration',
-    name: 'administration',
-    display_name: 'Quản trị',
-    icon: <SettingsIcon />,
-    color: 'error',
-    description: 'Quản lý nhân viên, cài đặt hệ thống'
-  }
-];
 
-const mockRoleTemplates: RoleTemplate[] = [
-  {
-    id: 1,
-    name: 'admin',
-    display_name: 'Quản trị viên',
-    description: 'Toàn quyền quản lý hệ thống',
-    is_template: true,
-    is_system: true,
-    permission_count: 45,
-    color: 'error',
-    icon: 'AdminIcon'
-  },
-  {
-    id: 2,
-    name: 'manager',
-    display_name: 'Quản lý',
-    description: 'Quản lý cửa hàng và nhân viên',
-    is_template: true,
-    is_system: true,
-    permission_count: 32,
-    color: 'warning',
-    icon: 'ManagerIcon'
-  },
-  {
-    id: 3,
-    name: 'cashier',
-    display_name: 'Thu ngân',
-    description: 'Thực hiện giao dịch bán hàng',
-    is_template: true,
-    is_system: true,
-    permission_count: 18,
-    color: 'success',
-    icon: 'CashierIcon'
-  },
-  {
-    id: 4,
-    name: 'sales_agent',
-    display_name: 'Nhân viên kinh doanh',
-    description: 'Bán hàng và chăm sóc khách hàng',
-    is_template: true,
-    is_system: true,
-    permission_count: 22,
-    color: 'info',
-    icon: 'SalesIcon'
-  },
-  {
-    id: 5,
-    name: 'collaborator',
-    display_name: 'Cộng tác viên',
-    description: 'Quyền hạn cơ bản cho cộng tác viên',
-    is_template: true,
-    is_system: true,
-    permission_count: 12,
-    color: 'secondary',
-    icon: 'CollaboratorIcon'
-  }
-];
 
 const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
   open,
@@ -417,6 +304,7 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [selectedRoleTemplate, setSelectedRoleTemplate] = useState<number | ''>('');
   const [reason, setReason] = useState('');
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Map<string, boolean>>(new Map());
 
   // Enhanced UI state
@@ -453,25 +341,304 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
     }
   }, [open, employee]);
 
+  // Fallback data for when APIs are not available
+  const getFallbackPermissionMatrix = (): PermissionMatrix => ({
+    resources: [
+      {
+        id: 1,
+        name: 'sales',
+        display_name: 'Bán hàng',
+        resource_type: 'module',
+        actions: [
+          {
+            id: 1,
+            name: 'access',
+            display_name: 'Truy cập điểm bán hàng',
+            permission_key: 'sales.pos.access',
+            has_permission: true,
+            permission_source: 'role'
+          },
+          {
+            id: 2,
+            name: 'create',
+            display_name: 'Tạo đơn hàng',
+            permission_key: 'sales.orders.create',
+            has_permission: true,
+            permission_source: 'role'
+          },
+          {
+            id: 3,
+            name: 'view',
+            display_name: 'Xem đơn hàng',
+            permission_key: 'sales.orders.view',
+            has_permission: true,
+            permission_source: 'role'
+          },
+          {
+            id: 4,
+            name: 'apply_discount',
+            display_name: 'Áp dụng giảm giá',
+            permission_key: 'sales.discounts.apply',
+            has_permission: false,
+            permission_source: 'role'
+          }
+        ]
+      },
+      {
+        id: 2,
+        name: 'inventory',
+        display_name: 'Kho hàng',
+        resource_type: 'module',
+        actions: [
+          {
+            id: 5,
+            name: 'view',
+            display_name: 'Xem sản phẩm',
+            permission_key: 'inventory.products.view',
+            has_permission: true,
+            permission_source: 'role'
+          },
+          {
+            id: 6,
+            name: 'edit',
+            display_name: 'Chỉnh sửa sản phẩm',
+            permission_key: 'inventory.products.edit',
+            has_permission: false,
+            permission_source: 'role'
+          },
+          {
+            id: 7,
+            name: 'manage',
+            display_name: 'Quản lý tồn kho',
+            permission_key: 'inventory.stock.manage',
+            has_permission: false,
+            permission_source: 'role'
+          }
+        ]
+      },
+      {
+        id: 3,
+        name: 'administration',
+        display_name: 'Quản trị',
+        resource_type: 'module',
+        actions: [
+          {
+            id: 8,
+            name: 'manage_users',
+            display_name: 'Quản lý người dùng',
+            permission_key: 'admin.users.manage',
+            has_permission: false,
+            permission_source: 'role'
+          },
+          {
+            id: 9,
+            name: 'manage_roles',
+            display_name: 'Quản lý vai trò',
+            permission_key: 'admin.roles.manage',
+            has_permission: false,
+            permission_source: 'role'
+          }
+        ]
+      }
+    ]
+  });
+
+  const getFallbackRoleTemplates = (): RoleTemplate[] => [
+    {
+      id: 1,
+      name: 'cashier',
+      display_name: 'Thu ngân',
+      description: 'Nhân viên thu ngân, xử lý thanh toán',
+      color: '#2196F3',
+      is_system: true,
+      is_template: true,
+      permission_count: 8
+    },
+    {
+      id: 2,
+      name: 'sales_agent',
+      display_name: 'Nhân viên kinh doanh',
+      description: 'Nhân viên bán hàng và tư vấn khách hàng',
+      color: '#4CAF50',
+      is_system: true,
+      is_template: true,
+      permission_count: 12
+    },
+    {
+      id: 3,
+      name: 'inventory_manager',
+      display_name: 'Quản lý kho',
+      description: 'Quản lý kho hàng và nhập xuất',
+      color: '#FF9800',
+      is_system: true,
+      is_template: true,
+      permission_count: 15
+    },
+    {
+      id: 4,
+      name: 'store_manager',
+      display_name: 'Quản lý cửa hàng',
+      description: 'Quản lý toàn bộ hoạt động cửa hàng',
+      color: '#9C27B0',
+      is_system: true,
+      is_template: true,
+      permission_count: 25
+    },
+    {
+      id: 5,
+      name: 'admin',
+      display_name: 'Quản trị viên',
+      description: 'Toàn quyền quản trị hệ thống',
+      color: '#F44336',
+      is_system: true,
+      is_template: true,
+      permission_count: 50
+    }
+  ];
+
+  const getFallbackAuditLog = (): AuditLogEntry[] => [
+    {
+      id: 1,
+      permission_key: 'sales.pos.access',
+      permission_display_name: 'Truy cập điểm bán hàng',
+      action: 'granted',
+      changed_by_name: 'Admin User',
+      changed_by_id: 1,
+      changed_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+      reason: 'Gán vai trò Thu ngân',
+      old_value: false,
+      new_value: true
+    },
+    {
+      id: 2,
+      permission_key: 'sales.orders.create',
+      permission_display_name: 'Tạo đơn hàng',
+      action: 'granted',
+      changed_by_name: 'Admin User',
+      changed_by_id: 1,
+      changed_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+      reason: 'Nhân viên mới',
+      old_value: false,
+      new_value: true
+    },
+    {
+      id: 3,
+      permission_key: '',
+      permission_display_name: 'Gán vai trò Thu ngân',
+      action: 'role_assigned',
+      changed_by_name: 'Admin User',
+      changed_by_id: 1,
+      changed_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+      reason: 'Nhân viên mới gia nhập',
+      role_name: 'Thu ngân'
+    },
+    {
+      id: 4,
+      permission_key: 'inventory.products.view',
+      permission_display_name: 'Xem sản phẩm',
+      action: 'revoked',
+      changed_by_name: 'Store Manager',
+      changed_by_id: 2,
+      changed_at: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
+      reason: 'Điều chỉnh quyền hạn theo vai trò',
+      old_value: true,
+      new_value: false
+    }
+  ];
+
   const loadPermissionData = async () => {
     if (!employee) return;
 
     setLoading(true);
     try {
-      // Load core permission data
-      const [matrixResponse, templatesResponse, rolesResponse, auditResponse] = await Promise.all([
-        apiClient.get(`/permissions/employees/${employee.id}/matrix`),
-        apiClient.get('/permissions/roles/templates'),
-        apiClient.get(`/permissions/employees/${employee.id}/roles`),
-        apiClient.get(`/permissions/employees/${employee.id}/audit?limit=20`)
-      ]);
+      // Load core permission data with robust fallback handling
+      let matrixResponse = null;
+      let templatesResponse = null;
+      let rolesResponse = null;
+      let auditResponse = null;
 
-      setPermissionMatrix(matrixResponse.data);
-      setRoleTemplates(templatesResponse.data);
-      setEmployeeRoles(rolesResponse.data);
-      setAuditLog(auditResponse.data);
+      try {
+        const promises = [
+          apiClient.get(`/permissions/employees/${employee.id}/matrix`).catch((error) => {
+            console.log('🔄 Matrix API failed, using fallback');
+            return null;
+          }),
+          apiClient.get('/permissions/roles/templates').catch((error) => {
+            console.log('🔄 Templates API failed, using fallback');
+            return null;
+          }),
+          apiClient.get(`/permissions/employees/${employee.id}/roles`).catch((error) => {
+            console.log('🔄 Roles API failed, using fallback');
+            return null;
+          }),
+          apiClient.get(`/permissions/employees/${employee.id}/audit?limit=20`).catch((error) => {
+            console.log('🔄 Audit API failed, using fallback');
+            return null;
+          })
+        ];
 
-      // Load analytics and recommendations
+        [matrixResponse, templatesResponse, rolesResponse, auditResponse] = await Promise.all(promises);
+      } catch (promiseError) {
+        console.log('🔄 Promise.all failed, using fallback data for all APIs');
+        // All responses will remain null, triggering fallback logic below
+      }
+
+      // Track if we're using any fallback data
+      let hasFallbackData = false;
+
+      // Set permission matrix with fallback
+      if (matrixResponse && matrixResponse.data?.success) {
+        setPermissionMatrix(matrixResponse.data.data);
+      } else {
+        console.log('🔄 Using fallback permission matrix data');
+        setPermissionMatrix(getFallbackPermissionMatrix());
+        hasFallbackData = true;
+      }
+
+      // Set role templates with fallback
+      if (templatesResponse && templatesResponse.data?.success) {
+        setRoleTemplates(templatesResponse.data.data);
+      } else {
+        console.log('🔄 Using fallback role templates data');
+        setRoleTemplates(getFallbackRoleTemplates());
+        hasFallbackData = true;
+      }
+
+      // Set employee roles with fallback
+      if (rolesResponse && rolesResponse.data?.success) {
+        setEmployeeRoles(rolesResponse.data.data);
+      } else {
+        console.log('🔄 Using fallback employee roles data');
+        // For demo purposes, assign a role based on employee role
+        const employeeRole = employee.role?.toLowerCase();
+        const matchingTemplate = getFallbackRoleTemplates().find(template =>
+          template.name === employeeRole ||
+          (employeeRole === 'thu ngân' && template.name === 'cashier') ||
+          (employeeRole === 'nhân viên kinh doanh' && template.name === 'sales_agent') ||
+          (employeeRole === 'quản trị viên' && template.name === 'admin')
+        );
+
+        if (matchingTemplate) {
+          setEmployeeRoles([matchingTemplate]);
+        } else {
+          setEmployeeRoles([]);
+        }
+        hasFallbackData = true;
+      }
+
+      // Set audit log with fallback
+      if (auditResponse && auditResponse.data?.success) {
+        setAuditLog(auditResponse.data.data);
+      } else {
+        console.log('🔄 Using fallback audit log data');
+        setAuditLog(getFallbackAuditLog());
+        hasFallbackData = true;
+      }
+
+      // Update fallback data flag
+      setUsingFallbackData(hasFallbackData);
+
+      // Load analytics and recommendations (optional)
       try {
         const [analyticsResponse, recommendationsResponse] = await Promise.all([
           apiClient.get(`/permissions/employees/${employee.id}/analytics`),
@@ -482,149 +649,29 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
         setRoleRecommendations(recommendationsResponse.data);
       } catch (analyticsError) {
         console.warn('Analytics data not available:', analyticsError);
-        // Generate mock analytics
-        generateMockAnalytics(matrixResponse.data);
+        // Analytics are optional - continue without them
       }
     } catch (error) {
       console.error('Error loading permission data:', error);
 
-      // Try to initialize RBAC system first
-      try {
-        console.log('🔧 Attempting to initialize RBAC system...');
-        await apiClient.post('/init-database');
+      // Use fallback data even on complete failure
+      console.log('🔄 Using complete fallback data due to API failure');
+      setPermissionMatrix(getFallbackPermissionMatrix());
+      setRoleTemplates(getFallbackRoleTemplates());
+      setEmployeeRoles([]);
+      setAuditLog(getFallbackAuditLog());
+      setUsingFallbackData(true);
 
-        // Retry loading data after initialization
-        const [matrixResponse, templatesResponse, rolesResponse, auditResponse] = await Promise.all([
-          apiClient.get(`/permissions/employees/${employee.id}/matrix`),
-          apiClient.get('/permissions/roles/templates'),
-          apiClient.get(`/permissions/employees/${employee.id}/roles`),
-          apiClient.get(`/permissions/employees/${employee.id}/audit?limit=20`)
-        ]);
-
-        setPermissionMatrix(matrixResponse.data);
-        setRoleTemplates(templatesResponse.data);
-        setEmployeeRoles(rolesResponse.data);
-        setAuditLog(auditResponse.data);
-
-        enqueueSnackbar('Hệ thống phân quyền đã được khởi tạo thành công', { variant: 'success' });
-        return; // Exit early if successful
-      } catch (initError) {
-        console.error('Failed to initialize RBAC system:', initError);
-      }
-
-      // Fallback to mock data for demonstration
-      console.log('🔄 Using mock data for demonstration');
-
-      // Generate mock permission matrix
-      const mockMatrix: PermissionMatrix = {
-        resources: mockPermissionCategories.map(category => ({
-          id: Math.floor(Math.random() * 1000),
-          name: category.name,
-          display_name: category.display_name,
-          resource_type: category.name,
-          actions: [
-            {
-              id: 1,
-              name: 'view',
-              display_name: 'Xem',
-              permission_key: `${category.name}.view`,
-              has_permission: Math.random() > 0.3,
-              permission_source: Math.random() > 0.5 ? 'role' : 'individual'
-            },
-            {
-              id: 2,
-              name: 'create',
-              display_name: 'Tạo mới',
-              permission_key: `${category.name}.create`,
-              has_permission: Math.random() > 0.5,
-              permission_source: Math.random() > 0.5 ? 'role' : 'individual'
-            },
-            {
-              id: 3,
-              name: 'update',
-              display_name: 'Cập nhật',
-              permission_key: `${category.name}.update`,
-              has_permission: Math.random() > 0.4,
-              permission_source: Math.random() > 0.5 ? 'role' : 'individual'
-            },
-            {
-              id: 4,
-              name: 'delete',
-              display_name: 'Xóa',
-              permission_key: `${category.name}.delete`,
-              has_permission: Math.random() > 0.7,
-              permission_source: Math.random() > 0.5 ? 'role' : 'individual'
-            }
-          ]
-        }))
-      };
-
-      // Generate mock audit log
-      const mockAudit: AuditLogEntry[] = [
-        {
-          id: 1,
-          permission_key: 'sales.create',
-          permission_display_name: 'Tạo đơn hàng',
-          action: 'granted',
-          changed_by_name: 'Admin User',
-          changed_by_id: 1,
-          changed_at: new Date(Date.now() - 86400000).toISOString(),
-          reason: 'Nâng cấp quyền hạn cho nhân viên kinh doanh',
-          old_value: false,
-          new_value: true
-        },
-        {
-          id: 2,
-          permission_key: 'inventory.view',
-          permission_display_name: 'Xem kho hàng',
-          action: 'role_assigned',
-          changed_by_name: 'Manager',
-          changed_by_id: 2,
-          changed_at: new Date(Date.now() - 172800000).toISOString(),
-          role_name: 'Nhân viên kinh doanh'
-        }
-      ];
-
-      setPermissionMatrix(mockMatrix);
-      setRoleTemplates(mockRoleTemplates);
-      setEmployeeRoles([mockRoleTemplates[3]]); // Sales agent role
-      setAuditLog(mockAudit);
-
-      enqueueSnackbar('Đang sử dụng dữ liệu mẫu do lỗi hệ thống', { variant: 'warning' });
+      enqueueSnackbar('Đang sử dụng dữ liệu mẫu. Một số tính năng có thể bị hạn chế.', {
+        variant: 'warning',
+        autoHideDuration: 5000
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Generate mock analytics data
-  const generateMockAnalytics = useCallback((matrix: PermissionMatrix) => {
-    if (!matrix) return;
 
-    const totalPermissions = matrix.resources.reduce((sum, resource) => sum + resource.actions.length, 0);
-    const grantedPermissions = matrix.resources.reduce((sum, resource) =>
-      sum + resource.actions.filter(action => action.has_permission).length, 0);
-    const rolePermissions = matrix.resources.reduce((sum, resource) =>
-      sum + resource.actions.filter(action => action.has_permission && action.permission_source === 'role').length, 0);
-
-    const analytics: PermissionAnalytics = {
-      total_permissions: totalPermissions,
-      granted_permissions: grantedPermissions,
-      role_permissions: rolePermissions,
-      individual_permissions: grantedPermissions - rolePermissions,
-      coverage_percentage: Math.round((grantedPermissions / totalPermissions) * 100),
-      categories: matrix.resources.map(resource => ({
-        name: resource.display_name,
-        granted: resource.actions.filter(action => action.has_permission).length,
-        total: resource.actions.length,
-        percentage: Math.round((resource.actions.filter(action => action.has_permission).length / resource.actions.length) * 100)
-      })),
-      recent_changes: Math.floor(Math.random() * 10),
-      risk_level: grantedPermissions > totalPermissions * 0.8 ? 'high' :
-                  grantedPermissions > totalPermissions * 0.5 ? 'medium' : 'low'
-    };
-
-    setPermissionAnalytics(analytics);
-  }, []);
 
   const handlePermissionToggle = (permissionKey: string, granted: boolean) => {
     const newChanges = new Map(pendingChanges);
@@ -643,21 +690,34 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
         )
       }));
       setPermissionMatrix(updatedMatrix);
-
-      // Update analytics
-      generateMockAnalytics(updatedMatrix);
     }
   };
 
   // Enhanced utility functions
   const getResourceIcon = (resourceType: string) => {
-    const category = mockPermissionCategories.find(cat => cat.name === resourceType);
-    return category?.icon || <SecurityIcon />;
+    // Default icons for different resource types
+    switch (resourceType) {
+      case 'sales': return <StoreIcon />;
+      case 'inventory': return <InventoryIcon />;
+      case 'customers': return <PeopleIcon />;
+      case 'reports': return <ReportsIcon />;
+      case 'administration': return <SettingsIcon />;
+      case 'dashboard': return <DashboardIcon />;
+      default: return <SecurityIcon />;
+    }
   };
 
   const getResourceColor = (resourceType: string) => {
-    const category = mockPermissionCategories.find(cat => cat.name === resourceType);
-    return category?.color || 'default';
+    // Default colors for different resource types
+    switch (resourceType) {
+      case 'sales': return 'success';
+      case 'inventory': return 'warning';
+      case 'customers': return 'info';
+      case 'reports': return 'secondary';
+      case 'administration': return 'error';
+      case 'dashboard': return 'primary';
+      default: return 'default';
+    }
   };
 
   const getRoleIcon = (roleName: string) => {
@@ -761,7 +821,7 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
       employee: {
         id: employee.id,
         name: employee.full_name,
-        email: employee.email,
+        email: employee.email || '',
         role: employee.role
       },
       permissions: permissionMatrix.resources.map(resource => ({
@@ -883,36 +943,6 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
     }
   };
 
-  // Enhanced utility functions
-  const getResourceIcon = (resourceType: string) => {
-    const category = mockPermissionCategories.find(cat => cat.name === resourceType);
-    return category?.icon || <SecurityIcon />;
-  };
-
-  const getResourceColor = (resourceType: string) => {
-    const category = mockPermissionCategories.find(cat => cat.name === resourceType);
-    return category?.color || 'default';
-  };
-
-  const getRoleIcon = (roleName: string) => {
-    switch (roleName) {
-      case 'admin': return <AdminIcon />;
-      case 'manager': return <ManagerIcon />;
-      case 'cashier': return <CashierIcon />;
-      case 'sales_agent': return <SalesIcon />;
-      case 'collaborator': return <CollaboratorIcon />;
-      default: return <PersonIcon />;
-    }
-  };
-
-  const getResourceTypeIcon = (resourceType: string) => {
-    return getResourceIcon(resourceType);
-  };
-
-  const getResourceTypeColor = (resourceType: string) => {
-    return getResourceColor(resourceType);
-  };
-
   if (!employee) return null;
 
   return (
@@ -1006,6 +1036,28 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
           </Box>
         ) : (
           <>
+            {/* Fallback Data Banner */}
+            {usingFallbackData && (
+              <Alert
+                severity="info"
+                sx={{ mb: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={loadPermissionData}
+                    disabled={loading}
+                  >
+                    Thử lại
+                  </Button>
+                }
+              >
+                <AlertTitle>Đang sử dụng dữ liệu mẫu</AlertTitle>
+                Hệ thống đang hiển thị dữ liệu mẫu do không thể kết nối với API phân quyền.
+                Một số tính năng có thể bị hạn chế. Bạn có thể thử lại để kết nối với dữ liệu thực.
+              </Alert>
+            )}
+
             <Tabs
               value={tabValue}
               onChange={(_, newValue) => setTabValue(newValue)}
@@ -1080,11 +1132,11 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
                         label="Danh mục"
                       >
                         <MenuItem value="all">Tất cả danh mục</MenuItem>
-                        {mockPermissionCategories.map(category => (
-                          <MenuItem key={category.id} value={category.name}>
+                        {permissionMatrix?.resources.map(resource => (
+                          <MenuItem key={resource.id} value={resource.name}>
                             <Box display="flex" alignItems="center" gap={1}>
-                              {category.icon}
-                              {!isMobile && category.display_name}
+                              {getResourceIcon(resource.name)}
+                              {!isMobile && resource.display_name}
                             </Box>
                           </MenuItem>
                         ))}
@@ -1185,7 +1237,7 @@ const PermissionManagementModal: React.FC<PermissionManagementModalProps> = ({
                   </Grid>
                   <Grid item xs={12} md={4}>
                     <ButtonGroup size="small" variant="outlined" fullWidth>
-                      <Button onClick={resetToRoleDefaults} startIcon={<RotateCcwIcon />}>
+                      <Button onClick={resetToRoleDefaults} startIcon={<RefreshIcon />}>
                         Đặt lại mặc định
                       </Button>
                       <Button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} startIcon={<TuneIcon />}>

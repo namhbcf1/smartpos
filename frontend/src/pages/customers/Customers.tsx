@@ -24,16 +24,35 @@ import { usePaginatedQuery } from '../../hooks/useApiData';
 import api from '../../services/api';
 
 // Import modular components
-import { CustomersHeader } from './components/CustomersHeader';
-import { CustomersFilters } from './components/CustomersFilters';
-import { CustomersTable } from './components/CustomersTable';
+import { CustomerHeader } from './components/CustomerHeader';
+import { CustomerFiltersComponent as CustomerFilters } from './components/CustomerFilters';
+import { CustomerTable } from './components/CustomerTable';
 import { CustomerForm } from './components/CustomerForm';
-import { 
-  Customer, 
-  CustomerFilters, 
-  CustomerStats,
-  CustomerCreateData 
-} from './components/types';
+// Define types locally to avoid import issues
+interface Customer {
+  id: number;
+  full_name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  customer_type?: 'individual' | 'business';
+  loyalty_points?: number;
+  total_spent?: number;
+  is_vip?: boolean;
+  created_at?: string;
+}
+
+interface CustomerFilters {
+  search: string;
+  customer_type: 'all' | 'individual' | 'business';
+  status: 'all' | 'active' | 'inactive';
+}
+
+interface CustomerStats {
+  total_customers: number;
+  active_customers: number;
+  new_customers_this_month: number;
+}
 
 const Customers = () => {
   const navigate = useNavigate();
@@ -230,7 +249,7 @@ const Customers = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
-      <CustomersHeader
+      <CustomerHeader
         stats={stats}
         onNewCustomer={handleNewCustomer}
         onExport={handleExport}
@@ -241,7 +260,7 @@ const Customers = () => {
 
       <Divider sx={{ my: 3 }} />
 
-      <CustomersFilters
+      <CustomerFilters
         filters={filters}
         onFiltersChange={setFilters}
         onClearFilters={handleClearFilters}
@@ -256,7 +275,7 @@ const Customers = () => {
 
       {!customersLoading && customers && (
         <>
-          <CustomersTable
+          <CustomerTable
             customers={customers}
             onViewDetails={handleViewDetails}
             onEditCustomer={handleEditCustomer}

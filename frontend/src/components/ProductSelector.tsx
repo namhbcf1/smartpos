@@ -109,7 +109,10 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount == null || isNaN(amount)) {
+      return '0 ₫';
+    }
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'

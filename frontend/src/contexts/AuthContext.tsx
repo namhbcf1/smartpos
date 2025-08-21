@@ -1,7 +1,8 @@
 // Enhanced AuthContext - Following rules.md standards
 // NO MOCK DATA - Real authentication only
+// Production-only, online-only operation
 
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { authAPI } from '../services/api';
 import { User } from '../types/api';
 import { permissionService } from '../services/permissionService';
@@ -36,58 +37,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  
-  // Initialize authentication on mount
+
+  // Use refs to prevent multiple auth checks and track component state
+  const isMountedRef = useRef(true);
+  const hasInitializedRef = useRef(false);
+  const authCheckInProgressRef = useRef(false);
+
+  // FINAL SOLUTION: NO AUTO AUTH CHECK - MANUAL ONLY
   useEffect(() => {
-    const initAuth = async () => {
-      console.log('🔐 AuthContext: Initializing authentication...');
+    console.log('🔧 FINAL AUTH SOLUTION: Manual authentication only');
 
-      const storedToken = sessionStorage.getItem('auth_token');
-      const storedUser = sessionStorage.getItem('user');
+    // Immediately set to not loading and not authenticated
+    // No automatic API calls that can cause infinite loops
+    setIsLoading(false);
+    setIsAuthenticated(false);
+    setUser(null);
 
-      if (storedToken && storedUser) {
-        console.log('🔐 AuthContext: Found stored session, validating...');
-        
-        try {
-          const isValid = await checkAuthSilent();
-          if (isValid) {
-            const userData = JSON.parse(storedUser);
-            setUser(userData);
-            setIsAuthenticated(true);
-            console.log('✅ AuthContext: Session validated successfully');
+    hasInitializedRef.current = true;
 
-            // Load user permissions
-            try {
-              await permissionService.loadUserPermissions(userData.id);
-              console.log('✅ AuthContext: User permissions loaded from stored session');
-            } catch (error) {
-              console.error('❌ AuthContext: Failed to load permissions from stored session:', error);
-            }
-          } else {
-            console.log('❌ AuthContext: Session invalid, clearing...');
-            clearStoredAuth();
-          }
-        } catch (error) {
-          console.error('❌ AuthContext: Failed to validate session:', error);
-          clearStoredAuth();
-        }
-      } else {
-        console.log('🔐 AuthContext: No stored session found');
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-
-      setIsLoading(false);
+    // Cleanup function to prevent memory leaks
+    return () => {
+      console.log('🧹 AuthProvider cleanup');
+      isMountedRef.current = false;
+      authCheckInProgressRef.current = false;
     };
-
-    initAuth();
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once
 
   const clearStoredAuth = () => {
-    sessionStorage.removeItem('auth_token');
-    sessionStorage.removeItem('user');
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
+    // Clear auth cookie (no localStorage/sessionStorage - security compliance)
+    document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     setUser(null);
     setIsAuthenticated(false);
 
@@ -99,39 +77,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (username: string, password: string): Promise<void> => {
     try {
       setIsLoading(true);
-      console.log('🔐 AuthContext: Starting login...');
 
       const response = await authAPI.login({ username, password });
 
       if (response.success && response.data) {
         const { user: userData, token } = response.data;
-
-        console.log('✅ AuthContext: Login successful');
         
         setUser(userData);
         setIsAuthenticated(true);
 
-        // Store in sessionStorage for security
-        sessionStorage.setItem('user', JSON.stringify(userData));
-        sessionStorage.setItem('auth_token', token);
+        // Token stored in secure HttpOnly cookie by backend
+        // No localStorage/sessionStorage usage for security compliance
 
-        // Set token in API service
+        // Set token in API service (will read from cookie)
         const { setAuthToken } = await import('../services/api');
         setAuthToken(token);
 
         // Load user permissions
         try {
           await permissionService.loadUserPermissions(userData.id);
-          console.log('✅ AuthContext: User permissions loaded');
         } catch (error) {
-          console.error('❌ AuthContext: Failed to load permissions:', error);
+          console.error('Failed to load user permissions:', error);
         }
 
       } else {
-        throw new Error(response.error || 'Login failed');
+        throw new Error(response.message || response.error || 'Login failed');
       }
     } catch (error) {
-      console.error('❌ AuthContext: Login failed:', error);
+      console.error('Login failed:', error);
       clearStoredAuth();
       throw error;
     } finally {
@@ -143,12 +116,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      console.log('🔐 AuthContext: Logging out...');
 
       await authAPI.logout();
-      console.log('✅ AuthContext: Logout successful');
     } catch (error) {
-      console.error('❌ AuthContext: Logout API failed:', error);
+      console.error('Logout failed:', error);
     } finally {
       clearStoredAuth();
       setIsLoading(false);
@@ -158,53 +129,73 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Check authentication status
   const checkAuth = async (): Promise<boolean> => {
     try {
-      console.log('🔐 AuthContext: Checking authentication...');
-      
       const response = await authAPI.me();
       
       if (response.success && response.data) {
         setUser(response.data);
         setIsAuthenticated(true);
-        sessionStorage.setItem('user', JSON.stringify(response.data));
-        console.log('✅ AuthContext: Authentication valid');
+        // No localStorage/sessionStorage - security compliance
 
         // Load user permissions
         try {
           await permissionService.loadUserPermissions(response.data.id);
-          console.log('✅ AuthContext: User permissions loaded from checkAuth');
         } catch (error) {
-          console.error('❌ AuthContext: Failed to load permissions from checkAuth:', error);
+          console.error('Failed to load user permissions:', error);
         }
         return true;
       } else {
         clearStoredAuth();
-        console.log('❌ AuthContext: Authentication invalid');
         return false;
       }
     } catch (error) {
-      console.error('❌ AuthContext: Auth check failed:', error);
+      console.error('Auth check failed:', error);
       clearStoredAuth();
       return false;
     }
   };
 
-  // Silent authentication check (no error logging)
+  // Silent authentication check - single use only, no loops
   const checkAuthSilent = async (): Promise<boolean> => {
+    // Prevent multiple simultaneous silent checks
+    if (authCheckInProgressRef.current) {
+      console.log('🔄 Auth check already in progress, returning current state');
+      return isAuthenticated;
+    }
+
     try {
+      console.log('🔍 Manual silent auth check...');
+      authCheckInProgressRef.current = true;
+
       const response = await authAPI.me();
-      
+
+      if (!isMountedRef.current) return false;
+
       if (response.success && response.data) {
+        console.log('✅ Silent auth check successful');
         setUser(response.data);
         setIsAuthenticated(true);
-        sessionStorage.setItem('user', JSON.stringify(response.data));
         return true;
       } else {
-        clearStoredAuth();
+        console.log('❌ Silent auth check failed - no valid session');
+        setUser(null);
+        setIsAuthenticated(false);
         return false;
       }
-    } catch (error) {
-      clearStoredAuth();
+    } catch (error: any) {
+      if (!isMountedRef.current) return false;
+
+      // Handle 401 gracefully
+      if (error?.response?.status === 401 || error?.message?.includes('NO_TOKEN')) {
+        console.log('❌ Silent auth check: No valid authentication');
+      } else {
+        console.log('❌ Silent auth check error:', error);
+      }
+
+      setUser(null);
+      setIsAuthenticated(false);
       return false;
+    } finally {
+      authCheckInProgressRef.current = false;
     }
   };
 

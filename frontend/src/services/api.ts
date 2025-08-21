@@ -1,14 +1,15 @@
 // Enhanced API Service - Following rules.md standards
 // NO MOCK DATA - Real API calls only
 
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
-import { 
-  ApiResponse, 
-  ApiError, 
-  User, 
-  Product, 
-  Sale, 
-  Customer, 
+import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig } from 'axios';
+import { API_ENDPOINTS } from '../config/constants';
+import {
+  ApiResponse,
+  ApiError,
+  User,
+  Product,
+  Sale,
+  Customer,
   Supplier,
   Category,
   StockTransaction,
@@ -26,7 +27,7 @@ import {
 // API Configuration - Use environment variables with fallback
 const RAW_API_URL = import.meta.env.VITE_API_BASE_URL ||
                     import.meta.env.VITE_API_URL ||
-                    'https://smartpos-api-bangachieu2.bangachieu2.workers.dev';
+                    'https://pos-backend-bangachieu2.bangachieu2.workers.dev';
 
 const sanitizedBase = (RAW_API_URL || '').replace(/\/$/, '');
 // Check if URL already has /api/v1 suffix to avoid double prefix
@@ -59,61 +60,28 @@ const api: AxiosInstance = axios.create({
 // Token storage with persistence - prioritize sessionStorage over localStorage
 let authToken: string | null = null;
 
-// Enhanced user storage and retrieval
+// SECURITY COMPLIANCE: No localStorage/sessionStorage usage
 const getUserFromStorage = (): User | null => {
-  try {
-    const userStr = sessionStorage.getItem('user') || localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
-  } catch (error) {
-    console.error('Error parsing user from storage:', error);
-    return null;
-  }
+  // User data will be fetched from /auth/me endpoint
+  return null;
 };
 
 const setUserInStorage = (user: User): void => {
-  try {
-    const userStr = JSON.stringify(user);
-    sessionStorage.setItem('user', userStr);
-    localStorage.setItem('user', userStr); // Backup in localStorage
-  } catch (error) {
-    console.error('Error storing user:', error);
-  }
+  // No storage - security compliance
+  console.log('User data managed by secure cookies');
 };
 
 const clearUserFromStorage = (): void => {
-  sessionStorage.removeItem('user');
-  sessionStorage.removeItem('auth_token');
-  localStorage.removeItem('user');
-  localStorage.removeItem('auth_token');
+  // Clear auth cookie
+  document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   authToken = null;
 };
 
-// Initialize token from storage on module load (consistent with AuthContext)
+// SECURITY COMPLIANCE: No localStorage/sessionStorage usage
 const initializeToken = (): void => {
-  // SECURITY FIX: Prioritize sessionStorage (current session) over localStorage (old session)
-  const sessionToken = sessionStorage.getItem('auth_token');
-  const localToken = localStorage.getItem('auth_token');
-
-  if (sessionToken) {
-    authToken = sessionToken;
-    console.log('🔐 API Service: Using sessionStorage token');
-
-    // Clean up old localStorage token if it exists and is different
-    if (localToken && localToken !== sessionToken) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user');
-      console.log('🧹 API Service: Cleaned up old localStorage token');
-    }
-  } else if (localToken) {
-    // Fallback to localStorage token but move it to sessionStorage
-    authToken = localToken;
-    sessionStorage.setItem('auth_token', localToken);
-    console.log('🔄 API Service: Migrated localStorage token to sessionStorage');
-
-    // Clean up localStorage
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
-  }
+  // Token will be read from secure cookies automatically by browser
+  // No need to manually extract - cookies are sent automatically
+  console.log('🔐 API Service: Using secure HTTP-only cookies');
 };
 
 // Initialize token immediately
@@ -122,13 +90,8 @@ initializeToken();
 // Enhanced request interceptor with proper error handling
 api.interceptors.request.use(
   (config) => {
-    // Add auth token to all requests
-    if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
-      console.log('🔐 Adding auth token to request:', authToken.substring(0, 20) + '...');
-    } else {
-      console.log('⚠️ No auth token available for request');
-    }
+    // SECURITY COMPLIANCE: Using HTTP-only cookies instead of Authorization header
+    // Cookies are automatically sent by browser
 
     // Add request ID for tracking
     config.headers['X-Request-ID'] = crypto.randomUUID();
@@ -136,15 +99,13 @@ api.interceptors.request.use(
     // Add timestamp for debugging
     config.headers['X-Timestamp'] = new Date().toISOString();
 
-    console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
-      data: config.data,
-      params: config.params,
-      hasAuthToken: !!authToken,
-      headers: {
-        Authorization: config.headers.Authorization ? 'Bearer ***' : 'None',
-        'Content-Type': config.headers['Content-Type']
-      }
-    });
+    // Only log important requests in development mode (exclude polling and frequent requests)
+    if (process.env.NODE_ENV === 'development' &&
+        !config.url?.includes('/dashboard/stats') &&
+        !config.url?.includes('/polling') &&
+        !config.url?.includes('/employees')) {
+      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    }
 
     return config;
   },
@@ -157,18 +118,23 @@ api.interceptors.request.use(
 // Enhanced response interceptor with proper error handling
 api.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
-    console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
-      status: response.status,
-      success: response.data.success,
-      data: response.data.data
-    });
+    // Only log important responses in development mode (not polling responses)
+    if (process.env.NODE_ENV === 'development' &&
+        !response.config.url?.includes('/dashboard/stats') &&
+        !response.config.url?.includes('/polling') &&
+        !response.config.url?.includes('/employees/simple')) {
+      console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+        status: response.status,
+        success: response.data.success
+      });
+    }
 
     // Handle successful responses
     if (response.data.success) {
       return response;
     } else {
-      // Handle API-level errors
-      const error = new Error(response.data.error || 'API request failed');
+      // Handle API-level errors - check both message and error fields
+      const error = new Error(response.data.message || response.data.error || 'API request failed');
       (error as any).response = response;
       (error as any).apiError = response.data;
       return Promise.reject(error);
@@ -190,9 +156,12 @@ api.interceptors.response.use(
 
       switch (status) {
         case 401:
-          // Unauthorized - clear auth and redirect to login
+          // Unauthorized - clear auth but don't auto-redirect on login page
           clearUserFromStorage();
-          window.location.href = '/login';
+          // Only redirect if not already on login page
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
           break;
         case 403:
           // Forbidden - user doesn't have permission
@@ -218,8 +187,8 @@ api.interceptors.response.use(
           console.error('API error:', data?.error);
       }
 
-      // Create enhanced error object
-      const enhancedError = new Error(data?.error || `HTTP ${status}: ${error.response.statusText}`);
+      // Create enhanced error object - check both message and error fields
+      const enhancedError = new Error(data?.message || data?.error || `HTTP ${status}: ${error.response.statusText}`);
       (enhancedError as any).status = status;
       (enhancedError as any).response = error.response;
       (enhancedError as any).apiError = data;
@@ -262,7 +231,7 @@ export const authAPI = {
   },
 
   me: async (): Promise<ApiResponse<User>> => {
-    const response = await api.get<ApiResponse<User>>('/auth/me');
+    const response = await api.get<ApiResponse<User>>(API_ENDPOINTS.USER);
     return response.data;
   }
 };

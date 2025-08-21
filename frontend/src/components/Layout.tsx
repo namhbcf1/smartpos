@@ -292,7 +292,6 @@ const Layout = () => {
 
       // If permissions are not loaded yet, fallback to role-based checking
       if (!permissionService.getPermissionStatus().loaded) {
-        console.log(`🔄 Permissions not loaded yet, using role-based fallback for: ${menuKey}`);
         if (!user?.role) return false;
         return requiredRoles.includes(user.role);
       }

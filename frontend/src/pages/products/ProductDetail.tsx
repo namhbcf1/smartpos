@@ -105,7 +105,7 @@ const ProductDetail = () => {
 
       // DIRECT API CALL - Get product from products list API (working API)
       console.log('📡 Calling products API directly...');
-      const response = await fetch('https://smartpos-api.bangachieu2.workers.dev/api/v1/products?limit=100');
+      const response = await fetch('https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/products?limit=100');
       const data = await response.json();
 
       console.log('📦 Products API response:', data);
@@ -185,7 +185,7 @@ Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đ�
       const response = await api.get<{
         data: Category[];
         pagination: any;
-      }>('/categories?limit=100');
+      }>('/categories/simple?limit=100');
 
       // API trả về dữ liệu trong response.data.data
       const categories = response.data || [];

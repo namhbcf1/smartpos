@@ -2,7 +2,7 @@
 
 import { ApiResponse, Product, CartItem, Order, Customer, Category, Supplier, StockTransaction, ProductFilters, InventoryFilters } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://smartpos-api-bangachieu2.bangachieu2.workers.dev/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
 
 // Generic API fetch function
 export const fetchAPI = async <T = any>(
