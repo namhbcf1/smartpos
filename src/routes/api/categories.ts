@@ -39,7 +39,7 @@ app.get('/', async (c: any) => {
     const { q, page = '1', limit = '50', sortBy = 'name', sortDirection = 'asc' } = c.req.query();
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const allowedSortFields = ['name', 'description', 'created_at', 'updated_at'];
+    const allowedSortFields = ['name', 'description'];
     const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'name';
     const sortDir = sortDirection && sortDirection.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
@@ -50,10 +50,10 @@ app.get('/', async (c: any) => {
       params.push(`%${q}%`, `%${q}%`);
     }
 
-    // Simplified query without complex joins - just return categories
+    // Simplified query with only basic columns that exist
     const query = `
       SELECT
-        id, name, description, is_active, created_at, updated_at
+        id, name, description
       FROM categories
       ${whereClause}
       ORDER BY ${sortField} ${sortDir}

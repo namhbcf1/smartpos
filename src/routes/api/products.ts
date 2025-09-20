@@ -130,12 +130,13 @@ app.get('/low-stock', async (c: any) => {
       params.push(stockThreshold);
     }
 
+    // Try a basic query first to see what columns exist
     const products = await c.env.DB.prepare(`
-      SELECT
-        p.id, p.name, p.sku, p.stock, p.min_stock, p.price, p.cost_price
+      SELECT *
       FROM products p
       ${whereClause}
-      ORDER BY p.stock ASC, p.name
+      ORDER BY p.name
+      LIMIT 10
     `).bind(...params).all();
 
     return c.json({
