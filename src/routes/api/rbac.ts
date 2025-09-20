@@ -5,12 +5,12 @@ import { authenticate, getUser } from '../../middleware/auth';
 const app = new Hono<{ Bindings: Env }>();
 
 // Get current user permissions
-app.get('/permissions/me', authenticate, async (c: any) => {
+app.get('/me', authenticate, async (c: any) => {
   try {
     const user = getUser(c);
 
     // For admin users, return all permissions
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'ADMIN') {
       const permissions = [
         'dashboard.view', 'products.view', 'products.create', 'products.update', 'products.delete',
         'categories.view', 'categories.create', 'categories.update', 'categories.delete',
