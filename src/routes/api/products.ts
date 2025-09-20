@@ -132,12 +132,8 @@ app.get('/low-stock', async (c: any) => {
 
     const products = await c.env.DB.prepare(`
       SELECT
-        p.id, p.name, p.sku, p.stock, p.min_stock, p.price_cents, p.cost_price_cents,
-        c.name as category_name,
-        b.name as brand_name
+        p.id, p.name, p.sku, p.stock, p.min_stock, p.price, p.cost_price
       FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN brands b ON p.brand_id = b.id
       ${whereClause}
       ORDER BY p.stock ASC, p.name
     `).bind(...params).all();

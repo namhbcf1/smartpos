@@ -36,44 +36,6 @@ app.get('/names', async (c: any) => {
 // GET /api/categories - List all categories with search and pagination (D1)
 app.get('/', async (c: any) => {
   try {
-    // Check if categories table exists and create if needed
-    let hasCategories = true;
-    try {
-      await c.env.DB.prepare(`SELECT COUNT(*) as count FROM categories LIMIT 1`).first();
-    } catch (tableError) {
-      hasCategories = false;
-    }
-
-    if (!hasCategories) {
-      // Create categories table
-      await c.env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS categories (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          description TEXT,
-          is_active INTEGER DEFAULT 1,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
-
-      // Insert sample categories
-      const sampleCategories = [
-        { id: 'cat-computers', name: 'Máy tính', description: 'Laptop, PC, Máy tính bàn' },
-        { id: 'cat-accessories', name: 'Phụ kiện', description: 'Chuột, bàn phím, tai nghe' },
-        { id: 'cat-monitors', name: 'Màn hình', description: 'Màn hình máy tính, TV' },
-        { id: 'cat-storage', name: 'Lưu trữ', description: 'SSD, HDD, USB' },
-        { id: 'cat-networking', name: 'Mạng', description: 'Router, Switch, Cable' }
-      ];
-
-      for (const cat of sampleCategories) {
-        await c.env.DB.prepare(`
-          INSERT OR IGNORE INTO categories (id, name, description, is_active, created_at)
-          VALUES (?, ?, ?, 1, datetime('now'))
-        `).bind(cat.id, cat.name, cat.description).run();
-      }
-    }
-
     const { q, page = '1', limit = '50', sortBy = 'name', sortDirection = 'asc' } = c.req.query();
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -84,30 +46,50 @@ app.get('/', async (c: any) => {
     let whereClause = '';
     const params: any[] = [];
     if (q) {
-      whereClause = 'WHERE c.name LIKE ? OR c.description LIKE ?';
+      whereClause = 'WHERE name LIKE ? OR description LIKE ?';
       params.push(`%${q}%`, `%${q}%`);
     }
 
+    // Simplified query without complex joins - just return categories
     const query = `
       SELECT
-        c.id, c.name, c.description, c.is_active, c.created_at, c.updated_at,
-        COUNT(p.id) AS product_count
-      FROM categories c
-      LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1
+        id, name, description, is_active, created_at, updated_at
+      FROM categories
       ${whereClause}
-      GROUP BY c.id, c.name, c.description, c.is_active, c.created_at, c.updated_at
-      ORDER BY c.${sortField} ${sortDir}
+      ORDER BY ${sortField} ${sortDir}
       LIMIT ? OFFSET ?
     `;
 
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM categories c
+      FROM categories
       ${whereClause}
     `;
 
-    const dataRes = await c.env.DB.prepare(query).bind(...params, parseInt(limit), offset).all();
-    const countRes = await c.env.DB.prepare(countQuery).bind(...params).first();
+    // First ensure categories table exists and has some data
+    let hasData = false;
+    try {
+      const testRes = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM categories`).first();
+      hasData = testRes?.count > 0;
+    } catch {
+      // Table doesn't exist, return empty result
+      return c.json({
+        success: true,
+        data: [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0,
+          totalPages: 0
+        },
+        message: 'Categories table not initialized'
+      });
+    }
+
+    const [dataRes, countRes] = await Promise.all([
+      c.env.DB.prepare(query).bind(...params, parseInt(limit), offset).all(),
+      c.env.DB.prepare(countQuery).bind(...params).first()
+    ]);
 
     return c.json({
       success: true,

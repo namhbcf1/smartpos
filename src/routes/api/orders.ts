@@ -19,20 +19,20 @@ app.get('/', async (c: any) => {
         o.id,
         o.order_number,
         o.customer_id,
-        o.user_id,
-        o.store_id,
-        o.status,
-        o.subtotal_cents,
-        o.discount_cents,
-        o.tax_cents,
-        o.total_cents,
-        o.notes,
-        o.receipt_printed,
         o.customer_name,
         o.customer_phone,
+        o.customer_email,
+        o.status,
+        o.subtotal,
+        o.discount,
+        o.tax,
+        o.total,
+        o.payment_method,
+        o.payment_status,
+        o.notes,
         o.created_at,
         o.updated_at
-      FROM orders o
+      FROM pos_orders o
       WHERE 1=1
     `;
     const params = [];
@@ -62,7 +62,7 @@ app.get('/', async (c: any) => {
 
     // Get total count for pagination
     let countQuery = `
-      SELECT COUNT(*) as total FROM orders o
+      SELECT COUNT(*) as total FROM pos_orders o
       WHERE 1=1
     `;
     const countParams = [];
@@ -120,20 +120,20 @@ app.get('/:id', async (c: any) => {
         o.id,
         o.order_number,
         o.customer_id,
-        o.user_id,
-        o.store_id,
-        o.status,
-        o.subtotal_cents,
-        o.discount_cents,
-        o.tax_cents,
-        o.total_cents,
-        o.notes,
-        o.receipt_printed,
         o.customer_name,
         o.customer_phone,
+        o.customer_email,
+        o.status,
+        o.subtotal,
+        o.discount,
+        o.tax,
+        o.total,
+        o.payment_method,
+        o.payment_status,
+        o.notes,
         o.created_at,
         o.updated_at
-      FROM orders o
+      FROM pos_orders o
       WHERE o.id = ? OR o.order_number = ?
     `).bind(id, id).first();
 
@@ -144,18 +144,17 @@ app.get('/:id', async (c: any) => {
     // Get order items
     const items = await c.env.DB.prepare(`
       SELECT
-        oi.id,
-        oi.product_id,
-        oi.variant_id,
-        oi.quantity,
-        oi.unit_price_cents,
-        oi.total_price_cents,
-        oi.discount_cents,
-        oi.product_name,
-        oi.product_sku
-      FROM order_items oi
-      WHERE oi.order_id = ?
-      ORDER BY oi.created_at
+        poi.id,
+        poi.product_id,
+        poi.product_name,
+        poi.product_sku,
+        poi.quantity,
+        poi.unit_price,
+        poi.total_price,
+        poi.discount_amount,
+        poi.tax_amount
+      FROM pos_order_items poi
+      WHERE poi.order_id = ?
     `).bind(id).all();
 
     return c.json({
