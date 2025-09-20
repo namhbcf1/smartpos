@@ -7,6 +7,47 @@ const app = new Hono<{ Bindings: Env }>();
 // GET /api/inventory/movements - Get inventory movements
 app.get('/movements', async (c: any) => {
   try {
+    // Ensure inventory tables exist - COMPLETE SCHEMA
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS inventory_movements (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        variant_id TEXT,
+        transaction_type TEXT NOT NULL CHECK (transaction_type IN ('in', 'out', 'adjustment', 'transfer')),
+        quantity INTEGER NOT NULL,
+        unit_cost_cents INTEGER,
+        reference_id TEXT,
+        reference_type TEXT,
+        reason TEXT,
+        notes TEXT,
+        user_id TEXT,
+        store_id TEXT,
+        product_name TEXT,
+        product_sku TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Ensure serial_numbers table exists
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS serial_numbers (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        variant_id TEXT,
+        serial_number TEXT UNIQUE NOT NULL,
+        status TEXT DEFAULT 'available' CHECK (status IN ('available', 'sold', 'returned', 'defective')),
+        batch_number TEXT,
+        purchase_date TEXT,
+        sale_date TEXT,
+        customer_id TEXT,
+        warranty_start_date TEXT,
+        warranty_end_date TEXT,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
     const { page = '1', limit = '50', product_id, transaction_type } = c.req.query();
     const offset = (parseInt(page) - 1) * parseInt(limit);
 

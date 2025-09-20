@@ -10,12 +10,53 @@ app.use('*', authenticate);
 // GET /api/payment-methods - List payment methods
 app.get('/', async (c: any) => {
   try {
+    // Ensure payment_methods table exists - COMPLETE SCHEMA
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS payment_methods (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        code TEXT UNIQUE NOT NULL,
+        description TEXT,
+        fee_percentage REAL DEFAULT 0,
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Ensure payments table exists
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id TEXT PRIMARY KEY,
+        order_id TEXT NOT NULL,
+        payment_method_id TEXT NOT NULL,
+        amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+        reference TEXT,
+        status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
+        processed_at TEXT DEFAULT (datetime('now')),
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Insert default payment methods if table is empty
+    const existingCount = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM payment_methods`).first();
+    if (existingCount.count === 0) {
+      await c.env.DB.prepare(`
+        INSERT INTO payment_methods (name, code, is_active) VALUES
+        ('Tiền mặt', 'CASH', 1),
+        ('Chuyển khoản', 'BANK_TRANSFER', 1),
+        ('Thẻ tín dụng', 'CREDIT_CARD', 1),
+        ('Thẻ ghi nợ', 'DEBIT_CARD', 1),
+        ('Ví điện tử', 'E_WALLET', 1),
+        ('QR Code', 'QR_CODE', 1)
+      `).run();
+    }
+
     const { page = '1', limit = '50' } = c.req.query();
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const query = `
       SELECT
-        id, name, code, description, fee_percentage, is_active, created_at
+        id, name, code, is_active, created_at
       FROM payment_methods
       WHERE is_active = 1
       ORDER BY name
@@ -53,7 +94,7 @@ app.post('/', async (c: any) => {
     const data = await c.req.json();
 
     const {
-      name, code, description, fee_percentage = 0
+      name, code, type = 'other'
     } = data;
 
     if (!name || !code) {
@@ -81,10 +122,10 @@ app.post('/', async (c: any) => {
     // Insert payment method
     await c.env.DB.prepare(`
       INSERT INTO payment_methods (
-        id, name, code, description, fee_percentage, is_active, created_at
-      ) VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
+        id, name, code, type, is_active, created_at
+      ) VALUES (?, ?, ?, ?, 1, datetime('now'))
     `).bind(
-      paymentMethodId, name, code, description || null, fee_percentage
+      paymentMethodId, name, code, type
     ).run();
 
     // Get the created payment method
@@ -124,18 +165,16 @@ app.put('/:id', async (c: any) => {
       }, 404);
     }
 
-    const { name, description, fee_percentage, is_active } = data;
+    const { name, is_active } = data;
 
     // Update payment method
     await c.env.DB.prepare(`
       UPDATE payment_methods
       SET
         name = COALESCE(?, name),
-        description = COALESCE(?, description),
-        fee_percentage = COALESCE(?, fee_percentage),
         is_active = COALESCE(?, is_active)
       WHERE id = ?
-    `).bind(name, description, fee_percentage, is_active, id).run();
+    `).bind(name, is_active, id).run();
 
     // Get updated payment method
     const updatedPaymentMethod = await c.env.DB.prepare(`

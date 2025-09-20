@@ -412,6 +412,38 @@ app.post('/quick-sale', async (c: any) => {
   }
 });
 
+// GET /api/pos - POS Dashboard root endpoint
+app.get('/', async (c: any) => {
+  try {
+    await ensurePOSTables(c.env);
+    const user = c.get('jwtPayload') as any;
+
+    return c.json({
+      success: true,
+      data: {
+        user: {
+          id: user?.id,
+          username: user?.username,
+          role: user?.role
+        },
+        endpoints: {
+          dashboard: '/api/v1/pos/dashboard',
+          orders: '/api/v1/pos/orders',
+          sessions: '/api/v1/pos/sessions',
+          quick_sale: '/api/v1/pos/quick-sale',
+          parked_carts: '/api/v1/pos/parked-carts'
+        },
+        status: 'POS system ready'
+      }
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: 'POS system unavailable'
+    }, 500);
+  }
+});
+
 // Authentication is already applied at the main API level in index.ts
 // No need to re-apply here to avoid conflicts
 

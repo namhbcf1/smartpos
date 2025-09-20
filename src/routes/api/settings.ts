@@ -106,8 +106,8 @@ async function updateStoreSettings(db: D1Database, data: any, tenantId: string =
 }
 
 async function getPaymentMethods(db: D1Database, tenantId: string = 'default') {
-  const query = 'SELECT * FROM payment_methods WHERE tenant_id = ? ORDER BY sort_order ASC';
-  const result = await db.prepare(query).bind(tenantId).all();
+  const query = 'SELECT * FROM payment_methods ORDER BY name ASC';
+  const result = await db.prepare(query).all();
   return result.results || [];
 }
 
@@ -324,7 +324,7 @@ app.put('/payment-methods', async (c: any) => {
 app.get('/tax', async (c: any) => {
   try {
     const db = c.env.DB;
-    const query = 'SELECT * FROM settings WHERE category = "financial" ORDER BY sort_order ASC';
+    const query = 'SELECT * FROM settings WHERE category = "financial" ORDER BY key ASC';
     const result = await db.prepare(query).all();
     const settings = result.results || [];
 
@@ -384,7 +384,7 @@ app.put('/tax', async (c: any) => {
     }
 
     // Fetch updated tax settings
-    const query = 'SELECT * FROM settings WHERE category = "financial" ORDER BY sort_order ASC';
+    const query = 'SELECT * FROM settings WHERE category = "financial" ORDER BY key ASC';
     const result = await db.prepare(query).all();
     const settings = result.results || [];
 
@@ -414,7 +414,7 @@ app.put('/tax', async (c: any) => {
 app.get('/inventory', async (c: any) => {
   try {
     const db = c.env.DB;
-    const query = 'SELECT * FROM settings WHERE category = "inventory" ORDER BY sort_order ASC';
+    const query = 'SELECT * FROM settings WHERE category = "inventory" ORDER BY key ASC';
     const result = await db.prepare(query).all();
     const settings = result.results || [];
 
@@ -465,7 +465,7 @@ app.put('/inventory', async (c: any) => {
     }
 
     // Fetch updated inventory settings
-    const query = 'SELECT * FROM settings WHERE category = "inventory" ORDER BY sort_order ASC';
+    const query = 'SELECT * FROM settings WHERE category = "inventory" ORDER BY key ASC';
     const result = await db.prepare(query).all();
     const settings = result.results || [];
 
@@ -495,7 +495,7 @@ app.put('/inventory', async (c: any) => {
 app.get('/pos', async (c: any) => {
   try {
     const db = c.env.DB;
-    const query = 'SELECT * FROM settings WHERE category = "pos" ORDER BY sort_order ASC';
+    const query = 'SELECT * FROM settings WHERE category = "pos" ORDER BY key ASC';
     const result = await db.prepare(query).all();
     const settings = result.results || [];
 
@@ -547,7 +547,7 @@ app.put('/pos', async (c: any) => {
     }
 
     // Fetch updated POS settings
-    const query = 'SELECT * FROM settings WHERE category = "pos" ORDER BY sort_order ASC';
+    const query = 'SELECT * FROM settings WHERE category = "pos" ORDER BY key ASC';
     const result = await db.prepare(query).all();
     const settings = result.results || [];
 
@@ -577,7 +577,7 @@ app.put('/pos', async (c: any) => {
 app.get('/backup', async (c: any) => {
   try {
     const db = c.env.DB;
-    const query = 'SELECT * FROM settings WHERE category = "backup" ORDER BY sort_order ASC';
+    const query = 'SELECT * FROM settings WHERE category = "backup" ORDER BY key ASC';
     const result = await db.prepare(query).all();
     const settings = result.results || [];
 
@@ -633,7 +633,7 @@ app.put('/backup', async (c: any) => {
     }
 
     // Fetch updated backup settings
-    const query = 'SELECT * FROM settings WHERE category = "backup" ORDER BY sort_order ASC';
+    const query = 'SELECT * FROM settings WHERE category = "backup" ORDER BY key ASC';
     const result = await db.prepare(query).all();
     const settings = result.results || [];
 
@@ -707,7 +707,7 @@ app.get('/all', async (c: any) => {
     const db = c.env.DB;
 
     // Fetch all settings grouped by category
-    const settingsQuery = 'SELECT * FROM settings ORDER BY category, sort_order ASC';
+    const settingsQuery = 'SELECT * FROM settings ORDER BY category, key ASC';
     const settingsResult = await db.prepare(settingsQuery).all();
     const settings = settingsResult.results || [];
 

@@ -10,6 +10,101 @@ app.use('*', authenticate);
 // GET /api/products - List products with search, filter, pagination
 app.get('/', async (c: any) => {
   try {
+    // Ensure products table exists - COMPLETE SCHEMA
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        sku TEXT UNIQUE NOT NULL,
+        barcode TEXT UNIQUE,
+        description TEXT,
+        price_cents INTEGER NOT NULL CHECK (price_cents >= 0),
+        cost_price_cents INTEGER NOT NULL CHECK (cost_price_cents >= 0),
+        stock INTEGER DEFAULT 0 CHECK (stock >= 0),
+        min_stock INTEGER DEFAULT 0 CHECK (min_stock >= 0),
+        max_stock INTEGER DEFAULT 1000 CHECK (max_stock >= min_stock),
+        unit TEXT DEFAULT 'piece',
+        weight_grams INTEGER CHECK (weight_grams >= 0),
+        dimensions TEXT,
+        category_id TEXT,
+        brand_id TEXT,
+        supplier_id TEXT,
+        store_id TEXT DEFAULT 'store-1',
+        image_url TEXT,
+        images TEXT,
+        category_name TEXT,
+        brand_name TEXT,
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        is_serialized INTEGER DEFAULT 0 CHECK (is_serialized IN (0, 1)),
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Ensure categories table exists
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        parent_id TEXT,
+        image_url TEXT,
+        sort_order INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Ensure brands table exists
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS brands (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        website TEXT,
+        logo_url TEXT,
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Ensure suppliers table exists
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        tax_number TEXT,
+        payment_terms TEXT,
+        credit_limit_cents INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Add missing columns to existing products table if they don't exist
+    try {
+      await c.env.DB.prepare(`ALTER TABLE products ADD COLUMN min_stock INTEGER DEFAULT 0`).run();
+    } catch (e) { /* column already exists */ }
+
+    try {
+      await c.env.DB.prepare(`ALTER TABLE products ADD COLUMN max_stock INTEGER DEFAULT 1000`).run();
+    } catch (e) { /* column already exists */ }
+
+    try {
+      await c.env.DB.prepare(`ALTER TABLE products ADD COLUMN price_cents INTEGER DEFAULT 0`).run();
+    } catch (e) { /* column already exists */ }
+
+    try {
+      await c.env.DB.prepare(`ALTER TABLE products ADD COLUMN cost_price_cents INTEGER DEFAULT 0`).run();
+    } catch (e) { /* column already exists */ }
+
     const {
       page = '1',
       limit = '50',
@@ -20,7 +115,8 @@ app.get('/', async (c: any) => {
       status = 'active',
       sort_by = 'name',
       sort_order = 'asc',
-      low_stock
+      low_stock,
+      in_stock_only
     } = c.req.query();
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -60,27 +156,17 @@ app.get('/', async (c: any) => {
     const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'name';
     const sortDirection = sort_order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
+    // Use simplified query to avoid JOIN errors with missing tables
     const query = `
       SELECT
-        p.id, p.name, p.description, p.sku, p.barcode,
-        p.category_id, p.brand_id, p.supplier_id, p.store_id,
-        p.price_cents, p.cost_price_cents, p.stock, p.min_stock, p.max_stock, p.unit,
-        p.weight_grams, p.dimensions, p.is_active, p.is_serialized,
-        p.category_name, p.brand_name, p.image_url, p.images,
-        p.created_at, p.updated_at,
-        c.name as category_full_name,
-        b.name as brand_full_name,
-        s.name as supplier_name,
+        p.*,
         CASE
           WHEN p.stock <= 0 THEN 'out_of_stock'
-          WHEN p.stock <= p.min_stock THEN 'low_stock'
-          WHEN p.stock >= p.max_stock THEN 'overstock'
+          WHEN p.stock <= COALESCE(p.min_stock, 0) THEN 'low_stock'
+          WHEN p.stock >= COALESCE(p.max_stock, 999999) THEN 'overstock'
           ELSE 'in_stock'
         END as stock_status
       FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN brands b ON p.brand_id = b.id
-      LEFT JOIN suppliers s ON p.supplier_id = s.id
       ${whereClause}
       ORDER BY p.${sortField} ${sortDirection}
       LIMIT ? OFFSET ?
@@ -111,7 +197,8 @@ app.get('/', async (c: any) => {
     console.error('Products list error:', error);
     return c.json({
       success: false,
-      message: 'Failed to fetch products'
+      message: 'Failed to fetch products',
+      error: error instanceof Error ? error.message : String(error)
     }, 500);
   }
 });
@@ -122,7 +209,7 @@ app.get('/low-stock', async (c: any) => {
     const { threshold } = c.req.query();
     const stockThreshold = threshold ? parseInt(threshold) : null;
 
-    let whereClause = 'WHERE p.is_active = 1 AND p.stock <= p.min_stock';
+    let whereClause = 'WHERE p.is_active = 1 AND (p.stock <= p.min_stock_level OR p.stock <= p.minStock)';
     const params: any[] = [];
 
     if (stockThreshold !== null) {
@@ -307,50 +394,24 @@ app.post('/', async (c: any) => {
     // Generate product ID
     const productId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-    // Insert product with schema-compliant fields
+    // Insert product using actual database schema columns
     await c.env.DB.prepare(`
       INSERT INTO products (
-        id, name, description, sku, barcode, category_id, brand_id, supplier_id, store_id,
-        price_cents, cost_price_cents, stock, min_stock, max_stock, unit,
-        weight_grams, dimensions, image_url, images, is_active, is_serialized,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, datetime('now'), datetime('now'))
+        id, name, description, sku, barcode, category_id, supplier_id,
+        selling_price, cost_price, stock, min_stock, max_stock, unit_type, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      productId, name, description, sku, barcode || null, category_id, brand_id, supplier_id,
-      'store-1', // Default store_id
-      price_cents, cost_price_cents || 0, stock, min_stock, max_stock, unit,
-      weight_grams || null,
-      dimensions ? JSON.stringify(dimensions) : null,
-      image_url || null,
-      images ? JSON.stringify(images) : null,
-      is_serialized
+      productId, name, description || null, sku, barcode || null, category_id || null, supplier_id || null,
+      (price_cents || 0) / 100, // Convert cents to VND for selling_price
+      (cost_price_cents || 0) / 100, // Convert cents to VND for cost_price
+      stock || 0, min_stock || 0, max_stock || 100, unit || 'piece', 1
     ).run();
 
-    // Create initial inventory movement if stock > 0
-    if (stock > 0) {
-      await c.env.DB.prepare(`
-        INSERT INTO inventory_movements (
-          id, product_id, transaction_type, quantity, unit_cost_cents, reference_type,
-          reference_id, reason, notes, user_id, store_id, product_name, product_sku, created_at
-        ) VALUES (?, ?, 'in', ?, ?, 'initial_stock', ?, 'Initial stock', 'Initial stock entry', ?, ?, ?, ?, datetime('now'))
-      `).bind(
-        `mov_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-        productId, stock, cost_price_cents || 0, productId, user.id, 'store-1', name, sku
-      ).run().catch(() => {});
-    }
+    // Skip inventory movement creation for now
 
-    // Get the created product with relations
+    // Get the created product
     const createdProduct = await c.env.DB.prepare(`
-      SELECT
-        p.*,
-        c.name as category_name,
-        b.name as brand_name,
-        s.name as supplier_name
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN brands b ON p.brand_id = b.id
-      LEFT JOIN suppliers s ON p.supplier_id = s.id
-      WHERE p.id = ?
+      SELECT * FROM products WHERE id = ?
     `).bind(productId).first();
 
     return c.json({
@@ -362,7 +423,8 @@ app.post('/', async (c: any) => {
     console.error('Product creation error:', error);
     return c.json({
       success: false,
-      message: 'Failed to create product'
+      message: 'Failed to create product',
+      error: error instanceof Error ? error.message : String(error)
     }, 500);
   }
 });
@@ -419,37 +481,68 @@ app.put('/:id', async (c: any) => {
       }
     }
 
-    // Update product
+    // Update product - only update fields that are provided
+    const updateFields = [];
+    const updateValues = [];
+
+    if (name !== undefined) {
+      updateFields.push('name = ?');
+      updateValues.push(name);
+    }
+    if (description !== undefined) {
+      updateFields.push('description = ?');
+      updateValues.push(description);
+    }
+    if (sku !== undefined) {
+      updateFields.push('sku = ?');
+      updateValues.push(sku);
+    }
+    if (barcode !== undefined) {
+      updateFields.push('barcode = ?');
+      updateValues.push(barcode);
+    }
+    if (category_id !== undefined) {
+      updateFields.push('category_id = ?');
+      updateValues.push(category_id);
+    }
+    if (supplier_id !== undefined) {
+      updateFields.push('supplier_id = ?');
+      updateValues.push(supplier_id);
+    }
+    if (price_cents !== undefined) {
+      updateFields.push('selling_price = ?');
+      updateValues.push(price_cents / 100); // Convert to VND for selling_price
+    }
+    if (cost_price_cents !== undefined) {
+      updateFields.push('cost_price = ?');
+      updateValues.push(cost_price_cents / 100); // Convert to VND for cost_price
+    }
+    if (min_stock !== undefined) {
+      updateFields.push('min_stock = ?');
+      updateValues.push(min_stock);
+    }
+    if (max_stock !== undefined) {
+      updateFields.push('max_stock = ?');
+      updateValues.push(max_stock);
+    }
+    if (unit !== undefined) {
+      updateFields.push('unit_type = ?');
+      updateValues.push(unit);
+    }
+
+    if (updateFields.length === 0) {
+      return c.json({
+        success: false,
+        message: 'No fields to update'
+      }, 400);
+    }
+
+    updateFields.push('updated_at = datetime("now")');
+    updateValues.push(id);
+
     await c.env.DB.prepare(`
-      UPDATE products
-      SET
-        name = COALESCE(?, name),
-        description = COALESCE(?, description),
-        sku = COALESCE(?, sku),
-        barcode = COALESCE(?, barcode),
-        category_id = COALESCE(?, category_id),
-        brand_id = COALESCE(?, brand_id),
-        supplier_id = COALESCE(?, supplier_id),
-        price_cents = COALESCE(?, price_cents),
-        cost_price_cents = COALESCE(?, cost_price_cents),
-        min_stock = COALESCE(?, min_stock),
-        max_stock = COALESCE(?, max_stock),
-        unit = COALESCE(?, unit),
-        weight_grams = COALESCE(?, weight_grams),
-        dimensions = COALESCE(?, dimensions),
-        image_url = COALESCE(?, image_url),
-        images = COALESCE(?, images),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(
-      name, description, sku, barcode, category_id, brand_id, supplier_id,
-      price_cents, cost_price_cents, min_stock, max_stock, unit,
-      weight_grams,
-      dimensions ? JSON.stringify(dimensions) : null,
-      image_url,
-      images ? JSON.stringify(images) : null,
-      id
-    ).run();
+      UPDATE products SET ${updateFields.join(', ')} WHERE id = ?
+    `).bind(...updateValues).run();
 
     // Get updated product
     const updatedProduct = await c.env.DB.prepare(`

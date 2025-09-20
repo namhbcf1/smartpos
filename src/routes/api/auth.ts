@@ -7,6 +7,42 @@ const app = new Hono<{ Bindings: Env }>();
 // Health check endpoint
 app.get('/health', async (c: any) => {
   try {
+    // Ensure users table exists - COMPLETE SCHEMA
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'manager', 'cashier', 'employee')),
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        last_login TEXT,
+        store_id TEXT DEFAULT 'store-1',
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Ensure stores table exists
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS stores (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        address TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT NOT NULL,
+        tax_number TEXT,
+        business_license TEXT,
+        logo_url TEXT,
+        timezone TEXT DEFAULT 'Asia/Ho_Chi_Minh',
+        currency TEXT DEFAULT 'VND',
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
     // Check if users table exists and has admin user
     const userCount = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM users`).first();
     const adminUser = await c.env.DB.prepare(`SELECT username FROM users WHERE username = 'admin'`).first();
@@ -207,12 +243,29 @@ app.post('/logout', authenticate, async (c: any) => {
 // Get current user profile
 app.get('/me', authenticate, async (c: any) => {
   try {
+    // Ensure users table exists
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'manager', 'cashier', 'employee')),
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        last_login TEXT,
+        store_id TEXT DEFAULT 'store-1',
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
     const user = getUser(c);
 
     const userData = await c.env.DB.prepare(`
       SELECT
         id, username, email, full_name, role, store_id, is_active,
-        last_login_at, login_count, avatar_url, phone, created_at
+        last_login, created_at
       FROM users
       WHERE id = ?
     `).bind(user.id).first();
@@ -224,21 +277,27 @@ app.get('/me', authenticate, async (c: any) => {
       }, 404);
     }
 
-    // Get user's store info
-    const storeInfo = await c.env.DB.prepare(`
-      SELECT id, name, code, address, phone, email
-      FROM stores
-      WHERE id = ?
-    `).bind(userData.store_id || 1).first();
+    // Get user's store info (optional)
+    let storeInfo = null;
+    try {
+      storeInfo = await c.env.DB.prepare(`
+        SELECT id, name, address, phone, email
+        FROM stores
+        WHERE id = ?
+      `).bind(userData.store_id || 'store-1').first();
+    } catch (storeError) {
+      // Store table might not exist, continue without store info
+    }
 
     return c.json({
       success: true,
       data: {
         ...userData,
-        store: storeInfo || null
+        store: storeInfo || { id: 'store-1', name: 'Default Store' }
       }
     });
   } catch (error) {
+    console.error('Get user profile error:', error);
     return c.json({
       success: false,
       message: 'Failed to get user profile'

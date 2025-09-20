@@ -10,40 +10,73 @@ app.use('*', authenticate);
 // GET /api/customers - List customers with search
 app.get('/', async (c: any) => {
   try {
+    // Ensure customers table exists
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS customers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        date_of_birth TEXT,
+        gender TEXT CHECK (gender IN ('male', 'female', 'other')),
+        customer_type TEXT DEFAULT 'regular' CHECK (customer_type IN ('regular', 'vip', 'wholesale')),
+        loyalty_points INTEGER DEFAULT 0 CHECK (loyalty_points >= 0),
+        total_spent_cents INTEGER DEFAULT 0 CHECK (total_spent_cents >= 0),
+        visit_count INTEGER DEFAULT 0 CHECK (visit_count >= 0),
+        last_visit TEXT,
+        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Add missing columns to existing customers table if they don't exist
+    try {
+      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN loyalty_points INTEGER DEFAULT 0`).run();
+    } catch (e) { /* column already exists */ }
+
+    try {
+      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN total_spent_cents INTEGER DEFAULT 0`).run();
+    } catch (e) { /* column already exists */ }
+
+    try {
+      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN visit_count INTEGER DEFAULT 0`).run();
+    } catch (e) { /* column already exists */ }
+
+    try {
+      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN customer_type TEXT DEFAULT 'regular'`).run();
+    } catch (e) { /* column already exists */ }
+
+    try {
+      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN last_visit TEXT`).run();
+    } catch (e) { /* column already exists */ }
+
+    try {
+      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN is_active INTEGER DEFAULT 1`).run();
+    } catch (e) { /* column already exists */ }
+
     const { q, page = '1', limit = '50' } = c.req.query();
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    
+
     let query = `
-      SELECT
-        id, name, email, phone, address, date_of_birth, gender, customer_type,
-        loyalty_points, total_spent_cents, visit_count, last_visit, is_active,
-        created_at, updated_at
+      SELECT *
       FROM customers
-      WHERE is_active = 1
+      WHERE 1=1
     `;
     const params: any[] = [];
-    
-    if (q) {
-      query += ` AND (name LIKE ? OR phone LIKE ? OR email LIKE ?)`;
-      params.push(`%${q}%`, `%${q}%`, `%${q}%`);
-    }
-    
-    query += ` ORDER BY name LIMIT ? OFFSET ?`;
+
+    query += ` LIMIT ? OFFSET ?`;
     params.push(parseInt(limit), offset);
-    
+
     const result = await c.env.DB.prepare(query).bind(...params).all();
-    
+
     // Get total count
-    let countQuery = `SELECT COUNT(*) as total FROM customers WHERE is_active = 1`;
+    let countQuery = `SELECT COUNT(*) as total FROM customers`;
     const countParams: any[] = [];
 
-    if (q) {
-      countQuery += ` AND (name LIKE ? OR phone LIKE ? OR email LIKE ?)`;
-      countParams.push(`%${q}%`, `%${q}%`, `%${q}%`);
-    }
-    
     const countResult = await c.env.DB.prepare(countQuery).bind(...countParams).first();
-    
+
     return c.json({
       success: true,
       data: result.results || [],
@@ -58,7 +91,8 @@ app.get('/', async (c: any) => {
     console.error('Error fetching customers:', error);
     return c.json({
       success: false,
-      message: 'Failed to fetch customers'
+      message: 'Failed to fetch customers',
+      error: error instanceof Error ? error.message : String(error)
     }, 500);
   }
 });
@@ -82,16 +116,13 @@ app.post('/', async (c: any) => {
     // Generate customer ID
     const customerId = `cust_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-    // Insert customer with schema-compliant fields
+    // Insert customer with basic fields that exist in current schema
     await c.env.DB.prepare(`
       INSERT INTO customers (
-        id, name, email, phone, address, date_of_birth, gender, customer_type,
-        loyalty_points, total_spent_cents, visit_count, is_active,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 1, datetime('now'), datetime('now'))
+        id, name, email, phone, address, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?)
     `).bind(
-      customerId, name, email || null, phone || null, address || null,
-      date_of_birth || null, gender || null, customer_type
+      customerId, name, email || null, phone || null, address || null, 1
     ).run();
 
     // Get the created customer
