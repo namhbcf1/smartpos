@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 import {
   Box,
   Button,
   Card,
   CardContent,
   Container,
-  Grid,
   IconButton,
   InputAdornment,
+  LinearProgress,
   Paper,
   Table,
   TableBody,
@@ -31,7 +32,15 @@ import {
   Tooltip,
   Alert,
   AlertTitle,
-  Divider
+  Divider,
+  Drawer,
+  Tabs,
+  Tab,
+  Checkbox,
+  FormControlLabel,
+  Switch,
+  Stack,
+  ButtonGroup
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -44,9 +53,12 @@ import {
   CheckCircle as ApprovedIcon,
   Schedule as PendingIcon,
   Cancel as RejectedIcon,
-  Assignment as CompletedIcon
+  Assignment as CompletedIcon,
+  Print as PrintIcon,
+  Download as DownloadIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
-import { usePaginatedQuery } from '../hooks/useApiData';
+import { usePaginatedQuery } from '../../hooks/useApiData';
 import { useSnackbar } from 'notistack';
 import { formatCurrency } from '../config/constants';
 
@@ -63,6 +75,7 @@ interface Return {
   customer_phone?: string;
   original_amount?: number;
   created_at: string;
+  warranty_status?: 'in_warranty' | 'expired' | 'not_registered';
 }
 
 const Returns = () => {
@@ -74,6 +87,16 @@ const Returns = () => {
   const [returnStatusFilter, setReturnStatusFilter] = useState('');
   const [dateFromFilter, setDateFromFilter] = useState('');
   const [dateToFilter, setDateToFilter] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('');
+  const [warrantyFilter, setWarrantyFilter] = useState<'all' | 'in_warranty' | 'expired' | 'not_registered'>('all');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Selection & UI state
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; item: Return | null }>({ open: false, item: null });
+  const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   // State for status update dialog
   const [statusDialog, setStatusDialog] = useState<{
@@ -108,8 +131,16 @@ const Returns = () => {
       params.date_to = dateToFilter;
     }
 
+    if (customerFilter.trim()) {
+      params.customer = customerFilter.trim();
+    }
+
+    if (warrantyFilter !== 'all') {
+      params.warranty_status = warrantyFilter;
+    }
+
     return params;
-  }, [searchTerm, returnStatusFilter, dateFromFilter, dateToFilter]);
+  }, [searchTerm, returnStatusFilter, dateFromFilter, dateToFilter, customerFilter, warrantyFilter]);
 
   // Fetch returns
   const {
@@ -128,6 +159,24 @@ const Returns = () => {
   const handleRetry = () => {
     console.log('🔄 Returns: Retrying data fetch...');
     refetch();
+  };
+
+  // Stats
+  const stats = useMemo(() => {
+    const total = pagination?.total ?? 0;
+    const list = Array.isArray(returns) ? returns : [];
+    const pending = list.filter(r => r.return_status === 'pending').length;
+    const approved = list.filter(r => r.return_status === 'approved').length;
+    const completed = list.filter(r => r.return_status === 'completed').length;
+    return { total, pending, approved, completed };
+  }, [returns, pagination]);
+
+  // Selection handlers
+  const isSelected = (id: number) => selectedIds.includes(id);
+  const toggleSelect = (id: number) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedIds((Array.isArray(returns) ? returns : []).map((r: Return) => r.id));
+    else setSelectedIds([]);
   };
 
   // Return status icons and colors
@@ -150,6 +199,8 @@ const Returns = () => {
   const handleViewReturn = (returnId: number) => {
     navigate(`/returns/${returnId}`);
   };
+  const openDetail = (returnItem: Return) => setDetailDrawer({ open: true, item: returnItem });
+  const closeDetail = () => setDetailDrawer({ open: false, item: null });
 
   // Handle update return status
   const handleUpdateStatus = (returnItem: Return) => {
@@ -166,21 +217,17 @@ const Returns = () => {
     if (!statusDialog.returnItem) return;
 
     try {
-      const response = await fetch(`/api/v1/returns/${statusDialog.returnItem.id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          return_status: statusDialog.newStatus,
-          notes: statusDialog.notes
-        })
+      const response = await api.put(`/returns/${statusDialog.returnItem.id}/status`, {
+        return_status: statusDialog.newStatus,
+        notes: statusDialog.notes
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Lỗi khi cập nhật trạng thái');
+      if (response.data.success) {
+        enqueueSnackbar('Cập nhật trạng thái thành công', { variant: 'success' });
+        setStatusDialog({ open: false, returnItem: null, newStatus: '', notes: '' });
+        refetch();
+      } else {
+        throw new Error(response.data.message || 'Lỗi khi cập nhật trạng thái');
       }
 
       enqueueSnackbar('Cập nhật trạng thái thành công', { variant: 'success' });
@@ -207,101 +254,117 @@ const Returns = () => {
         Trả hàng & Hoàn tiền
       </Typography>
 
-      {/* Header Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6" color="text.secondary">
-          Quản lý trả hàng và hoàn tiền
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          component={RouterLink}
-          to="/returns/new"
-        >
-          Tạo phiếu trả hàng
-        </Button>
+      {/* Stats + Quick Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2, flex: 1 }}>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary">Tổng số</Typography>
+              <Typography variant="h5">{stats.total}</Typography>
+              <LinearProgress variant="determinate" value={100} sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary">Chờ duyệt</Typography>
+              <Typography variant="h5">{stats.pending}</Typography>
+              <LinearProgress color="warning" variant="determinate" value={stats.pending / Math.max(stats.total || 1, 1) * 100} sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary">Đã duyệt</Typography>
+              <Typography variant="h5">{stats.approved}</Typography>
+              <LinearProgress color="info" variant="determinate" value={stats.approved / Math.max(stats.total || 1, 1) * 100} sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary">Hoàn thành</Typography>
+              <Typography variant="h5">{stats.completed}</Typography>
+              <LinearProgress color="success" variant="determinate" value={stats.completed / Math.max(stats.total || 1, 1) * 100} sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+        </Box>
+        <ButtonGroup>
+          <Button variant="outlined" startIcon={<DownloadIcon />} onClick={() => setExportDialogOpen(true)}>Xuất</Button>
+          <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => window.print()}>In</Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setNewDialogOpen(true)}>Tạo phiếu</Button>
+        </ButtonGroup>
       </Box>
 
       {/* Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            {/* Search */}
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                label="Tìm kiếm"
-                placeholder="Lý do trả hàng, tên khách hàng..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-
-            {/* Return Status Filter */}
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Trạng thái</InputLabel>
-                <Select
-                  value={returnStatusFilter}
-                  label="Trạng thái"
-                  onChange={(e) => setReturnStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="">Tất cả</MenuItem>
-                  <MenuItem value="pending">Chờ duyệt</MenuItem>
-                  <MenuItem value="approved">Đã duyệt</MenuItem>
-                  <MenuItem value="rejected">Từ chối</MenuItem>
-                  <MenuItem value="completed">Hoàn thành</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Date From */}
-            <Grid item xs={12} md={2}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Từ ngày"
-                value={dateFromFilter}
-                onChange={(e) => setDateFromFilter(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            {/* Date To */}
-            <Grid item xs={12} md={2}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Đến ngày"
-                value={dateToFilter}
-                onChange={(e) => setDateToFilter(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            {/* Action Buttons */}
-            <Grid item xs={12} md={3}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Tooltip title="Làm mới">
-                  <IconButton onClick={refetch}>
-                    <RefreshIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Xóa bộ lọc">
-                  <IconButton onClick={handleClearFilters}>
-                    <FilterIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.3fr 1fr 1fr 1fr 1fr' }, gap: 2, alignItems: 'center' }}>
+            <TextField
+              fullWidth
+              label="Tìm kiếm"
+              placeholder="Lý do trả hàng, tên khách hàng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái</InputLabel>
+              <Select
+                value={returnStatusFilter}
+                label="Trạng thái"
+                onChange={(e) => setReturnStatusFilter(e.target.value)}
+              >
+                <MenuItem value="">Tất cả</MenuItem>
+                <MenuItem value="pending">Chờ duyệt</MenuItem>
+                <MenuItem value="approved">Đã duyệt</MenuItem>
+                <MenuItem value="rejected">Từ chối</MenuItem>
+                <MenuItem value="completed">Hoàn thành</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              type="date"
+              label="Từ ngày"
+              value={dateFromFilter}
+              onChange={(e) => setDateFromFilter(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              fullWidth
+              type="date"
+              label="Đến ngày"
+              value={dateToFilter}
+              onChange={(e) => setDateToFilter(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Tooltip title="Làm mới">
+                <IconButton onClick={refetch}>
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Xóa bộ lọc">
+                <IconButton onClick={handleClearFilters}>
+                  <FilterIcon />
+                </IconButton>
+              </Tooltip>
+              <FormControlLabel control={<Switch checked={showAdvanced} onChange={(e) => setShowAdvanced(e.target.checked)} />} label="Nâng cao" />
+            </Box>
+          </Box>
+          {showAdvanced && (
+            <Box sx={{ mt: 2 }}>
+              <Tabs value={0} onChange={() => {}}>
+                <Tab label="Bộ lọc nâng cao" />
+              </Tabs>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Gợi ý: kết hợp nhiều bộ lọc để thu hẹp kết quả chính xác.
+              </Typography>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -331,12 +394,20 @@ const Returns = () => {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  indeterminate={selectedIds.length > 0 && selectedIds.length < returns.length}
+                  checked={returns.length > 0 && selectedIds.length === returns.length}
+                  onChange={(e) => toggleSelectAll(e.target.checked)}
+                />
+              </TableCell>
               <TableCell>ID</TableCell>
               <TableCell>Đơn hàng gốc</TableCell>
               <TableCell>Khách hàng</TableCell>
               <TableCell align="right">Số tiền trả</TableCell>
               <TableCell>Lý do</TableCell>
               <TableCell>Trạng thái</TableCell>
+              <TableCell>Bảo hành</TableCell>
               <TableCell>Ngày tạo</TableCell>
               <TableCell align="center">Thao tác</TableCell>
             </TableRow>
@@ -346,7 +417,7 @@ const Returns = () => {
               // Loading skeletons
               Array.from({ length: limit }).map((_, index) => (
                 <TableRow key={index}>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={9}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Box sx={{ width: '100%', height: 40, bgcolor: 'grey.200', borderRadius: 1 }} />
                     </Box>
@@ -355,7 +426,10 @@ const Returns = () => {
               ))
             ) : returns.length > 0 ? (
               returns.map((returnItem) => (
-                <TableRow key={returnItem.id} hover>
+                <TableRow key={returnItem.id} hover selected={selectedIds.includes(returnItem.id)}>
+                  <TableCell padding="checkbox">
+                    <Checkbox checked={selectedIds.includes(returnItem.id)} onChange={() => setSelectedIds(prev => prev.includes(returnItem.id) ? prev.filter(x => x !== returnItem.id) : [...prev, returnItem.id])} />
+                  </TableCell>
                   <TableCell>#{returnItem.id}</TableCell>
                   <TableCell>
                     <Typography variant="body2" fontWeight={500}>
@@ -398,6 +472,11 @@ const Returns = () => {
                     {getReturnStatusChip(returnItem.return_status)}
                   </TableCell>
                   <TableCell>
+                    {returnItem.warranty_status === 'in_warranty' && <Chip size="small" label="Trong BH" color="success" />}
+                    {returnItem.warranty_status === 'expired' && <Chip size="small" label="Hết hạn" color="error" />}
+                    {returnItem.warranty_status === 'not_registered' && <Chip size="small" label="Chưa đăng ký" color="warning" />}
+                  </TableCell>
+                  <TableCell>
                     <Typography variant="body2">
                       {new Date(returnItem.created_at).toLocaleDateString('vi-VN')}
                     </Typography>
@@ -410,7 +489,7 @@ const Returns = () => {
                       <Tooltip title="Xem chi tiết">
                         <IconButton
                           size="small"
-                          onClick={() => handleViewReturn(returnItem.id)}
+                          onClick={() => setDetailDrawer({ open: true, item: returnItem })}
                         >
                           <ViewIcon />
                         </IconButton>
@@ -431,7 +510,7 @@ const Returns = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={9} align="center">
                   <Alert severity="info" sx={{ border: 'none' }}>
                     <Typography>Không tìm thấy phiếu trả hàng nào.</Typography>
                   </Alert>
@@ -517,6 +596,64 @@ const Returns = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Detail Drawer */}
+      <Drawer anchor="right" open={detailDrawer.open} onClose={() => setDetailDrawer({ open: false, item: null })} PaperProps={{ sx: { width: { xs: '100%', sm: 480 } } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
+          <Typography variant="h6">Chi tiết phiếu trả</Typography>
+          <IconButton onClick={() => setDetailDrawer({ open: false, item: null })}><CloseIcon /></IconButton>
+        </Box>
+        <Divider />
+        {detailDrawer.item ? (
+          <Box sx={{ p: 2 }}>
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2">Mã: #{detailDrawer.item.id}</Typography>
+              <Typography variant="body2">Đơn gốc: #{detailDrawer.item.original_sale_id}</Typography>
+              <Typography variant="body2">Khách: {detailDrawer.item.customer_name ?? 'Khách vãng lai'} {detailDrawer.item.customer_phone ? `(${detailDrawer.item.customer_phone})` : ''}</Typography>
+              <Typography variant="body2">Số tiền: {formatCurrency(detailDrawer.item.return_amount)}</Typography>
+              <Typography variant="body2">Trạng thái: {getReturnStatusChip(detailDrawer.item.return_status)}</Typography>
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle2">Lý do</Typography>
+              <Typography variant="body2" color="text.secondary">{detailDrawer.item.return_reason}</Typography>
+              {!!detailDrawer.item.notes && <Typography variant="caption" color="text.secondary">Ghi chú: {detailDrawer.item.notes}</Typography>}
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle2">Dòng thời gian</Typography>
+              <Stack spacing={0.5}>
+                <Typography variant="caption">{new Date(detailDrawer.item.created_at).toLocaleString('vi-VN')} • Tạo phiếu</Typography>
+                <Typography variant="caption">{new Date(detailDrawer.item.created_at).toLocaleString('vi-VN')} • Cập nhật trạng thái</Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        ) : null}
+      </Drawer>
+      {/* Detail Drawer */}
+      <Drawer anchor="right" open={detailDrawer.open} onClose={() => setDetailDrawer({ open: false, item: null })} PaperProps={{ sx: { width: { xs: '100%', sm: 480 } } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
+          <Typography variant="h6">Chi tiết phiếu trả</Typography>
+          <IconButton onClick={() => setDetailDrawer({ open: false, item: null })}><CloseIcon /></IconButton>
+        </Box>
+        <Divider />
+        {detailDrawer.item ? (
+          <Box sx={{ p: 2 }}>
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2">Mã: #{detailDrawer.item.id}</Typography>
+              <Typography variant="body2">Đơn gốc: #{detailDrawer.item.original_sale_id}</Typography>
+              <Typography variant="body2">Khách: {detailDrawer.item.customer_name ?? 'Khách vãng lai'} {detailDrawer.item.customer_phone ? `(${detailDrawer.item.customer_phone})` : ''}</Typography>
+              <Typography variant="body2">Số tiền: {formatCurrency(detailDrawer.item.return_amount)}</Typography>
+              <Typography variant="body2">Trạng thái: {getReturnStatusChip(detailDrawer.item.return_status)}</Typography>
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle2">Lý do</Typography>
+              <Typography variant="body2" color="text.secondary">{detailDrawer.item.return_reason}</Typography>
+              {!!detailDrawer.item.notes && <Typography variant="caption" color="text.secondary">Ghi chú: {detailDrawer.item.notes}</Typography>}
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle2">Dòng thời gian</Typography>
+              <Stack spacing={0.5}>
+                <Typography variant="caption">{new Date(detailDrawer.item.created_at).toLocaleString('vi-VN')} • Tạo phiếu</Typography>
+                <Typography variant="caption">{new Date(detailDrawer.item.created_at).toLocaleString('vi-VN')} • Cập nhật trạng thái</Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        ) : null}
+      </Drawer>
     </Container>
   );
 };

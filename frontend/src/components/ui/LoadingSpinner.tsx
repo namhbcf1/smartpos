@@ -24,20 +24,20 @@ const sizeClasses = {
 }
 
 const colorClasses = {
-  blue: 'text-blue-600 dark:text-blue-400',
-  green: 'text-green-600 dark:text-green-400',
-  red: 'text-red-600 dark:text-red-400',
-  yellow: 'text-yellow-600 dark:text-yellow-400',
-  purple: 'text-purple-600 dark:text-purple-400',
-  pink: 'text-pink-600 dark:text-pink-400',
-  indigo: 'text-indigo-600 dark:text-indigo-400',
-  gray: 'text-gray-600 dark:text-gray-400'
+  blue: 'text-blue-600 
+  green: 'text-green-600 
+  red: 'text-red-600 
+  yellow: 'text-yellow-600 
+  purple: 'text-purple-600 
+  pink: 'text-pink-600 
+  indigo: 'text-indigo-600 
+  gray: 'text-gray-600 
 }
 
 const DefaultSpinner: React.FC<{ size: string; color: string; className?: string }> = ({ size, color, className }) => (
   <motion.div
     className={cn(
-      'border-2 border-gray-200 dark:border-gray-700 rounded-full',
+      'border-2 border-gray-200  rounded-full',
       size,
       className
     )}
@@ -112,14 +112,14 @@ const OrbitSpinner: React.FC<{ size: string; color: string; className?: string }
   return (
     <div className={cn('relative', size, className)}>
       <motion.div
-        className="absolute inset-0"
+        className="absolute inset-0">
         animate={{ rotate: 360 }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
       >
         <div className={cn('absolute top-0 left-1/2 transform -translate-x-1/2 bg-current rounded-full', dotSize, color)} />
       </motion.div>
       <motion.div
-        className="absolute inset-0"
+        className="absolute inset-0">
         animate={{ rotate: -360 }}
         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
       >
@@ -300,7 +300,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="text-sm text-gray-600 dark:text-gray-400 font-medium text-center max-w-xs"
+            className="text-sm text-gray-600 font-medium text-center max-w-xs">
           >
             {text}
           </motion.p>
@@ -315,7 +315,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-50"
+        className="fixed inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-50">
       >
         {content}
       </motion.div>
@@ -328,7 +328,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg"
+        className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
       >
         {content}
       </motion.div>
@@ -375,7 +375,7 @@ export const InlineLoading: React.FC<{
       variant={variant}
       color={color}
     />
-    <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+    <span className="text-sm text-gray-600 font-medium">
       {text}
     </span>
   </div>
@@ -393,7 +393,7 @@ export const ButtonLoading: React.FC<{
     size={size}
     variant="default"
     color={color}
-    className="mr-2"
+    className="mr-2">
   />
 )
 
@@ -411,7 +411,7 @@ export const CardLoading: React.FC<{
       variant={variant}
       color="blue"
     />
-    <p className="text-sm text-gray-500 dark:text-gray-400">{text}</p>
+    <p className="text-sm text-gray-500">
   </div>
 )
 
@@ -427,7 +427,7 @@ export const SkeletonLoading: React.FC<{
     {Array.from({ length: lines }).map((_, i) => (
       <motion.div
         key={i}
-        className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+        className="h-4 bg-gray-200 rounded animate-pulse">
         style={{ width: `${Math.random() * 40 + 60}%` }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

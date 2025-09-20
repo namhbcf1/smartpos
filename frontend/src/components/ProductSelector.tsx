@@ -5,262 +5,446 @@ import {
   Box,
   Typography,
   Chip,
+  Grid,
+  Card,
+  CardContent,
   Avatar,
-  InputAdornment,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   IconButton,
-  Paper
+  Tooltip,
+  Alert,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Divider,
+  Badge
 } from '@mui/material';
 import {
-  Search,
-  QrCodeScanner,
-  Inventory,
-  Category
+  Search as SearchIcon,
+  Add as AddIcon,
+  Inventory as InventoryIcon,
+  ShoppingCart as CartIcon,
+  TrendingUp as TrendingUpIcon,
+  Warning as WarningIcon,
+  CheckCircle as CheckIcon,
+  QrCode as QrCodeIcon,
+  Visibility as ViewIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
-import { debounce } from 'lodash';
-import BarcodeScanner from './BarcodeScanner';
-import api from '../services/api';
+import { comprehensiveAPI } from '../services/business/comprehensiveApi';
 
 interface Product {
   id: number;
   name: string;
   sku: string;
   barcode?: string;
-  category_name: string;
   price: number;
-  cost_price: number;
-  stock_quantity: number;
+  cost: number;
+  current_stock: number;
+  min_stock: number;
+  category_name?: string;
+  supplier_name?: string;
+  image_url?: string;
+  description?: string;
+  unit: string;
+  status: 'active' | 'inactive' | 'discontinued';
+  last_updated: string;
 }
 
 interface ProductSelectorProps {
-  value: Product | null;
+  value?: Product | null;
   onChange: (product: Product | null) => void;
-  label?: string;
+  onQuantityChange?: (quantity: number) => void;
+  showQuantityInput?: boolean;
+  showStockInfo?: boolean;
+  allowCreateNew?: boolean;
+  filterByCategory?: string;
+  filterBySupplier?: string;
   placeholder?: string;
+  label?: string;
+  required?: boolean;
   disabled?: boolean;
-  error?: boolean;
-  helperText?: string;
-  showBarcodeScanner?: boolean;
 }
 
 const ProductSelector: React.FC<ProductSelectorProps> = ({
   value,
   onChange,
-  label = 'Chọn sản phẩm',
-  placeholder = 'Tìm kiếm theo tên, SKU hoặc mã vạch...',
-  disabled = false,
-  error = false,
-  helperText,
-  showBarcodeScanner = true
+  onQuantityChange,
+  showQuantityInput = false,
+  showStockInfo = true,
+  allowCreateNew = false,
+  filterByCategory,
+  filterBySupplier,
+  placeholder = "Search products...",
+  label = "Select Product",
+  required = false,
+  disabled = false
 }) => {
-  const [inputValue, setInputValue] = useState('');
-  const [options, setOptions] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
-  const [scannerOpen, setScannerOpen] = useState(false);
-
-  // Debounced search function
-  const debouncedSearch = useMemo(
-    () => debounce(async (searchTerm: string) => {
-      if (!searchTerm.trim()) {
-        setOptions([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        // Use the API service which handles authentication and base URL correctly
-        const data = await api.get<{ data: Product[]; pagination: any }>(`/products?search=${encodeURIComponent(searchTerm)}&limit=20`);
-        setOptions(data.data || []);
-      } catch (error) {
-        console.error('Error searching products:', error);
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 300),
-    []
-  );
+  const [searchTerm, setSearchTerm] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
-    debouncedSearch(inputValue);
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [inputValue, debouncedSearch]);
+    loadProducts();
+  }, [filterByCategory, filterBySupplier]);
 
-  const handleBarcodeScanned = async (barcode: string) => {
-    setInputValue(barcode);
-
-    // Search for product by barcode
+  const loadProducts = async () => {
     try {
-      // Use the API service which handles authentication and base URL correctly
-      const data = await api.get<{ data: Product[]; pagination: any }>(`/products?search=${encodeURIComponent(barcode)}&limit=1`);
-      const products = data.data || [];
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filterByCategory) params.append('category', filterByCategory);
+      if (filterBySupplier) params.append('supplier', filterBySupplier);
+      params.append('status', 'active');
 
-      if (products.length > 0) {
-        const product = products[0];
-        // Check if barcode matches exactly
-        if (product.barcode === barcode) {
-          onChange(product);
-          setInputValue(product.name);
-        }
-      }
+      const response = await comprehensiveAPI.products.getProducts({
+        page: 1,
+        limit: 1000,
+        search: searchTerm,
+        category: filterByCategory,
+        supplier: filterBySupplier,
+        status: 'active'
+      });
+      const productsData = response.data || [];
+      setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (error) {
-      console.error('Error finding product by barcode:', error);
+      console.error('Error loading products:', error);
+      // NO MOCK DATA - Clear products on API failure
+      setProducts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number | null | undefined) => {
-    if (amount == null || isNaN(amount)) {
-      return '0 ₫';
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm) return products;
+    
+    const search = searchTerm.toLowerCase();
+    return products.filter(product => 
+      product.name.toLowerCase().includes(search) ||
+      product.sku.toLowerCase().includes(search) ||
+      product.barcode?.toLowerCase().includes(search) ||
+      product.category_name?.toLowerCase().includes(search)
+    );
+  }, [products, searchTerm]);
+
+  const handleProductChange = (product: Product | null) => {
+    onChange(product);
+    if (showQuantityInput && onQuantityChange) {
+      onQuantityChange(quantity);
     }
-    return new Intl.NumberFormat('vi-VN', {
+  };
+
+  const handleQuantityChange = (newQuantity: number) => {
+    const validQuantity = Math.max(1, newQuantity);
+    setQuantity(validQuantity);
+    if (onQuantityChange) {
+      onQuantityChange(validQuantity);
+    }
+  };
+
+  const getStockStatus = (product: Product) => {
+    if (product.current_stock === 0) return { status: 'out', color: 'error', label: 'Out of Stock' };
+    if (product.current_stock <= product.min_stock) return { status: 'low', color: 'warning', label: 'Low Stock' };
+    return { status: 'good', color: 'success', label: 'In Stock' };
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'VND'
+      currency: 'USD'
     }).format(amount);
   };
 
-  const getStockStatusColor = (quantity: number) => {
-    if (quantity === 0) return 'error';
-    if (quantity < 10) return 'warning';
-    return 'success';
+  const handleViewDetails = (product: Product) => {
+    setSelectedProduct(product);
+    setDetailsOpen(true);
   };
 
-  const renderOption = (props: any, option: Product) => (
-    <Box component="li" {...props}>
-      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', py: 1 }}>
-        <Avatar
-          sx={{
-            bgcolor: 'primary.main',
-            mr: 2,
-            width: 40,
-            height: 40
-          }}
-        >
-          <Inventory />
-        </Avatar>
-        
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="subtitle1" noWrap>
-            {option.name}
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-            <Chip
-              label={option.sku}
-              size="small"
-              variant="outlined"
-              sx={{ fontSize: '0.75rem' }}
-            />
-            
-            {option.barcode && (
-              <Chip
-                label={option.barcode}
-                size="small"
-                color="secondary"
-                variant="outlined"
-                sx={{ fontSize: '0.75rem' }}
-              />
-            )}
-            
-            <Chip
-              label={option.category_name}
-              size="small"
-              color="info"
-              variant="outlined"
-              sx={{ fontSize: '0.75rem' }}
-              icon={<Category sx={{ fontSize: '0.75rem' }} />}
-            />
-          </Box>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
-            <Typography variant="body2" color="text.secondary">
-              Giá: {formatCurrency(option.price)}
+  const renderProductOption = (props: any, product: Product) => {
+    const stockInfo = getStockStatus(product);
+    
+    return (
+      <Box component="li" {...props}>
+        <Grid container alignItems="center" spacing={2}>
+          <Grid item>
+            <Avatar
+              src={product.image_url}
+              sx={{ bgcolor: 'primary.main' }}
+            >
+              <InventoryIcon />
+            </Avatar>
+          </Grid>
+          <Grid item xs>
+            <Typography variant="body1" fontWeight="bold">
+              {product.name}
             </Typography>
-            
-            <Chip
-              label={`Tồn: ${option.stock_quantity}`}
-              size="small"
-              color={getStockStatusColor(option.stock_quantity)}
-              variant="filled"
-              sx={{ fontSize: '0.75rem' }}
-            />
-          </Box>
-        </Box>
-      </Box>
-    </Box>
-  );
-
-  const renderInput = (params: any) => (
-    <TextField
-      {...params}
-      label={label}
-      placeholder={placeholder}
-      error={error}
-      helperText={helperText}
-      InputProps={{
-        ...params.InputProps,
-        startAdornment: (
-          <InputAdornment position="start">
-            <Search color="action" />
-          </InputAdornment>
-        ),
-        endAdornment: (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {showBarcodeScanner && (
-              <IconButton
-                onClick={() => setScannerOpen(true)}
-                size="small"
-                color="primary"
-                title="Quét mã vạch"
-              >
-                <QrCodeScanner />
-              </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                SKU: {product.sku}
+              </Typography>
+              {product.category_name && (
+                <Chip label={product.category_name} size="small" variant="outlined" />
+              )}
+            </Box>
+            {showStockInfo && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Stock: {product.current_stock} {product.unit}
+                </Typography>
+                <Chip
+                  label={stockInfo.label}
+                  color={stockInfo.color}
+                  size="small"
+                />
+              </Box>
             )}
-            {params.InputProps.endAdornment}
-          </Box>
-        )
-      }}
-    />
-  );
+          </Grid>
+          <Grid item>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="body1" fontWeight="bold">
+                {formatCurrency(product.price)}
+              </Typography>
+              <Tooltip title="View Details">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewDetails(product);
+                  }}
+                >
+                  <ViewIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  };
 
   return (
-    <>
-      <Autocomplete
-        value={value}
-        onChange={(_, newValue) => onChange(newValue)}
-        inputValue={inputValue}
-        onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
-        options={options}
-        loading={loading}
-        disabled={disabled}
-        getOptionLabel={(option) => option.name}
-        isOptionEqualToValue={(option, value) => option.id === value.id}
-        renderOption={renderOption}
-        renderInput={renderInput}
-        noOptionsText="Không tìm thấy sản phẩm"
-        loadingText="Đang tìm kiếm..."
-        PaperComponent={({ children, ...props }) => (
-          <Paper {...props} elevation={8}>
-            {children}
-          </Paper>
-        )}
-        sx={{
-          '& .MuiAutocomplete-listbox': {
-            maxHeight: 400,
-            '& .MuiAutocomplete-option': {
-              padding: 0
+    <Box>
+      <Grid container spacing={2} alignItems="flex-start">
+        <Grid item xs={12} md={showQuantityInput ? 8 : 12}>
+          <Autocomplete
+            value={value}
+            onChange={(_, newValue) => handleProductChange(newValue)}
+            options={filteredProducts}
+            getOptionLabel={(option) => option ? `${option.name} (${option.sku})` : ''}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderOption={renderProductOption}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={label}
+                placeholder={placeholder}
+                required={required}
+                disabled={disabled}
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                  endAdornment: (
+                    <>
+                      {loading ? <CircularProgress size={20} /> : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
+              />
+            )}
+            loading={loading}
+            onInputChange={(_, newInputValue) => setSearchTerm(newInputValue)}
+            noOptionsText={
+              <Box sx={{ textAlign: 'center', py: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  No products found
+                </Typography>
+                {allowCreateNew && (
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setCreateDialogOpen(true)}
+                    sx={{ mt: 1 }}
+                  >
+                    Create New Product
+                  </Button>
+                )}
+              </Box>
             }
-          }
-        }}
-      />
+            filterOptions={(options) => options}
+          />
+        </Grid>
+        
+        {showQuantityInput && (
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="Quantity"
+              type="number"
+              value={quantity}
+              onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
+              inputProps={{ min: 1 }}
+              fullWidth
+              disabled={!value}
+            />
+          </Grid>
+        )}
+      </Grid>
 
-      <BarcodeScanner
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        onScan={handleBarcodeScanned}
-        title="Quét mã vạch sản phẩm"
-      />
-    </>
+      {/* Selected Product Info */}
+      {value && showStockInfo && (
+        <Card variant="outlined" sx={{ mt: 2 }}>
+          <CardContent>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="h6" gutterBottom>
+                  Selected Product
+                </Typography>
+                <Typography variant="body1" fontWeight="bold">
+                  {value.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  SKU: {value.sku} | Price: {formatCurrency(value.price)}
+                </Typography>
+                {value.supplier_name && (
+                  <Typography variant="body2" color="text.secondary">
+                    Supplier: {value.supplier_name}
+                  </Typography>
+                )}
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Current Stock
+                    </Typography>
+                    <Typography variant="h6">
+                      {value.current_stock} {value.unit}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={getStockStatus(value).label}
+                    color={getStockStatus(value).color}
+                    icon={getStockStatus(value).status === 'good' ? <CheckIcon /> : <WarningIcon />}
+                  />
+                </Box>
+                {value.current_stock <= value.min_stock && (
+                  <Alert severity="warning" sx={{ mt: 1 }}>
+                    Stock is below minimum level ({value.min_stock} {value.unit})
+                  </Alert>
+                )}
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Product Details Dialog */}
+      <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          Product Details
+        </DialogTitle>
+        <DialogContent>
+          {selectedProduct && (
+            <Box>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Avatar
+                      src={selectedProduct.image_url}
+                      sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
+                    >
+                      <InventoryIcon sx={{ fontSize: 60 }} />
+                    </Avatar>
+                    <Typography variant="h6">{selectedProduct.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      SKU: {selectedProduct.sku}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={8}>
+                  <List>
+                    <ListItem>
+                      <ListItemText primary="Price" secondary={formatCurrency(selectedProduct.price)} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText primary="Cost" secondary={formatCurrency(selectedProduct.cost)} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText primary="Current Stock" secondary={`${selectedProduct.current_stock} ${selectedProduct.unit}`} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText primary="Minimum Stock" secondary={`${selectedProduct.min_stock} ${selectedProduct.unit}`} />
+                    </ListItem>
+                    {selectedProduct.category_name && (
+                      <ListItem>
+                        <ListItemText primary="Category" secondary={selectedProduct.category_name} />
+                      </ListItem>
+                    )}
+                    {selectedProduct.supplier_name && (
+                      <ListItem>
+                        <ListItemText primary="Supplier" secondary={selectedProduct.supplier_name} />
+                      </ListItem>
+                    )}
+                    {selectedProduct.barcode && (
+                      <ListItem>
+                        <ListItemText primary="Barcode" secondary={selectedProduct.barcode} />
+                      </ListItem>
+                    )}
+                  </List>
+                </Grid>
+              </Grid>
+              {selectedProduct.description && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Description
+                  </Typography>
+                  <Typography variant="body2">
+                    {selectedProduct.description}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailsOpen(false)}>Close</Button>
+          {selectedProduct && (
+            <Button
+              variant="contained"
+              onClick={() => {
+                handleProductChange(selectedProduct);
+                setDetailsOpen(false);
+              }}
+            >
+              Select Product
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Product Dialog */}
+      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Product</DialogTitle>
+        <DialogContent>
+          <Alert severity="info">
+            Product creation is not implemented in this demo. In a real application, this would open a product creation form.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 

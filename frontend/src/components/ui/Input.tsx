@@ -9,11 +9,11 @@ const inputVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400",
-        filled: "border-transparent bg-gray-100 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-blue-500",
-        outlined: "border-2 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400",
-        error: "border-red-500 dark:border-red-400 focus:border-red-500 dark:focus:border-red-400",
-        success: "border-green-500 dark:border-green-400 focus:border-green-500 dark:focus:border-green-400",
+        default: "border-gray-300 focus:border-blue-500",
+        filled: "border-transparent bg-gray-100 focus:bg-white focus:border-blue-500",
+        outlined: "border-2 border-gray-300 focus:border-blue-500",
+        error: "border-red-500 focus:border-red-500",
+        success: "border-green-500 focus:border-green-500",
       },
       size: {
         sm: "h-9 px-3 py-2 text-xs",
@@ -112,9 +112,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {label && floating && (
             <motion.label
               className={cn(
-                "absolute left-3 text-gray-500 dark:text-gray-400 pointer-events-none transition-all duration-200",
+                "absolute left-3 text-gray-500 pointer-events-none transition-all duration-200",
                 (isFocused || hasValue)
-                  ? "top-2 text-xs text-blue-600 dark:text-blue-400"
+                  ? "top-2 text-xs text-blue-600"
                   : "top-1/2 transform -translate-y-1/2 text-sm"
               )}
               animate={{
@@ -132,7 +132,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             <motion.label
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
               {label}
             </motion.label>
@@ -142,14 +142,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <div className="relative">
             {/* Left Icon */}
             {leftIcon && (
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 z-10">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
                 {leftIcon}
               </div>
             )}
 
             {/* Search Icon for searchable inputs */}
             {searchable && !leftIcon && (
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 z-10">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
                 <Search className="w-4 h-4" />
               </div>
             )}
@@ -172,6 +172,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               onBlur={handleBlur}
               whileFocus={{ scale: 1.01 }}
               transition={{ duration: 0.2 }}
+              aria-label={label || props['aria-label'] || props.placeholder}
+              aria-describedby={cn(
+                error && 'error-message',
+                helperText && 'helper-text',
+                props['aria-describedby']
+              ).trim() || undefined}
+              aria-invalid={!!error}
+              aria-required={props.required}
               {...props}
             />
 
@@ -193,12 +201,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <motion.button
                   type="button"
                   onClick={handleClear}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-sm"
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0 }}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  aria-label="Xóa nội dung"
+                  tabIndex={0}
                 >
                   <X className="w-4 h-4" />
                 </motion.button>
@@ -209,9 +219,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <motion.button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-sm"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
+                  aria-pressed={showPassword}
+                  tabIndex={0}
                 >
                   <AnimatePresence mode="wait">
                     {showPassword ? (
@@ -241,7 +254,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
               {/* Custom Right Icon */}
               {rightIcon && !isPassword && !clearable && !loading && (
-                <div className="text-gray-400 dark:text-gray-500">
+                <div className="text-gray-400">
                   {rightIcon}
                 </div>
               )}
@@ -274,10 +287,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             >
               {error && <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />}
               {!error && helperText && <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />}
-              <p className={cn(
-                "text-xs",
-                error ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
-              )}>
+              <p 
+                className={cn(
+                  "text-xs",
+                  error ? "text-red-600" : "text-gray-500"
+                )}
+                id={error ? 'error-message' : 'helper-text'}
+                role={error ? 'alert' : 'status'}
+                aria-live={error ? 'assertive' : 'polite'}
+              >
                 {error || helperText}
               </p>
             </motion.div>

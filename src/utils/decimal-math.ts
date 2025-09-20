@@ -209,7 +209,7 @@ export class FinancialCalculator {
     const remainder = DecimalMath.subtract(totalAmount, totalRounded);
     
     if (!DecimalMath.equals(remainder, 0)) {
-      const remainderCents = DecimalMath.toInteger(remainder);
+      const remainderCents = (remainder * 100) | 0;
       for (let i = 0; i < Math.abs(remainderCents) && i < parts; i++) {
         if (remainderCents > 0) {
           result[i] = DecimalMath.add(result[i], 0.01);

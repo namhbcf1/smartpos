@@ -1,9 +1,8 @@
 /**
  * MoMo Payment Gateway Service
  * Tích hợp thanh toán MoMo cho ComputerPOS Pro
+ * Optimized for Cloudflare Workers with Web Crypto API
  */
-
-import crypto from 'node:crypto';
 
 export interface MoMoConfig {
   partnerCode: string;
@@ -60,11 +59,8 @@ export class MoMoService {
     // Tạo raw signature
     const rawSignature = `accessKey=${this.config.accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${this.config.partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
 
-    // Tạo signature
-    const signature = crypto
-      .createHmac('sha256', this.config.secretKey)
-      .update(rawSignature)
-      .digest('hex');
+    // Tạo signature using Web Crypto API
+    const signature = await this.createHmacSignature(rawSignature, this.config.secretKey);
 
     const requestBody = {
       partnerCode: this.config.partnerCode,
@@ -125,10 +121,7 @@ export class MoMoService {
 
     const rawSignature = `accessKey=${this.config.accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
 
-    const expectedSignature = crypto
-      .createHmac('sha256', this.config.secretKey)
-      .update(rawSignature)
-      .digest('hex');
+    const expectedSignature = await this.createHmacSignature(rawSignature, this.config.secretKey);
 
     return signature === expectedSignature;
   }
@@ -140,11 +133,8 @@ export class MoMoService {
     const requestId = this.generateRequestId();
     
     const rawSignature = `accessKey=${this.config.accessKey}&orderId=${orderId}&partnerCode=${this.config.partnerCode}&requestId=${requestId}`;
-    
-    const signature = crypto
-      .createHmac('sha256', this.config.secretKey)
-      .update(rawSignature)
-      .digest('hex');
+
+    const signature = await this.createHmacSignature(rawSignature, this.config.secretKey);
 
     const requestBody = {
       partnerCode: this.config.partnerCode,
@@ -175,6 +165,28 @@ export class MoMoService {
    */
   isPaymentSuccessful(resultCode: number): boolean {
     return resultCode === 0;
+  }
+
+  /**
+   * Create HMAC-SHA256 signature using Web Crypto API
+   */
+  private async createHmacSignature(message: string, secretKey: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secretKey);
+    const messageData = encoder.encode(message);
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    return Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 
   /**

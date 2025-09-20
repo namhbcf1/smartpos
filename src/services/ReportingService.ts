@@ -10,7 +10,7 @@ export interface ReportFilter {
   dateFrom?: string;
   dateTo?: string;
   storeId?: number;
-  categoryId?: number;
+  category_id?: number;
   productId?: number;
   customerId?: number;
   userId?: number;
@@ -226,25 +226,25 @@ export class ReportingService {
             p.name as product_name,
             p.sku,
             c.name as category_name,
-            p.stock_quantity,
-            p.stock_alert_threshold,
+            p.stock,
+            p.min_stock,
             p.cost_price,
             p.price as selling_price,
             (p.price - p.cost_price) as profit_margin,
             CASE 
-              WHEN p.stock_quantity = 0 THEN 'Out of Stock'
-              WHEN p.stock_quantity <= p.stock_alert_threshold THEN 'Low Stock'
+              WHEN p.stock = 0 THEN 'Out of Stock'
+              WHEN p.stock <= p.min_stock THEN 'Low Stock'
               ELSE 'In Stock'
             END as stock_status,
-            p.stock_quantity * p.cost_price as inventory_value
+            p.stock * p.cost_price as inventory_value
           FROM products p
           JOIN categories c ON p.category_id = c.id
           WHERE p.is_active = 1
             {{CATEGORY_FILTER}}
           ORDER BY 
             CASE 
-              WHEN p.stock_quantity = 0 THEN 1
-              WHEN p.stock_quantity <= p.stock_alert_threshold THEN 2
+              WHEN p.stock = 0 THEN 1
+              WHEN p.stock <= p.min_stock THEN 2
               ELSE 3
             END,
             p.name
@@ -253,8 +253,8 @@ export class ReportingService {
           { key: 'product_name', label: 'Product', type: 'string' },
           { key: 'sku', label: 'SKU', type: 'string' },
           { key: 'category_name', label: 'Category', type: 'string' },
-          { key: 'stock_quantity', label: 'Stock Qty', type: 'number' },
-          { key: 'stock_alert_threshold', label: 'Alert Level', type: 'number' },
+          { key: 'stock', label: 'Stock Qty', type: 'number' },
+          { key: 'min_stock', label: 'Alert Level', type: 'number' },
           { key: 'cost_price', label: 'Cost Price', type: 'currency' },
           { key: 'selling_price', label: 'Selling Price', type: 'currency' },
           { key: 'profit_margin', label: 'Profit Margin', type: 'currency' },
@@ -341,6 +341,48 @@ export class ReportingService {
         chartType: 'area',
         refreshInterval: 30,
       },
+      {
+        id: 'pnl_basic',
+        name: 'Basic Profit & Loss',
+        description: 'Revenue vs Expenses (without COGS breakdown)',
+        category: 'financial',
+        query: `
+          WITH revenue AS (
+            SELECT DATE(s.created_at) as period, SUM(s.final_amount) as amount
+            FROM sales s
+            WHERE s.sale_status = 'completed' AND s.payment_status = 'paid'
+              AND s.created_at >= ? AND s.created_at <= ?
+            GROUP BY DATE(s.created_at)
+          ),
+          expenses AS (
+            SELECT DATE(e.expense_date) as period, SUM(e.amount) as amount
+            FROM expenses e
+            GROUP BY DATE(e.expense_date)
+          ),
+          periods AS (
+            SELECT period FROM revenue
+            UNION
+            SELECT period FROM expenses
+          )
+          SELECT
+            p.period as period,
+            COALESCE((SELECT amount FROM revenue r WHERE r.period = p.period), 0) as revenue,
+            COALESCE((SELECT amount FROM expenses ex WHERE ex.period = p.period), 0) as expenses,
+            COALESCE((SELECT amount FROM revenue r WHERE r.period = p.period), 0) - COALESCE((SELECT amount FROM expenses ex WHERE ex.period = p.period), 0) as net_profit
+          FROM periods p
+          WHERE DATE(p.period) >= DATE(?) AND DATE(p.period) <= DATE(?)
+          ORDER BY p.period DESC
+        `,
+        columns: [
+          { key: 'period', label: 'Date', type: 'date' },
+          { key: 'revenue', label: 'Revenue', type: 'currency', aggregation: 'sum' },
+          { key: 'expenses', label: 'Expenses', type: 'currency', aggregation: 'sum' },
+          { key: 'net_profit', label: 'Net Profit', type: 'currency', aggregation: 'sum' },
+        ],
+        filters: {},
+        chartType: 'area',
+        refreshInterval: 30,
+      },
     ];
   }
 
@@ -373,9 +415,9 @@ export class ReportingService {
       query = query.replace('{{STORE_FILTER}}', '');
     }
 
-    if (filters.categoryId) {
+    if (filters.category_id) {
       query = query.replace('{{CATEGORY_FILTER}}', 'AND p.category_id = ?');
-      bindings.push(filters.categoryId);
+      bindings.push(filters.category_id);
     } else {
       query = query.replace('{{CATEGORY_FILTER}}', '');
     }

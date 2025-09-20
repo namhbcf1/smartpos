@@ -9,14 +9,14 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700",
-        elevated: "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-2xl",
-        glass: "bg-white/10 dark:bg-black/10 backdrop-blur-md border-white/20 dark:border-white/10",
-        gradient: "bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700",
-        success: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700",
-        warning: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700",
-        error: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
-        info: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700",
+        default: "bg-white border-gray-200",
+        elevated: "bg-white border-gray-200 shadow-xl hover:shadow-2xl",
+        glass: "bg-white/10 backdrop-blur-md border-white/20",
+        gradient: "bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200",
+        success: "bg-green-50 border-green-200",
+        warning: "bg-yellow-50 border-yellow-200",
+        error: "bg-red-50 border-red-200",
+        info: "bg-blue-50 border-blue-200",
       },
       size: {
         sm: "p-4",
@@ -95,7 +95,8 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <motion.div
         ref={ref}
         className={cn(
-          cardVariants({ variant: finalVariant, size, interactive, className }),
+          cardVariants({ variant: finalVariant, size, interactive }),
+          className,
           hover && "hover:shadow-xl hover:-translate-y-1",
           "relative"
         )}
@@ -113,9 +114,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl flex items-center justify-center z-10"
+              className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex items-center justify-center z-10"
             >
-              <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+              <div className="flex items-center space-x-2 text-gray-600">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span className="text-sm font-medium">Loading...</span>
               </div>
@@ -127,9 +128,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         {closable && (
           <button
             onClick={handleClose}
-            className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors z-20"
+            className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 transition-colors z-20"
           >
-            <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <X className="w-4 h-4 text-gray-500" />
           </button>
         )}
 
@@ -140,20 +141,20 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
             animate={{ opacity: 1, y: 0 }}
             className={cn(
               "flex items-center space-x-2 p-3 rounded-t-xl border-b",
-              status === 'success' && "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700",
-              status === 'warning' && "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700",
-              status === 'error' && "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
-              status === 'info' && "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+              status === 'success' && "bg-green-50 border-green-200",
+              status === 'warning' && "bg-yellow-50 border-yellow-200",
+              status === 'error' && "bg-red-50 border-red-200",
+              status === 'info' && "bg-blue-50 border-blue-200"
             )}
           >
             {getStatusIcon(status)}
             {statusMessage && (
               <span className={cn(
                 "text-sm font-medium",
-                status === 'success' && "text-green-700 dark:text-green-300",
-                status === 'warning' && "text-yellow-700 dark:text-yellow-300",
-                status === 'error' && "text-red-700 dark:text-red-300",
-                status === 'info' && "text-blue-700 dark:text-blue-300"
+                status === 'success' && "text-green-700",
+                status === 'warning' && "text-yellow-700",
+                status === 'error' && "text-red-700",
+                status === 'info' && "text-blue-700"
               )}>
                 {statusMessage}
               </span>
@@ -164,9 +165,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         {/* Skeleton Content */}
         {skeleton ? (
           <div className="space-y-3">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-1/2"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
           </div>
         ) : (
           children
@@ -215,8 +216,8 @@ const CardTitle = React.forwardRef<
         "font-semibold leading-none tracking-tight",
         sizeClasses[size],
         gradient
-          ? "bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent"
-          : "text-gray-900 dark:text-gray-100",
+          ? "bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent"
+          : "text-gray-900",
         className
       )}
       initial={{ opacity: 0, x: -20 }}
@@ -236,7 +237,7 @@ const CardDescription = React.forwardRef<
 >(({ className, animated = true, ...props }, ref) => (
   <motion.p
     ref={ref}
-    className={cn("text-sm text-muted-foreground dark:text-gray-400", className)}
+    className={cn("text-sm text-muted-foreground", className)}
     initial={animated ? { opacity: 0, x: -20 } : undefined}
     animate={animated ? { opacity: 1, x: 0 } : undefined}
     transition={animated ? { duration: 0.3, delay: 0.3 } : undefined}

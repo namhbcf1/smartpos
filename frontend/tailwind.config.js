@@ -11,7 +11,13 @@ export default {
     container: {
       center: true,
       padding: "2rem",
-      // Fixed 1920x1080 layout - no responsive breakpoints
+      screens: {
+        sm: '640px',
+        md: '768px', 
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
+      },
     },
     extend: {
       colors: {
@@ -111,20 +117,60 @@ export default {
     themes: [
       {
         light: {
-          ...require("daisyui/src/theming/themes")["light"],
-          primary: "#3b82f6",
-          secondary: "#64748b",
-          accent: "#8b5cf6",
-          neutral: "#1f2937",
-          "base-100": "#ffffff",
+          primary: "#2563eb", // Modern blue
+          secondary: "#7c3aed", // Rich purple
+          accent: "#06b6d4", // Vibrant cyan
+          neutral: "#1e293b", // Deep slate
+          "base-100": "#ffffff", // Pure white
+          "base-200": "#f8fafc", // Light slate
+          "base-300": "#f1f5f9", // Lighter slate
+          "base-content": "#1e293b", // Dark text
+          info: "#0284c7", // Sky blue
+          success: "#059669", // Emerald
+          warning: "#d97706", // Amber
+          error: "#dc2626", // Red
         },
         dark: {
-          ...require("daisyui/src/theming/themes")["dark"],
-          primary: "#60a5fa",
-          secondary: "#94a3b8",
-          accent: "#a78bfa",
-          neutral: "#374151",
-          "base-100": "#111827",
+          primary: "#3b82f6", // Bright blue
+          secondary: "#8b5cf6", // Bright purple
+          accent: "#22d3ee", // Cyan
+          neutral: "#475569", // Medium slate
+          "base-100": "#0f172a", // Dark slate
+          "base-200": "#1e293b", // Darker slate
+          "base-300": "#334155", // Medium slate
+          "base-content": "#f8fafc", // Light text
+          info: "#0ea5e9", // Sky blue
+          success: "#10b981", // Emerald
+          warning: "#f59e0b", // Amber
+          error: "#ef4444", // Red
+        },
+        modern: {
+          primary: "#6366f1", // Indigo
+          secondary: "#ec4899", // Pink
+          accent: "#14b8a6", // Teal
+          neutral: "#1f2937",
+          "base-100": "#fafbfc",
+          "base-200": "#f4f6f8",
+          "base-300": "#e5e9f0",
+          "base-content": "#1f2937",
+          info: "#0ea5e9",
+          success: "#22c55e",
+          warning: "#f59e0b",
+          error: "#ef4444",
+        },
+        luxury: {
+          primary: "#7c2d12", // Rich brown
+          secondary: "#be185d", // Deep pink
+          accent: "#b45309", // Amber
+          neutral: "#1c1917",
+          "base-100": "#fefdf8",
+          "base-200": "#faf7f2",
+          "base-300": "#f5f1eb",
+          "base-content": "#1c1917",
+          info: "#0ea5e9",
+          success: "#166534",
+          warning: "#a16207",
+          error: "#991b1b",
         },
       },
     ],

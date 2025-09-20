@@ -33,10 +33,14 @@ const SESSION_TTL = 3 * 60 * 60; // 3 hours (as per security requirements)
  */
 export const standardAuthenticate: MiddlewareHandler<{
   Bindings: Env;
+  Variables: {
+    user?: any;
+    jwtPayload?: any;
+  };
 }> = async (c, next) => {
   try {
     // Get token from cookie or Authorization header
-    let token = c.req.cookie('auth_token');
+    let token = c.req.header('Cookie')?.match(/auth_token=([^;]+)/)?.[1];
     let tokenSource = 'cookie';
 
     if (!token) {
@@ -72,7 +76,7 @@ export const standardAuthenticate: MiddlewareHandler<{
 
     try {
       // Verify JWT token
-      const payload = await verify<JwtPayload>(token, jwtSecret);
+      const payload = await verify(token, jwtSecret) as any;
       
       // Validate token structure
       if (!payload.sub || !payload.username || !payload.role) {
@@ -201,9 +205,12 @@ export const standardAuthorize = (allowedRoles: UserRole[]): MiddlewareHandler =
  */
 export const optionalAuthenticate: MiddlewareHandler<{
   Bindings: Env;
+  Variables: {
+    user?: any;
+  };
 }> = async (c, next) => {
   try {
-    let token = c.req.cookie('auth_token');
+    let token = c.req.header('Cookie')?.match(/auth_token=([^;]+)/)?.[1];
     
     if (!token) {
       const authHeader = c.req.header('Authorization');
@@ -214,7 +221,7 @@ export const optionalAuthenticate: MiddlewareHandler<{
 
     if (token && c.env.JWT_SECRET) {
       try {
-        const payload = await verify<JwtPayload>(token, c.env.JWT_SECRET);
+        const payload = await verify(token, c.env.JWT_SECRET) as any;
         c.set('user', {
           id: payload.sub,
           username: payload.username,
@@ -241,7 +248,7 @@ async function logSecurityEvent(env: Env, event: any): Promise<void> {
   try {
     // Store in KV for security monitoring
     const eventKey = `security:${Date.now()}:${Math.random().toString(36).substr(2, 9)}`;
-    await env.CACHE.put(eventKey, JSON.stringify(event), { expirationTtl: 7 * 24 * 60 * 60 }); // 7 days
+    await env.CACHE.put(eventKey, JSON.stringify(event)); // Store security event
     
     // Also log to console for immediate monitoring
     console.warn('🚨 SECURITY EVENT:', JSON.stringify(event));

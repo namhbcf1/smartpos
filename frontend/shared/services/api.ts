@@ -159,7 +159,7 @@ export const createStockTransaction = async (transaction: Partial<StockTransacti
 
 // Auth API functions
 export const login = async (username: string, password: string): Promise<ApiResponse<{ token: string; user: any }>> => {
-  return fetchAPI<{ token: string; user: any }>('/auth/login', {
+  return fetchAPI<{ token: string; user: any }>('/simple-login', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
   });

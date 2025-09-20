@@ -12,12 +12,12 @@ const buttonVariants = cva(
       variant: {
         default: "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:shadow-blue-500/25",
         destructive: "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl hover:shadow-red-500/25",
-        outline: "border-2 border-gray-300 dark:border-gray-600 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300",
-        secondary: "bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-900 dark:text-gray-100 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-700",
-        ghost: "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 text-gray-600 dark:text-gray-400",
-        link: "text-blue-600 dark:text-blue-400 underline-offset-4 hover:underline hover:text-blue-700 dark:hover:text-blue-300",
+        outline: "border-2 border-gray-300 bg-transparent hover:bg-gray-50 hover:border-gray-400 text-gray-700",
+        secondary: "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900 hover:from-gray-200 hover:to-gray-300",
+        ghost: "hover:bg-gray-100 hover:text-gray-900 text-gray-600",
+        link: "text-blue-600 underline-offset-4 hover:underline hover:text-blue-700",
         gradient: "bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white hover:from-purple-600 hover:via-pink-600 hover:to-red-600 shadow-lg hover:shadow-xl hover:shadow-purple-500/25",
-        glass: "bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-white/10 text-white hover:bg-white/20 dark:hover:bg-black/20 shadow-lg",
+        glass: "bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 shadow-lg",
         success: "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-lg hover:shadow-xl hover:shadow-green-500/25",
         warning: "bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600 shadow-lg hover:shadow-xl hover:shadow-orange-500/25",
         premium: "bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black hover:from-amber-500 hover:via-yellow-600 hover:to-amber-700 shadow-lg hover:shadow-xl hover:shadow-amber-500/25",
@@ -64,22 +64,34 @@ export interface ButtonProps
   badgeVariant?: 'default' | 'destructive' | 'success' | 'warning'
 }
 
-// Ripple effect hook
+// Ripple effect hook with proper cleanup
 const useRipple = () => {
   const [ripples, setRipples] = React.useState<Array<{ id: number; x: number; y: number }>>([])
+  const timeoutsRef = React.useRef<Map<number, NodeJS.Timeout>>(new Map())
 
   const addRipple = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget
     const rect = button.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
-    const id = Date.now()
+    const id = Date.now() + Math.random() // More unique ID
 
     setRipples(prev => [...prev, { id, x, y }])
 
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       setRipples(prev => prev.filter(ripple => ripple.id !== id))
+      timeoutsRef.current.delete(id)
     }, 600)
+    
+    timeoutsRef.current.set(id, timeoutId)
+  }, [])
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach((timeout) => clearTimeout(timeout))
+      timeoutsRef.current.clear()
+    }
   }, [])
 
   return { ripples, addRipple }
@@ -127,7 +139,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const buttonContent = (
       <Comp
         className={cn(
-          buttonVariants({ variant, size, animation, className }),
+          buttonVariants({ variant, size, animation }),
+          className,
           fullWidth && "w-full",
           "relative"
         )}
@@ -137,6 +150,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={{ scale: asChild ? 1 : 1.02 }}
         whileTap={{ scale: asChild ? 1 : 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        aria-label={props['aria-label'] || (typeof children === 'string' ? children : 'Button')}
+        aria-describedby={props['aria-describedby']}
+        aria-disabled={loading || props.disabled}
+        role="button"
+        tabIndex={loading || props.disabled ? -1 : 0}
         {...props}
       >
         {/* Ripple Effect */}
@@ -219,9 +237,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       return (
         <div className="relative group">
           {buttonContent}
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
             {tooltip}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
           </div>
         </div>
       )

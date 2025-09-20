@@ -13,12 +13,12 @@ export interface Permission {
 }
 
 export interface UserPermission {
-  id: number;
-  user_id: number;
+  id: string; // TEXT PK according to detailed schema
+  user_id: string; // TEXT FK according to detailed schema
   resource: string;
   action: string;
   conditions?: string; // JSON string
-  granted_by: number;
+  granted_by: string; // TEXT FK according to detailed schema
   granted_at: string;
 }
 
@@ -295,12 +295,13 @@ export class PermissionChecker {
 /**
  * Enhanced middleware factory for granular permission checking
  */
-export const requirePermission = (permissionKey: string, conditions?: Record<string, any>) => {
+export const requirePermissions = (permissions: string[]) => {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
     try {
-      const user = c.get('user');
+      const userId = (c as any).get('userId');
+      const tenantId = (c as any).get('tenantId') || 'default';
 
-      if (!user) {
+      if (!userId) {
         return c.json({
           success: false,
           message: 'Authentication required',
@@ -308,19 +309,15 @@ export const requirePermission = (permissionKey: string, conditions?: Record<str
         }, 401);
       }
 
-      // Admin always has access
-      if (user.role === 'admin') {
-        return next();
-      }
+      // Load user permissions
+      const userPermissions = await loadUserPermissionsCompat(c.env.DB, String(userId), tenantId);
 
-      // Check if user has the specific permission
-      const hasPermission = await checkUserPermission(c.env, user.id, permissionKey);
-
-      if (!hasPermission) {
-        console.warn(`🚨 Permission denied: User ${user.username} (${user.role}) lacks permission: ${permissionKey}`);
+      // Check if user has required permissions
+      if (!hasPermissionCompat(userPermissions, permissions)) {
+        console.warn(`🚨 Permission denied: User ${userId} lacks permissions: ${permissions.join(', ')}`);
         return c.json({
           success: false,
-          message: `Insufficient permissions: ${permissionKey}`,
+          message: `Insufficient permissions: ${permissions.join(', ')}`,
           error: 'FORBIDDEN'
         }, 403);
       }
@@ -336,6 +333,78 @@ export const requirePermission = (permissionKey: string, conditions?: Record<str
     }
   };
 };
+
+/**
+ * Permission matching utility
+ */
+function hasPermissionCompat(userPermissions: string[], requiredPermissions: string[]): boolean {
+  // Super admin (*) has all permissions
+  if (userPermissions.includes('*')) {
+    return true;
+  }
+
+  // Check if user has any of the required permissions
+  return requiredPermissions.some(permission => {
+    // Direct permission match
+    if (userPermissions.includes(permission)) {
+      return true;
+    }
+
+    // Wildcard permission match (e.g., 'products.*' matches 'products.read')
+    return userPermissions.some(userPerm => {
+      if (userPerm.endsWith('.*')) {
+        const prefix = userPerm.slice(0, -2);
+        return permission.startsWith(prefix + '.');
+      }
+      if (userPerm.endsWith('*') && !userPerm.endsWith('.*')) {
+        const prefix = userPerm.slice(0, -1);
+        return permission.startsWith(prefix);
+      }
+      return false;
+    });
+  });
+}
+
+/**
+ * Load user permissions from database (compatible version)
+ */
+async function loadUserPermissionsCompat(db: D1Database, userId: string, tenantId: string) {
+  try {
+    // Get user roles and permissions
+    const userRoles = await db.prepare(`
+      SELECT 
+        r.id as role_id,
+        r.name as role_name,
+        r.permissions
+      FROM user_roles ur
+      JOIN roles r ON ur.role_id = r.id
+      WHERE ur.user_id = ? AND r.tenant_id = ?
+      ORDER BY r.name
+    `).bind(userId, tenantId).all();
+
+    const roles = userRoles.results || [];
+    const allPermissions = new Set<string>();
+
+    // Collect all permissions from all roles
+    roles.forEach((role: any) => {
+      if (role.permissions) {
+        try {
+          const permissions = JSON.parse(role.permissions);
+          if (Array.isArray(permissions)) {
+            permissions.forEach(perm => allPermissions.add(perm));
+          }
+        } catch (error) {
+          console.error('Error parsing permissions for role:', role.role_name, error);
+        }
+      }
+    });
+
+    return Array.from(allPermissions);
+  } catch (error) {
+    console.error('Error loading user permissions:', error);
+    return [];
+  }
+}
 
 /**
  * Check if user has a specific permission
@@ -382,7 +451,7 @@ async function checkUserPermission(env: Env, userId: number, permissionKey: stri
 export const requirePermissionLegacy = (resource: string, action: string, conditions?: Record<string, any>) => {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
     try {
-      const user = c.get('user');
+      const user = c.get('jwtPayload') as any;
 
       if (!user) {
         return c.json({
@@ -401,20 +470,20 @@ export const requirePermissionLegacy = (resource: string, action: string, condit
       const hasPermission = await PermissionChecker.checkPermission(c.env, user, permission);
 
       if (!hasPermission) {
-        console.warn(`🚨 RBAC: Permission denied for user ${user.username} (${user.role}) - ${action} on ${resource}`);
+        console.warn(`🚨 RBAC: Permission denied for user ${(user as any).username} (${(user as any).role}) - ${action} on ${resource}`);
         return c.json({
           success: false,
           message: 'Insufficient permissions',
           error: 'FORBIDDEN',
           details: {
             required_permission: permission,
-            user_role: user.role
+            user_role: (user as any).role
           }
         }, 403);
       }
 
       // Store permission context for audit logging
-      c.set('permission', permission);
+      c.set('jwtPayload', { ...c.get('jwtPayload'), permission });
       
       return next();
     } catch (error) {
@@ -434,7 +503,7 @@ export const requirePermissionLegacy = (resource: string, action: string, condit
 export const requireOwnership = (resourceIdParam: string = 'id') => {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
     try {
-      const user = c.get('user');
+      const user = c.get('jwtPayload') as any;
       const resourceId = c.req.param(resourceIdParam);
       
       if (!user || !resourceId) {
@@ -446,11 +515,13 @@ export const requireOwnership = (resourceIdParam: string = 'id') => {
       }
 
       // For non-admin users, add ownership condition
-      if (user.role !== 'admin') {
-        c.set('ownershipCondition', {
-          user_id: user.id,
-          store_id: user.store_id
-        });
+      if ((user as any).role !== 'admin') {
+        c.set('jwtPayload', {
+          ownershipCondition: {
+            user_id: (user as any).id,
+            store_id: (user as any).store_id
+          }
+        } as any);
       }
 
       return next();

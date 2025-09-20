@@ -1,132 +1,80 @@
-/**
- * Jest setup file for SmartPOS backend tests
- */
+import { beforeAll, afterAll, beforeEach } from '@jest/globals';
 
-import { jest } from '@jest/globals';
+let testDatabase: any;
 
-// Mock Cloudflare Workers environment
-global.crypto = {
-  randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
-  subtle: {} as any
-} as any;
-
-// Mock console methods for cleaner test output
-const originalConsole = global.console;
-global.console = {
-  ...originalConsole,
-  log: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  info: jest.fn(),
-  debug: jest.fn()
-};
-
-// Mock environment variables
-process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = 'test-jwt-secret-32-characters-long';
-process.env.ENCRYPTION_KEY = 'test-encryption-key-32-chars-long';
-
-// Mock Cloudflare bindings
-export const mockEnv = {
-  ENVIRONMENT: 'test',
-  API_VERSION: 'v1',
-  JWT_SECRET: 'test-jwt-secret-32-characters-long',
-  ENCRYPTION_KEY: 'test-encryption-key-32-chars-long',
-  DB: {
-    prepare: jest.fn().mockReturnValue({
-      bind: jest.fn().mockReturnValue({
-        run: jest.fn().mockResolvedValue({ success: true }),
-        first: jest.fn().mockResolvedValue(null),
-        all: jest.fn().mockResolvedValue([])
-      })
-    }),
-    exec: jest.fn().mockResolvedValue({ success: true })
-  },
-  CACHE: {
-    get: jest.fn().mockResolvedValue(null),
-    put: jest.fn().mockResolvedValue(undefined),
-    delete: jest.fn().mockResolvedValue(undefined)
-  },
-  SESSIONS: {
-    get: jest.fn().mockResolvedValue(null),
-    put: jest.fn().mockResolvedValue(undefined),
-    delete: jest.fn().mockResolvedValue(undefined)
+export async function setupTestDatabase() {
+  // Initialize test database connection
+  try {
+    // For real D1 testing, we would set up a test database instance
+    // For now, we'll use a mock implementation that simulates D1 behavior
+    testDatabase = {
+      prepare: (query: string) => ({
+        bind: (...params: any[]) => ({
+          run: () => ({ success: true }),
+          first: () => ({ id: 'test-id', name: 'Test Product' }),
+          all: () => ({ results: [] })
+        })
+      }),
+      exec: (query: string) => ({ success: true })
+    };
+    console.log('✅ Test database setup completed');
+  } catch (error) {
+    console.error('❌ Test database setup failed:', error);
+    throw error;
   }
-};
+}
 
-// Mock Hono context
-export const mockContext = {
-  env: mockEnv,
-  req: {
-    method: 'GET',
-    url: 'http://localhost:8787/test',
-    header: jest.fn().mockReturnValue('test-value'),
-    json: jest.fn().mockResolvedValue({}),
-    text: jest.fn().mockResolvedValue(''),
-    raw: new Request('http://localhost:8787/test')
-  },
-  res: {
-    status: 200
-  },
-  json: jest.fn().mockReturnValue(new Response()),
-  text: jest.fn().mockReturnValue(new Response()),
-  header: jest.fn(),
-  get: jest.fn(),
-  set: jest.fn()
+export async function teardownTestDatabase() {
+  try {
+    // Clean up test database connections
+    testDatabase = null;
+    console.log('✅ Test database teardown completed');
+  } catch (error) {
+    console.error('❌ Test database teardown failed:', error);
+  }
+}
+
+export async function cleanDatabase() {
+  try {
+    // Clean all test data between tests
+    if (testDatabase) {
+      await testDatabase.exec('DELETE FROM products WHERE sku LIKE "TEST-%"');
+      await testDatabase.exec('DELETE FROM categories WHERE name LIKE "Test %"');
+      await testDatabase.exec('DELETE FROM customers WHERE email LIKE "%@test.com"');
+      await testDatabase.exec('DELETE FROM sales WHERE notes LIKE "TEST:%"');
+    }
+    console.log('✅ Database cleaned for test');
+  } catch (error) {
+    console.error('❌ Database cleanup failed:', error);
+  }
+}
+
+// Global test setup
+beforeAll(async () => {
+  await setupTestDatabase();
+});
+
+afterAll(async () => {
+  await teardownTestDatabase();
+});
+
+beforeEach(async () => {
+  await cleanDatabase();
+});
+
+// Mock API client for testing
+export const testApiClient = {
+  get: async (url: string) => ({ status: 200, data: [] }),
+  post: async (url: string, data: any) => ({ status: 201, data: { id: 'test-id' } }),
+  put: async (url: string, data: any) => ({ status: 200, data: { ...data } }),
+  delete: async (url: string) => ({ status: 204 })
 };
 
 // Test utilities
-export const createMockRequest = (method: string = 'GET', url: string = '/test', body?: any) => {
-  return new Request(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': 'test-agent'
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-};
+export function generateTestId() {
+  return 'test-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+}
 
-export const createMockContext = (overrides: any = {}) => {
-  return {
-    ...mockContext,
-    ...overrides
-  };
-};
-
-// Database test utilities
-export const createMockDatabase = () => {
-  const queries: string[] = [];
-  const bindings: any[][] = [];
-  
-  return {
-    prepare: jest.fn().mockImplementation((query: string) => {
-      queries.push(query);
-      return {
-        bind: jest.fn().mockImplementation((...args: any[]) => {
-          bindings.push(args);
-          return {
-            run: jest.fn().mockResolvedValue({ success: true, meta: { changes: 1 } }),
-            first: jest.fn().mockResolvedValue(null),
-            all: jest.fn().mockResolvedValue([])
-          };
-        })
-      };
-    }),
-    exec: jest.fn().mockResolvedValue({ success: true }),
-    getQueries: () => queries,
-    getBindings: () => bindings,
-    reset: () => {
-      queries.length = 0;
-      bindings.length = 0;
-    }
-  };
-};
-
-// Cleanup after each test
-afterEach(() => {
-  jest.clearAllMocks();
-});
-
-// Global test timeout
-jest.setTimeout(10000);
+export function generateTestSKU() {
+  return 'TEST-' + Date.now().toString(36).toUpperCase();
+}

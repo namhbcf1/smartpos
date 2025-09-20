@@ -1,6 +1,10 @@
-# Cloudflare Pages redirects for SPA
-# API calls should go to the worker
-/api/v1/* https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/:splat 200
+# API calls to backend worker
+/api/v1/* https://namhbcf-api.bangachieu2.workers.dev/api/v1/:splat 200
 
-# All other routes should serve the React app
+# Redirect old simple page to main dashboard
+/simple / 301
+/simple.html / 301
+/login.html /login 301
+
+# SPA routing - all routes serve React app
 /* /index.html 200

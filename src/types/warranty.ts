@@ -83,38 +83,44 @@ export const NotificationStatus = {
 // ==========================================
 
 export interface SerialNumber {
-  id: number;
-  serial_number: string;
-  product_id: number;
-  supplier_id?: number;
-  status: keyof typeof SerialNumberStatus;
-  received_date: string;
-  sold_date?: string;
-  warranty_start_date?: string;
-  warranty_end_date?: string;
-  sale_id?: number;
-  customer_id?: number;
-  location?: string;
-  condition_notes?: string;
-  created_at: string;
-  updated_at: string;
-  created_by: number;
+  id: string; // TEXT PK per detailed schema
+  product_id: string; // TEXT NOT NULL FK → products.id
+  variant_id?: string; // TEXT FK → product_variants.id
+  serial_number: string; // TEXT UNIQUE NOT NULL
+  status: 'available' | 'sold' | 'returned' | 'defective'; // TEXT DEFAULT 'available' per detailed schema
+  batch_number?: string; // TEXT per detailed schema
+  purchase_date?: string; // TEXT (ISO 8601) per detailed schema
+  sale_date?: string; // TEXT (ISO 8601) per detailed schema
+  customer_id?: string; // TEXT FK → customers.id
+  warranty_start_date?: string; // TEXT per detailed schema
+  warranty_end_date?: string; // TEXT per detailed schema
+  notes?: string; // TEXT per detailed schema
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
+
+  // Legacy compatibility fields
+  supplier_id?: string; // For backward compatibility
+  received_date?: string; // Legacy field
+  sale_id?: string; // Legacy field
+  location?: string; // Legacy field
+  condition_notes?: string; // Legacy field
+  created_by?: string; // Legacy field
   
   // Joined data
   product?: {
-    id: number;
+    id: string; // TEXT PK per detailed schema
     name: string;
     sku: string;
     category_name?: string;
   };
   customer?: {
-    id: number;
+    id: string; // TEXT PK per detailed schema
     full_name: string;
     phone?: string;
     email?: string;
   };
   supplier?: {
-    id: number;
+    id: string; // TEXT PK per detailed schema
     name: string;
   };
 }
@@ -383,11 +389,12 @@ export interface WarrantyTrend {
 // ==========================================
 
 export interface SerialNumberFilters {
-  status?: keyof typeof SerialNumberStatus;
-  product_id?: number;
-  category_id?: number;
-  supplier_id?: number;
-  customer_id?: number;
+  status?: 'available' | 'sold' | 'returned' | 'defective'; // Updated to match detailed schema
+  product_id?: string; // TEXT FK → products.id
+  variant_id?: string; // TEXT FK → product_variants.id
+  category_id?: string; // TEXT FK → categories.id
+  supplier_id?: string; // TEXT FK → suppliers.id
+  customer_id?: string; // TEXT FK → customers.id
   date_from?: string;
   date_to?: string;
   search?: string; // Search in serial number, product name, customer name

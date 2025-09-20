@@ -50,7 +50,7 @@ import {
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { formatCurrency } from '../../config/constants';
-import { usePaginatedQuery } from '../../hooks/useApiData';
+import { usePaginatedQuery } from '../../../hooks/useApiData';
 import api from '../../services/api';
 
 // Types
@@ -192,8 +192,8 @@ const SuppliersPage: React.FC = () => {
       const method = editingSupplier ? 'PUT' : 'POST';
       
       const result = editingSupplier
-        ? await api.put(url, formData)
-        : await api.post(url, formData);
+        ? await api.put(url.replace('/suppliers', '/suppliers'), formData)
+        : await api.post(url.replace('/suppliers', '/suppliers'), formData);
 
       if (result.success) {
         enqueueSnackbar(

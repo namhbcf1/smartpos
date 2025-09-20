@@ -1,14 +1,13 @@
 // Authentication utilities for SmartPOS
 import { Context } from 'hono';
 
-// User interface
+// User interface - Following detailed schema
 export interface User {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   username: string;
   email: string;
   full_name: string;
   role: string;
-  store_id: number;
   is_active: boolean;
 }
 
@@ -23,12 +22,11 @@ export const getUser = async (c: Context): Promise<User | null> => {
     // In production, decode JWT token and get user from database
     // For now, return a mock user for development
     return {
-      id: 1,
+      id: 'admin-1', // TEXT PK per detailed schema
       username: 'admin',
       email: 'admin@smartpos.com',
       full_name: 'Administrator',
       role: 'admin',
-      store_id: 1,
       is_active: true
     };
   } catch (error) {
@@ -43,7 +41,7 @@ export const verifyToken = async (token: string): Promise<any> => {
     // In production, implement proper JWT verification
     // For now, return mock payload
     return {
-      userId: 1,
+      userId: 'admin-1', // TEXT per detailed schema
       username: 'admin',
       role: 'admin',
       exp: Math.floor(Date.now() / 1000) + (60 * 60) // 1 hour

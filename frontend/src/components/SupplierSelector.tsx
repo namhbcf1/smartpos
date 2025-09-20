@@ -1,38 +1,37 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Autocomplete,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   TextField,
   Box,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Typography,
   Chip,
-  Avatar,
-  InputAdornment,
-  IconButton,
-  Paper,
+  Grid,
+  Card,
+  CardContent,
   Rating,
-  Tooltip,
-  Button,
-  Menu,
-  MenuItem,
-  ListItemIcon,
+  List,
+  ListItem,
   ListItemText,
-  Divider
+  ListItemSecondaryAction,
+  IconButton
 } from '@mui/material';
 import {
-  Business as BusinessIcon,
   Add as AddIcon,
+  Edit as EditIcon,
+  Star as StarIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
-  Star as StarIcon,
-  History as HistoryIcon,
-  TrendingUp as TrendingUpIcon,
-  Schedule as ScheduleIcon,
-  LocalShipping as ShippingIcon,
-  MoreVert as MoreIcon
+  Business as BusinessIcon
 } from '@mui/icons-material';
-import { debounce } from 'lodash';
-import SupplierQuickAdd from './SupplierQuickAdd';
-import api from '../services/api';
+import { comprehensiveAPI } from '../services/business/comprehensiveApi';
 
 interface Supplier {
   id: number;
@@ -41,363 +40,255 @@ interface Supplier {
   phone: string | null;
   email: string | null;
   address: string | null;
-  tax_number: string | null;
-  notes: string | null;
-  is_active: boolean;
-  specializations?: string[];
   rating?: number;
-  performance?: {
-    total_orders: number;
-    avg_delivery_days: number;
-    on_time_delivery_rate: number;
-    quality_rating: number;
-    last_order_date: string;
-  };
+  total_orders?: number;
+  last_order_date?: string;
+  performance_score?: number;
 }
 
 interface SupplierSelectorProps {
-  value: Supplier | null;
-  onChange: (supplier: Supplier | null) => void;
-  label?: string;
-  placeholder?: string;
-  disabled?: boolean;
-  error?: boolean;
-  helperText?: string;
-  showQuickAdd?: boolean;
-  showPerformance?: boolean;
+  selectedSupplierId?: number;
+  onSupplierChange: (supplierId: number | null) => void;
+  showPerformanceMetrics?: boolean;
+  allowCreateNew?: boolean;
 }
 
 const SupplierSelector: React.FC<SupplierSelectorProps> = ({
-  value,
-  onChange,
-  label = 'Chọn nhà cung cấp',
-  placeholder = 'Tìm kiếm nhà cung cấp...',
-  disabled = false,
-  error = false,
-  helperText,
-  showQuickAdd = true,
-  showPerformance = true
+  selectedSupplierId,
+  onSupplierChange,
+  showPerformanceMetrics = false,
+  allowCreateNew = true
 }) => {
-  const [inputValue, setInputValue] = useState('');
-  const [options, setOptions] = useState<Supplier[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [recentSuppliers, setRecentSuppliers] = useState<Supplier[]>([]);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  // Debounced search function
-  const debouncedSearch = useMemo(
-    () => debounce(async (searchTerm: string) => {
-      if (!searchTerm.trim()) {
-        // Show recent suppliers when no search term
-        setOptions(recentSuppliers);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const response = await api.get<{
-          success: boolean;
-          data: {
-            data: Supplier[];
-            pagination: any;
-          }
-        }>(`/suppliers?search=${encodeURIComponent(searchTerm)}&limit=20&is_active=true`);
-        if (response.success && response.data?.data) {
-          setOptions(response.data.data);
-        } else {
-          setOptions([]);
-        }
-      } catch (error) {
-        console.error('Error searching suppliers:', error);
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 300),
-    [recentSuppliers]
-  );
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newSupplier, setNewSupplier] = useState({
+    name: '',
+    contact_person: '',
+    phone: '',
+    email: '',
+    address: ''
+  });
 
   useEffect(() => {
-    debouncedSearch(inputValue);
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [inputValue, debouncedSearch]);
-
-  // Load recent suppliers on mount
-  useEffect(() => {
-    const loadRecentSuppliers = async () => {
-      try {
-        const response = await api.get<{
-          success: boolean;
-          data: {
-            data: Supplier[];
-            pagination: any;
-          }
-        }>('/suppliers?limit=5&sort_by=last_used&is_active=true');
-        if (response.success && response.data?.data) {
-          setRecentSuppliers(response.data.data);
-          if (!inputValue) {
-            setOptions(response.data.data);
-          }
-        } else {
-          setRecentSuppliers([]);
-          if (!inputValue) {
-            setOptions([]);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading recent suppliers:', error);
-      }
-    };
-
-    loadRecentSuppliers();
+    loadSuppliers();
   }, []);
 
-  const handleSupplierCreated = (newSupplier: Supplier) => {
-    setOptions(prev => [newSupplier, ...prev]);
-    onChange(newSupplier);
-    setQuickAddOpen(false);
-  };
-
-  const handleContactAction = (action: 'phone' | 'email', supplier: Supplier) => {
-    if (action === 'phone' && supplier.phone) {
-      window.open(`tel:${supplier.phone}`);
-    } else if (action === 'email' && supplier.email) {
-      window.open(`mailto:${supplier.email}`);
+  const loadSuppliers = async () => {
+    try {
+      setLoading(true);
+      const response = await comprehensiveAPI.suppliers.getSuppliers();
+      const suppliersData = response.data || [];
+      setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
+    } catch (error) {
+      console.error('Error loading suppliers:', error);
+      setSuppliers([]);
+    } finally {
+      setLoading(false);
     }
-    setAnchorEl(null);
   };
 
-  const getPerformanceColor = (rating: number) => {
-    if (rating >= 4.5) return 'success';
-    if (rating >= 3.5) return 'warning';
-    return 'error';
+  const handleCreateSupplier = async () => {
+    try {
+      const response = await comprehensiveAPI.post('/suppliers', newSupplier);
+      const createdSupplier = response.data;
+      setSuppliers(prev => [...prev, createdSupplier]);
+      onSupplierChange(createdSupplier.id);
+      setDialogOpen(false);
+      setNewSupplier({
+        name: '',
+        contact_person: '',
+        phone: '',
+        email: '',
+        address: ''
+      });
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+    }
   };
 
-  const formatDeliveryTime = (days: number) => {
-    if (days < 1) return 'Trong ngày';
-    if (days === 1) return '1 ngày';
-    return `${Math.round(days)} ngày`;
-  };
+  const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
 
   return (
-    <>
-      <Autocomplete
-        value={value}
-        onChange={(_, newValue) => onChange(newValue)}
-        inputValue={inputValue}
-        onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
-        options={options}
-        loading={loading}
-        disabled={disabled}
-        getOptionLabel={(option) => option.name}
-        isOptionEqualToValue={(option, value) => option.id === value.id}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label={label}
-            placeholder={placeholder}
-            error={error}
-            helperText={helperText}
-            InputProps={{
-              ...params.InputProps,
-              startAdornment: (
-                <InputAdornment position="start">
-                  <BusinessIcon fontSize="small" />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  {params.InputProps.endAdornment}
-                  {showQuickAdd && (
-                    <Tooltip title="Thêm nhà cung cấp mới">
-                      <IconButton
-                        size="small"
-                        onClick={() => setQuickAddOpen(true)}
-                        disabled={disabled}
-                      >
-                        <AddIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Box>
-              )
-            }}
-          />
-        )}
-        renderOption={(props, option) => (
-          <Box component="li" {...props} sx={{ display: 'block !important', p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
-                <BusinessIcon />
-              </Avatar>
-              
-              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography variant="subtitle2" noWrap>
-                    {option.name}
-                  </Typography>
-                  {option.rating && showPerformance && (
-                    <Rating
-                      value={option.rating}
-                      readOnly
-                      size="small"
-                      precision={0.1}
-                      sx={{ ml: 1 }}
-                    />
-                  )}
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  {option.contact_person && (
+    <Box>
+      <FormControl fullWidth>
+        <InputLabel>Select Supplier</InputLabel>
+        <Select
+          value={selectedSupplierId || ''}
+          onChange={(e) => onSupplierChange(e.target.value ? Number(e.target.value) : null)}
+          label="Select Supplier"
+        >
+          <MenuItem value="">
+            <em>No Supplier</em>
+          </MenuItem>
+          {suppliers.map((supplier) => (
+            <MenuItem key={supplier.id} value={supplier.id}>
+              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <BusinessIcon sx={{ mr: 1, color: 'primary.main' }} />
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body1">{supplier.name}</Typography>
+                  {supplier.contact_person && (
                     <Typography variant="caption" color="text.secondary">
-                      {option.contact_person}
+                      Contact: {supplier.contact_person}
                     </Typography>
                   )}
-                  {option.phone && (
-                    <Chip
-                      icon={<PhoneIcon />}
-                      label={option.phone}
-                      size="small"
-                      variant="outlined"
-                      sx={{ height: 20, fontSize: '0.7rem' }}
-                    />
-                  )}
                 </Box>
-
-                {/* Specializations */}
-                {option.specializations && option.specializations.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
-                    {option.specializations.slice(0, 3).map((spec) => (
-                      <Chip
-                        key={spec}
-                        label={spec}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        sx={{ height: 18, fontSize: '0.65rem' }}
-                      />
-                    ))}
-                    {option.specializations.length > 3 && (
-                      <Chip
-                        label={`+${option.specializations.length - 3}`}
-                        size="small"
-                        variant="outlined"
-                        sx={{ height: 18, fontSize: '0.65rem' }}
-                      />
-                    )}
-                  </Box>
-                )}
-
-                {/* Performance Metrics */}
-                {option.performance && showPerformance && (
-                  <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                    <Tooltip title="Số đơn hàng">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <HistoryIcon sx={{ fontSize: 14 }} color="action" />
-                        <Typography variant="caption" color="text.secondary">
-                          {option.performance.total_orders} đơn
-                        </Typography>
-                      </Box>
-                    </Tooltip>
-                    
-                    <Tooltip title="Thời gian giao hàng trung bình">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <ShippingIcon sx={{ fontSize: 14 }} color="action" />
-                        <Typography variant="caption" color="text.secondary">
-                          {formatDeliveryTime(option.performance.avg_delivery_days)}
-                        </Typography>
-                      </Box>
-                    </Tooltip>
-
-                    <Tooltip title="Tỷ lệ giao đúng hạn">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <ScheduleIcon sx={{ fontSize: 14 }} color="action" />
-                        <Typography variant="caption" color="text.secondary">
-                          {Math.round(option.performance.on_time_delivery_rate)}%
-                        </Typography>
-                      </Box>
-                    </Tooltip>
+                {supplier.rating && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+                    <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                    <Typography variant="caption">{supplier.rating.toFixed(1)}</Typography>
                   </Box>
                 )}
               </Box>
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
-              {/* Quick Actions */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAnchorEl(e.currentTarget);
-                  }}
-                >
-                  <MoreIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </Box>
-          </Box>
-        )}
-        PaperComponent={(props) => (
-          <Paper {...props} sx={{ mt: 1, boxShadow: 3 }}>
-            {!inputValue && recentSuppliers.length > 0 && (
-              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <HistoryIcon sx={{ fontSize: 14 }} />
-                  Nhà cung cấp gần đây
+      {allowCreateNew && (
+        <Button
+          startIcon={<AddIcon />}
+          onClick={() => setDialogOpen(true)}
+          sx={{ mt: 1 }}
+          variant="outlined"
+          size="small"
+        >
+          Add New Supplier
+        </Button>
+      )}
+
+      {showPerformanceMetrics && selectedSupplier && (
+        <Card sx={{ mt: 2 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Supplier Details
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  Contact Person
                 </Typography>
-              </Box>
-            )}
-            {props.children}
-          </Paper>
-        )}
-        noOptionsText={
-          inputValue ? 'Không tìm thấy nhà cung cấp nào' : 'Nhập tên để tìm kiếm'
-        }
-        loadingText="Đang tìm kiếm..."
-      />
+                <Typography variant="body1">
+                  {selectedSupplier.contact_person || 'N/A'}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  Phone
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <PhoneIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                  <Typography variant="body1">
+                    {selectedSupplier.phone || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  Email
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <EmailIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                  <Typography variant="body1">
+                    {selectedSupplier.email || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  Performance Rating
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Rating
+                    value={selectedSupplier.rating || 0}
+                    readOnly
+                    size="small"
+                    precision={0.1}
+                  />
+                  <Typography variant="body2" sx={{ ml: 1 }}>
+                    ({selectedSupplier.rating?.toFixed(1) || 'N/A'})
+                  </Typography>
+                </Box>
+              </Grid>
+              {selectedSupplier.total_orders && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Orders
+                  </Typography>
+                  <Chip
+                    label={selectedSupplier.total_orders}
+                    color="primary"
+                    size="small"
+                  />
+                </Grid>
+              )}
+              {selectedSupplier.last_order_date && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Last Order
+                  </Typography>
+                  <Typography variant="body1">
+                    {new Date(selectedSupplier.last_order_date).toLocaleDateString()}
+                  </Typography>
+                </Grid>
+              )}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Quick Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        {value?.phone && (
-          <MenuItem onClick={() => handleContactAction('phone', value)}>
-            <ListItemIcon>
-              <PhoneIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Gọi điện" secondary={value.phone} />
-          </MenuItem>
-        )}
-        {value?.email && (
-          <MenuItem onClick={() => handleContactAction('email', value)}>
-            <ListItemIcon>
-              <EmailIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Gửi email" secondary={value.email} />
-          </MenuItem>
-        )}
-        {value?.phone || value?.email ? <Divider /> : null}
-        <MenuItem onClick={() => setAnchorEl(null)}>
-          <ListItemIcon>
-            <TrendingUpIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary="Xem hiệu suất" />
-        </MenuItem>
-      </Menu>
-
-      {/* Quick Add Dialog */}
-      <SupplierQuickAdd
-        open={quickAddOpen}
-        onClose={() => setQuickAddOpen(false)}
-        onSupplierCreated={handleSupplierCreated}
-      />
-    </>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Supplier</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <TextField
+              label="Supplier Name"
+              value={newSupplier.name}
+              onChange={(e) => setNewSupplier(prev => ({ ...prev, name: e.target.value }))}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Contact Person"
+              value={newSupplier.contact_person}
+              onChange={(e) => setNewSupplier(prev => ({ ...prev, contact_person: e.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label="Phone"
+              value={newSupplier.phone}
+              onChange={(e) => setNewSupplier(prev => ({ ...prev, phone: e.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={newSupplier.email}
+              onChange={(e) => setNewSupplier(prev => ({ ...prev, email: e.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label="Address"
+              value={newSupplier.address}
+              onChange={(e) => setNewSupplier(prev => ({ ...prev, address: e.target.value }))}
+              multiline
+              rows={3}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleCreateSupplier}
+            variant="contained"
+            disabled={!newSupplier.name.trim()}
+          >
+            Create Supplier
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 

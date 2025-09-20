@@ -1,58 +1,45 @@
-// Product Management Types
+// Product Management Types - Following detailed schema exactly
 export interface Product {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   name: string;
   sku: string;
   barcode?: string;
   description?: string;
-  short_description?: string;
-  category_id: number;
-  category_name?: string;
-  category_path?: string;
-  brand?: string;
-  model?: string;
-  price: number;
-  cost_price?: number;
-  wholesale_price?: number;
-  retail_price?: number;
-  stock_quantity: number;
-  min_stock_level: number;
-  max_stock_level?: number;
-  reorder_point?: number;
+
+  // D1 OPTIMIZED: INTEGER cents pricing (VND x 100)
+  price_cents: number; // INTEGER NOT NULL CHECK (price_cents >= 0)
+  cost_price_cents: number; // INTEGER NOT NULL CHECK (cost_price_cents >= 0)
+
+  // Inventory
+  stock: number;
+  min_stock: number;
+  max_stock: number;
   unit: string;
-  weight?: number;
-  dimensions?: string;
-  color?: string;
-  size?: string;
-  material?: string;
-  warranty_period?: number;
-  warranty_type?: string;
-  supplier_id?: number;
-  supplier_name?: string;
-  supplier_sku?: string;
-  tax_rate?: number;
-  discount_eligible: boolean;
-  is_active: boolean;
-  is_featured: boolean;
-  is_digital: boolean;
-  track_inventory: boolean;
-  allow_backorder: boolean;
+
+  // Physical attributes
+  weight_grams?: number; // INTEGER per detailed schema
+  dimensions?: string; // JSON: {"length": 10, "width": 5, "height": 2}
+
+  // Foreign keys
+  category_id?: string; // TEXT FK → categories.id
+  brand_id?: string; // TEXT FK → brands.id
+  supplier_id?: string; // TEXT FK → suppliers.id
+  store_id: string; // TEXT DEFAULT 'store-1' FK → stores.id
+
+  // Media
   image_url?: string;
-  images?: string[];
-  tags?: string[];
-  attributes?: ProductAttribute[];
-  variants?: ProductVariant[];
+  images?: string; // JSON array of URLs
+
+  // Denormalized fields for performance
+  category_name?: string;
+  brand_name?: string;
+
+  // Status
+  is_active: boolean;
+  is_serialized: boolean;
+
   created_at: string;
   updated_at: string;
-  created_by?: number;
-  updated_by?: number;
-  total_sold?: number;
-  revenue_generated?: number;
-  profit_margin?: number;
-  last_sold_date?: string;
-  last_restocked_date?: string;
-  average_rating?: number;
-  review_count?: number;
 }
 
 export interface ProductAttribute {
@@ -66,58 +53,51 @@ export interface ProductAttribute {
 }
 
 export interface ProductVariant {
-  id: number;
-  product_id: number;
-  sku: string;
-  name: string;
-  price: number;
-  cost_price?: number;
-  stock_quantity: number;
-  attributes: Record<string, string>;
-  image_url?: string;
-  is_active: boolean;
+  id: string; // TEXT PK per detailed schema
+  product_id: string; // TEXT NOT NULL FK → products.id
+  variant_name: string; // TEXT NOT NULL per detailed schema
+  sku: string; // TEXT UNIQUE NOT NULL
+  price_cents: number; // INTEGER NOT NULL CHECK (price_cents >= 0)
+  cost_price_cents: number; // INTEGER NOT NULL CHECK (cost_price_cents >= 0)
+  stock: number; // INTEGER DEFAULT 0 CHECK (stock >= 0)
+  attributes: string; // TEXT JSON {"color":"red","size":"L"}
+  is_active: boolean; // INTEGER DEFAULT 1
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Category {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   name: string;
-  slug: string;
   description?: string;
-  parent_id?: number;
-  parent_name?: string;
-  level: number;
-  path: string;
-  image_url?: string;
-  is_active: boolean;
-  product_count: number;
+  parent_id?: string; // TEXT FK → categories.id
+  image_url?: string; // R2 storage URL
   sort_order: number;
-  children?: Category[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Supplier {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   name: string;
-  company_name?: string;
   contact_person?: string;
   email?: string;
   phone?: string;
   address?: string;
-  city?: string;
-  country?: string;
-  tax_code?: string;
+  tax_number?: string; // tax_number per detailed schema
   payment_terms?: string;
-  credit_limit?: number;
+  credit_limit_cents?: number; // INTEGER DEFAULT 0 (VND cents)
   is_active: boolean;
-  product_count: number;
-  total_orders: number;
-  total_amount: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProductFilters {
   search: string;
-  category_id?: number;
-  supplier_id?: number;
-  brand?: string;
+  category_id?: string; // TEXT FK → categories.id per detailed schema
+  supplier_id?: string; // TEXT FK → suppliers.id per detailed schema
+  brand_id?: string; // TEXT FK → brands.id per detailed schema
   price_range: {
     min: number;
     max: number;
@@ -136,26 +116,26 @@ export interface ProductFormData {
   barcode?: string;
   description?: string;
   short_description?: string;
-  category_id: number;
-  brand?: string;
+  category_id: string; // TEXT FK → categories.id per detailed schema
+  brand_id?: string; // TEXT FK → brands.id per detailed schema
   model?: string;
   price: number;
   cost_price?: number;
   wholesale_price?: number;
   retail_price?: number;
-  stock_quantity: number;
-  min_stock_level: number;
-  max_stock_level?: number;
-  reorder_point?: number;
+  stock: number;
+  min_stock: number;
+  max_stock?: number;
+  // reorder_point removed - not in detailed schema
   unit: string;
   weight?: number;
   dimensions?: string;
   color?: string;
   size?: string;
   material?: string;
-  warranty_period?: number;
+  // warranty_period removed - not in detailed schema
   warranty_type?: string;
-  supplier_id?: number;
+  supplier_id?: string; // TEXT FK → suppliers.id per detailed schema
   supplier_sku?: string;
   tax_rate?: number;
   discount_eligible: boolean;

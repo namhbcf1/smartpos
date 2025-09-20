@@ -41,6 +41,19 @@ export const StockCheckTable: React.FC<StockCheckTableProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+  // Ensure items is always an array
+  const safeItems = Array.isArray(items) ? items : [];
+
+  if (!loading && safeItems.length === 0) {
+    return (
+      <Paper sx={{ py: 6, textAlign: 'center' }}>
+        <Typography variant="body1" color="text.secondary">
+          Không có dữ liệu kiểm kho để hiển thị.
+        </Typography>
+      </Paper>
+    );
+  }
+
   const getDiscrepancyStatus = (discrepancy: number) => {
     if (discrepancy === 0) {
       return {
@@ -70,7 +83,7 @@ export const StockCheckTable: React.FC<StockCheckTableProps> = ({
     // Mobile card layout
     return (
       <Box>
-        {items.map((item) => {
+        {safeItems.map((item) => {
           const status = getDiscrepancyStatus(item.discrepancy);
           return (
             <Paper key={item.product_id} sx={{ p: 2, mb: 2 }}>
@@ -149,7 +162,7 @@ export const StockCheckTable: React.FC<StockCheckTableProps> = ({
   // Desktop table layout
   return (
     <TableContainer component={Paper}>
-      <Table>
+      <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
             <TableCell>Sản phẩm</TableCell>
@@ -162,10 +175,10 @@ export const StockCheckTable: React.FC<StockCheckTableProps> = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {items.map((item) => {
+          {safeItems.map((item, idx) => {
             const status = getDiscrepancyStatus(item.discrepancy);
             return (
-              <TableRow key={item.product_id}>
+              <TableRow key={item.product_id} sx={{ bgcolor: idx % 2 === 1 ? 'action.hover' : 'inherit' }}>
                 <TableCell>
                   <Typography variant="body2" fontWeight="medium">
                     {item.product_name}
@@ -187,7 +200,7 @@ export const StockCheckTable: React.FC<StockCheckTableProps> = ({
                     value={item.actual_quantity}
                     onChange={(e) => handleActualQuantityChange(item.product_id, e.target.value)}
                     size="small"
-                    sx={{ width: 80 }}
+                    sx={{ width: 88 }}
                     disabled={loading}
                   />
                 </TableCell>
@@ -205,7 +218,7 @@ export const StockCheckTable: React.FC<StockCheckTableProps> = ({
                     value={item.notes || ''}
                     onChange={(e) => handleNotesChange(item.product_id, e.target.value)}
                     size="small"
-                    sx={{ minWidth: 150 }}
+                    sx={{ minWidth: 180 }}
                     disabled={loading}
                   />
                 </TableCell>

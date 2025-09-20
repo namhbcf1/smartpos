@@ -7,8 +7,8 @@
 import { API_ENDPOINTS } from '../config/constants';
 import { advancedInventoryApi } from '../services/advancedInventoryApi';
 import { advancedAnalyticsApi } from '../services/advancedAnalyticsApi';
-import { userManagementApi } from '../services/userManagementApi';
-import { databaseOptimizationApi } from '../services/databaseOptimizationApi';
+// import { userManagementApi } from '../services/userManagementApi';
+// import { databaseOptimizationApi } from '../services/databaseOptimizationApi';
 import { enhancedRealtimeService } from '../services/enhancedRealtimeService';
 import { enhancedAuthService } from '../services/enhancedAuthService';
 
@@ -372,8 +372,8 @@ export class IntegrationValidator {
     }
 
     // Check memory usage (basic check)
-    if (performance.memory) {
-      const memoryUsage = performance.memory.usedJSHeapSize / 1024 / 1024; // MB
+    if ((performance as any).memory) {
+      const memoryUsage = (performance as any).memory.usedJSHeapSize / 1024 / 1024; // MB
       checks.push({
         name: 'Memory usage',
         status: memoryUsage < 100 ? 'pass' as const : 'warning' as const,

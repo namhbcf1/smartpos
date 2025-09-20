@@ -13,15 +13,21 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  Card,
+  CardContent,
+  Divider,
 } from '@mui/material';
 import {
   LockOutlined as LockIcon,
   Visibility,
   VisibilityOff,
+  PersonOutline,
+  Business,
+  Computer,
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
 
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 
 interface LoginFormData {
   username: string;
@@ -78,69 +84,126 @@ const Login = () => {
   };
 
   return (
-    <Grid container component="main" sx={{ height: '100vh' }}>
-      <Grid
-        item
-        xs={false}
-        sm={4}
-        md={7}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 2,
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'url("data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Cpath d="m0 40l40-40h-40z"/%3E%3Cpath d="m0 40l40-40h-40z"/%3E%3C/g%3E%3C/svg%3E")',
+          zIndex: 0,
+        }
+      }}
+    >
+      <Card
+        elevation={24}
         sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          minWidth: { xs: '100%', sm: 480, md: 520 },
+          maxWidth: 520,
           position: 'relative',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.3)',
-            zIndex: 1,
-          },
-          '&::after': {
-            content: '"SmartPOS"',
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            color: 'white',
-            fontSize: '3rem',
-            fontWeight: 'bold',
-            zIndex: 2,
-            textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-          }
+          zIndex: 1,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: 4,
+          border: '1px solid rgba(255, 255, 255, 0.2)',
         }}
-      />
-      <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
-        <Box
-          sx={{
-            my: 8,
-            mx: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <Avatar sx={{ m: 1, bgcolor: 'primary.main', width: 56, height: 56 }}>
-            <LockIcon fontSize="large" />
-          </Avatar>
-          <Typography component="h1" variant="h5" sx={{ mt: 2 }}>
-            SmartPOS Login
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-            Enter your credentials to access the system
-          </Typography>
+      >
+        <CardContent sx={{ p: { xs: 3, sm: 5 } }}>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 3,
+              }}
+            >
+              <Box
+                sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '50%',
+                  p: 2,
+                  mr: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 8px 24px rgba(102, 126, 234, 0.3)',
+                }}
+              >
+                <Computer sx={{ color: 'white', fontSize: 32 }} />
+              </Box>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  letterSpacing: '-0.5px',
+                }}
+              >
+                ComputerPOS Pro
+              </Typography>
+            </Box>
+            
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: 'text.primary',
+                mb: 1,
+              }}
+            >
+              Hệ thống POS 100% Online
+            </Typography>
+            
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary',
+                fontSize: '1.1rem',
+              }}
+            >
+              Cloudflare Workers + D1 Database
+            </Typography>
+          </Box>
 
-          <Alert severity="info" sx={{ mb: 3, width: '100%' }}>
-            <strong>Tài khoản demo:</strong><br />
-            Username: <code>admin</code><br />
-            Password: <code>admin</code>
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="text.secondary">
+              Đăng nhập hệ thống
+            </Typography>
+          </Divider>
+          <Alert 
+            severity="info" 
+            sx={{ 
+              mb: 3, 
+              backgroundColor: 'rgba(25, 118, 210, 0.08)',
+              border: '1px solid rgba(25, 118, 210, 0.2)',
+              borderRadius: 2,
+              '& .MuiAlert-icon': {
+                color: 'primary.main'
+              }
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              <strong>Tài khoản demo:</strong><br />
+              Username: <code style={{ background: 'rgba(25, 118, 210, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>admin</code><br />
+              Password: <code style={{ background: 'rgba(25, 118, 210, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>admin123</code>
+            </Typography>
           </Alert>
           
-          <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1, width: '100%', maxWidth: '400px' }}>
+          <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1, width: '100%' }}>
             <Controller
               name="username"
               control={control}
@@ -159,13 +222,34 @@ const Login = () => {
                   fullWidth
                   id="username"
                   name="username"
-                  label="Username"
+                  label="Tên đăng nhập hoặc Email"
+                  placeholder="admin"
                   autoComplete="off"
                   autoFocus
                   error={!!errors.username}
                   helperText={errors.username?.message}
                   disabled={isSubmitting}
                   aria-label="Username input field"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutline sx={{ color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: 'rgba(255, 255, 255, 1)',
+                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                      }
+                    }
+                  }}
                 />
               )}
             />
@@ -186,7 +270,8 @@ const Login = () => {
                   margin="normal"
                   required
                   fullWidth
-                  label="Password"
+                  label="Mật khẩu"
+                  placeholder="admin123"
                   type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
@@ -196,17 +281,36 @@ const Login = () => {
                   disabled={isSubmitting}
                   aria-label="Password input field"
                   InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon sx={{ color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
                     endAdornment: (
                       <InputAdornment position="end">
                         <IconButton
                           aria-label="toggle password visibility"
                           onClick={() => setShowPassword(!showPassword)}
                           edge="end"
+                          sx={{ color: 'text.secondary' }}
                         >
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
                       </InputAdornment>
                     ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: 'rgba(255, 255, 255, 1)',
+                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                      }
+                    }
                   }}
                 />
               )}
@@ -217,13 +321,34 @@ const Login = () => {
               fullWidth
               variant="contained"
               disabled={isSubmitting}
-              sx={{ mt: 3, mb: 2, py: 1.5 }}
+              sx={{ 
+                mt: 3, 
+                mb: 2, 
+                py: 1.8,
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.3)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                  boxShadow: '0 12px 32px rgba(102, 126, 234, 0.4)',
+                  transform: 'translateY(-2px)',
+                },
+                '&:active': {
+                  transform: 'translateY(0px)',
+                },
+                transition: 'all 0.3s ease',
+              }}
               aria-label="Sign in button"
             >
               {isSubmitting ? (
-                <CircularProgress size={24} color="inherit" />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} color="inherit" />
+                  <span>Đang xử lý...</span>
+                </Box>
               ) : (
-                'Sign In'
+                'Đăng nhập'
               )}
             </Button>
             
@@ -233,9 +358,20 @@ const Login = () => {
                 <Link
                   to="/register"
                   style={{
-                    color: '#1976d2',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
                     textDecoration: 'none',
-                    fontWeight: 600
+                    fontWeight: 600,
+                    borderBottom: '2px solid transparent',
+                    transition: 'border-bottom 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.borderBottom = '2px solid #667eea';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.borderBottom = '2px solid transparent';
                   }}
                 >
                   Đăng ký ngay
@@ -243,15 +379,18 @@ const Login = () => {
               </Typography>
             </Box>
 
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="body2" color="text.secondary" align="center">
-                Default login: admin / admin
+            <Divider sx={{ my: 3 }} />
+            
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
+                © 2024 ComputerPOS Pro - 100% Online POS System<br />
+                <strong>Powered by Cloudflare Workers + D1 Database</strong>
               </Typography>
             </Box>
           </Box>
-        </Box>
-      </Grid>
-    </Grid>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 

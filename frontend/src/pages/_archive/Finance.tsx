@@ -48,7 +48,7 @@ import {
   AccountBalance as FinanceIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-import api from '../services/api';
+import api from '../../services/api';
 import {
   LineChart,
   Line,
@@ -63,7 +63,7 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import api from '../services/api';
+import api from '../../services/api';
 
 // Interface for transaction
 interface Transaction {

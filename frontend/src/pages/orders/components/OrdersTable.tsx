@@ -102,7 +102,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
       case 'completed': return <CompletedIcon />;
       case 'confirmed': return <OrderIcon />;
       case 'preparing': return <PendingIcon />;
-      case 'ready': return <CheckCircle />;
+      case 'ready': return <CompletedIcon />;
       case 'pending': return <PendingIcon />;
       case 'cancelled': return <CancelledIcon />;
       case 'refunded': return <CancelledIcon />;
@@ -371,7 +371,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
             if (selectedOrder) onUpdateStatus(selectedOrder.id, 'confirmed');
             handleMenuClose();
           }}>
-            <CheckCircle sx={{ mr: 1 }} />
+            <CompletedIcon sx={{ mr: 1 }} />
             Xác nhận đơn
           </MenuItem>
         )}

@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import api from '../../services/api/client';
 import {
   Box,
   Button,
@@ -38,24 +39,19 @@ import {
   Assignment as CheckIcon,
   Inventory as InventoryIcon
 } from '@mui/icons-material';
-import { usePaginatedQuery } from '../../hooks/useApiData';
 import { useSnackbar } from 'notistack';
-import { formatCurrency } from '../../config/constants';
 
 // Types
-interface InventoryTransaction {
-  id: number;
-  product_id: number;
-  product_name: string;
-  product_sku: string;
-  category_name: string;
-  transaction_type: 'stock_in' | 'stock_out' | 'transfer_in' | 'transfer_out' | 'adjustment';
+interface AuditRow {
+  id?: string;
+  product_id: string;
+  product_name?: string;
+  location_id?: string;
+  transaction_type: 'transfer_in' | 'transfer_out' | 'adjustment' | 'stock_in' | 'stock_out';
   quantity: number;
-  cost_price?: number;
-  reference_number?: string;
-  supplier_name?: string;
-  from_store_id?: number;
-  to_store_id?: number;
+  previous_quantity?: number;
+  new_quantity?: number;
+  reason?: string;
   notes?: string;
   created_at: string;
 }
@@ -65,46 +61,50 @@ const InventoryTransactions = () => {
   const { enqueueSnackbar } = useSnackbar();
   
   // State for filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [transactionTypeFilter, setTransactionTypeFilter] = useState('');
+  const [productId, setProductId] = useState('');
+  const [locationId, setLocationId] = useState('');
   const [dateFromFilter, setDateFromFilter] = useState('');
   const [dateToFilter, setDateToFilter] = useState('');
+  const [rows, setRows] = useState<AuditRow[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
 
   // Build query params
   const queryParams = useMemo(() => {
-    const params: Record<string, any> = {};
-    
-    if (searchTerm.trim()) {
-      params.search = searchTerm.trim();
-    }
-    
-    if (transactionTypeFilter) {
-      params.transaction_type = transactionTypeFilter;
-    }
-    
-    if (dateFromFilter) {
-      params.date_from = dateFromFilter;
-    }
-    
-    if (dateToFilter) {
-      params.date_to = dateToFilter;
-    }
-    
-    return params;
-  }, [searchTerm, transactionTypeFilter, dateFromFilter, dateToFilter]);
+    const p: Record<string, any> = {};
+    if (productId.trim()) p.product_id = productId.trim();
+    if (locationId.trim()) p.location_id = locationId.trim();
+    if (dateFromFilter) p.from = dateFromFilter;
+    if (dateToFilter) p.to = dateToFilter;
+    p.limit = 1000; // fetch up to 1000, paginate client-side
+    return p;
+  }, [productId, locationId, dateFromFilter, dateToFilter]);
 
-  // Fetch inventory transactions
-  const {
-    data: transactions,
-    pagination,
-    isLoading,
-    error,
-    refetch,
-    handlePageChange,
-    handleLimitChange,
-    page,
-    limit
-  } = usePaginatedQuery<InventoryTransaction>('/inventory/transactions', queryParams);
+  // Fetch audit rows
+  const refetch = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const params = new URLSearchParams();
+      Object.entries(queryParams).forEach(([k, v]) => params.set(k, String(v)));
+      const res = await api.get(`/inventory/audit?${params.toString()}`);
+      if (res.data?.success) {
+        setRows(res.data.data || []);
+        setPage(1);
+      } else {
+        setRows([]);
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Load audit failed');
+      setRows([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { refetch(); }, []);
 
   // Transaction type icons and colors
   const getTransactionTypeChip = (type: string, quantity: number) => {
@@ -126,10 +126,11 @@ const InventoryTransactions = () => {
 
   // Clear filters
   const handleClearFilters = () => {
-    setSearchTerm('');
-    setTransactionTypeFilter('');
+    setProductId('');
+    setLocationId('');
     setDateFromFilter('');
     setDateToFilter('');
+    refetch();
   };
 
   return (
@@ -145,14 +146,7 @@ const InventoryTransactions = () => {
           Theo dõi mọi thay đổi tồn kho
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
-            component={RouterLink}
-            to="/inventory/stock-in"
-          >
-            Nhập kho
-          </Button>
+          <Button variant="outlined" startIcon={<AddIcon />} component={RouterLink} to="/inventory/stock-in">Nhập kho</Button>
           <Button
             variant="outlined"
             startIcon={<TransferIcon />}
@@ -169,6 +163,9 @@ const InventoryTransactions = () => {
           >
             Kiểm kê
           </Button>
+          <Button variant="outlined" component="a" href="/inventory/audit/export.csv" target="_blank">Xuất Audit CSV</Button>
+          <Button variant="outlined" component="a" href="/inventory/export/stock.csv" target="_blank">Xuất Stock CSV</Button>
+          <Button variant="outlined" component="a" href="/inventory/export/locations.csv" target="_blank">Xuất Locations CSV</Button>
         </Box>
       </Box>
 
@@ -176,41 +173,13 @@ const InventoryTransactions = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            {/* Search */}
+            {/* Product ID */}
             <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                label="Tìm kiếm"
-                placeholder="Tên sản phẩm, SKU, số tham chiếu..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+              <TextField fullWidth label="Product ID" value={productId} onChange={(e)=>setProductId(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }} />
             </Grid>
-
-            {/* Transaction Type Filter */}
+            {/* Location */}
             <Grid item xs={12} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Loại giao dịch</InputLabel>
-                <Select
-                  value={transactionTypeFilter}
-                  label="Loại giao dịch"
-                  onChange={(e) => setTransactionTypeFilter(e.target.value)}
-                >
-                  <MenuItem value="">Tất cả</MenuItem>
-                  <MenuItem value="stock_in">Nhập kho</MenuItem>
-                  <MenuItem value="stock_out">Xuất kho</MenuItem>
-                  <MenuItem value="transfer_in">Chuyển đến</MenuItem>
-                  <MenuItem value="transfer_out">Chuyển đi</MenuItem>
-                  <MenuItem value="adjustment">Điều chỉnh</MenuItem>
-                </Select>
-              </FormControl>
+              <TextField fullWidth label="Location" value={locationId} onChange={(e)=>setLocationId(e.target.value)} />
             </Grid>
 
             {/* Date From */}
@@ -263,17 +232,20 @@ const InventoryTransactions = () => {
         </Alert>
       )}
 
-      {/* Transactions Table */}
+      {/* Audit Table */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>Thời gian</TableCell>
+              <TableCell>Loại</TableCell>
               <TableCell>Sản phẩm</TableCell>
-              <TableCell>Loại giao dịch</TableCell>
+              <TableCell>Vị trí</TableCell>
               <TableCell align="right">Số lượng</TableCell>
-              <TableCell align="right">Giá trị</TableCell>
-              <TableCell>Tham chiếu</TableCell>
-              <TableCell>Ngày</TableCell>
+              <TableCell align="right">Từ</TableCell>
+              <TableCell align="right">Thành</TableCell>
+              <TableCell>Lý do</TableCell>
+              <TableCell>Ghi chú</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -288,80 +260,25 @@ const InventoryTransactions = () => {
                   </TableCell>
                 </TableRow>
               ))
-            ) : transactions.length > 0 ? (
-              transactions.map((transaction) => (
-                <TableRow key={transaction.id} hover>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight={500}>
-                        {transaction.product_name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        SKU: {transaction.product_sku}
-                      </Typography>
-                      {transaction.category_name && (
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          {transaction.category_name}
-                        </Typography>
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    {getTransactionTypeChip(transaction.transaction_type, transaction.quantity)}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography 
-                      variant="body2" 
-                      fontWeight={600}
-                      color={
-                        ['stock_in', 'transfer_in'].includes(transaction.transaction_type) ? 'success.main' :
-                        ['stock_out', 'transfer_out'].includes(transaction.transaction_type) ? 'error.main' :
-                        'text.primary'
-                      }
-                    >
-                      {['stock_in', 'transfer_in'].includes(transaction.transaction_type) ? '+' : 
-                       ['stock_out', 'transfer_out'].includes(transaction.transaction_type) ? '-' : ''}
-                      {transaction.quantity}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    {transaction.cost_price ? (
-                      <Typography variant="body2" color="primary.main">
-                        {formatCurrency(transaction.cost_price * transaction.quantity)}
-                      </Typography>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        -
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Box>
-                      {transaction.reference_number && (
-                        <Typography variant="body2" fontWeight={500}>
-                          {transaction.reference_number}
-                        </Typography>
-                      )}
-                      {transaction.supplier_name && (
-                        <Typography variant="caption" color="text.secondary">
-                          {transaction.supplier_name}
-                        </Typography>
-                      )}
-                      {transaction.notes && (
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          {transaction.notes}
-                        </Typography>
-                      )}
-                    </Box>
-                  </TableCell>
+            ) : rows.length > 0 ? (
+              rows.slice((page-1)*limit, (page-1)*limit + limit).map((r, idx) => (
+                <TableRow key={`${r.created_at}-${idx}`} hover>
                   <TableCell>
                     <Typography variant="body2">
-                      {new Date(transaction.created_at).toLocaleDateString('vi-VN')}
+                      {new Date(r.created_at).toLocaleDateString('vi-VN')}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {new Date(transaction.created_at).toLocaleTimeString('vi-VN')}
+                      {new Date(r.created_at).toLocaleTimeString('vi-VN')}
                     </Typography>
                   </TableCell>
+                  <TableCell>{getTransactionTypeChip(r.transaction_type, r.quantity)}</TableCell>
+                  <TableCell>{r.product_name || r.product_id}</TableCell>
+                  <TableCell>{r.location_id || '-'}</TableCell>
+                  <TableCell align="right">{r.quantity}</TableCell>
+                  <TableCell align="right">{r.previous_quantity ?? '-'}</TableCell>
+                  <TableCell align="right">{r.new_quantity ?? '-'}</TableCell>
+                  <TableCell>{r.reason || '-'}</TableCell>
+                  <TableCell>{r.notes || '-'}</TableCell>
                 </TableRow>
               ))
             ) : (
@@ -377,21 +294,19 @@ const InventoryTransactions = () => {
         </Table>
 
         {/* Pagination */}
-        {pagination && (
-          <TablePagination
-            component="div"
-            count={pagination.total}
-            page={page - 1}
-            onPageChange={(_, newPage) => handlePageChange(newPage + 1)}
-            rowsPerPage={limit}
-            onRowsPerPageChange={(e) => handleLimitChange(parseInt(e.target.value))}
-            rowsPerPageOptions={[10, 25, 50, 100]}
-            labelRowsPerPage="Số dòng mỗi trang:"
-            labelDisplayedRows={({ from, to, count }) => 
-              `${from}-${to} của ${count !== -1 ? count : `hơn ${to}`}`
-            }
-          />
-        )}
+        <TablePagination
+          component="div"
+          count={rows.length}
+          page={page - 1}
+          onPageChange={(_, newPage) => setPage(newPage + 1)}
+          rowsPerPage={limit}
+          onRowsPerPageChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          labelRowsPerPage="Số dòng mỗi trang:"
+          labelDisplayedRows={({ from, to, count }) => 
+            `${from}-${to} của ${count !== -1 ? count : `hơn ${to}`}`
+          }
+        />
       </TableContainer>
     </Container>
   );

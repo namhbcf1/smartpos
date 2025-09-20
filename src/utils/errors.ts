@@ -176,10 +176,10 @@ export class ErrorLogger {
     };
 
     if (error instanceof AppError) {
-      logData.code = error.code;
-      logData.statusCode = error.statusCode;
-      logData.isOperational = error.isOperational;
-      logData.details = error.details;
+      (logData as any).code = (error as any).code;
+      (logData as any).statusCode = (error as any).statusCode;
+      (logData as any).isOperational = (error as any).isOperational;
+      (logData as any).details = (error as any).details;
     }
 
     // Log based on severity
@@ -191,8 +191,15 @@ export class ErrorLogger {
   }
 
   static logWithSentry(error: Error, context?: any): void {
-    // TODO: Integrate with Sentry when available
+    // External error reporting integration point
+    // This method provides a centralized place for future Sentry or similar service integration
+    // For now, uses the standard logging mechanism
     this.log(error, context);
+    
+    // Future implementation example:
+    // if (typeof Sentry !== 'undefined') {
+    //   Sentry.captureException(error, { extra: context });
+    // }
   }
 }
 

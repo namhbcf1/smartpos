@@ -28,7 +28,7 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-    'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://computerpos-pro-prod.your-subdomain.workers.dev')
+    // Stop injecting duplicate API URL; rely on VITE_API_BASE_URL in env files
   },
   preview: {
     port: 3000,

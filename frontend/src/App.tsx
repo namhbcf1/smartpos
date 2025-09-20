@@ -62,7 +62,9 @@ function App() {
       title: 'Tên sản phẩm',
       sortable: true,
       render: (value: string) => (
-        <div className="font-medium text-gray-900 dark:text-white">{value}</div>
+        <div className="font-medium text-gray-900">
+          {value}
+        </div>
       ),
     },
     {
@@ -70,7 +72,7 @@ function App() {
       title: 'Danh mục',
       sortable: true,
       render: (value: string) => (
-        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">
+        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800  rounded-full">
           {value}
         </span>
       ),
@@ -81,7 +83,7 @@ function App() {
       sortable: true,
       align: 'right' as const,
       render: (value: number) => (
-        <span className="font-bold text-green-600 dark:text-green-400">
+        <span className="font-bold text-green-600">
           {formatCurrency(value)}
         </span>
       ),
@@ -310,7 +312,7 @@ function App() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-gray-600">
                         Status
                       </p>
                       <p className={`font-semibold ${
@@ -329,7 +331,7 @@ function App() {
                       apiStatus === 'error' ? 'bg-red-400' : 'bg-yellow-400'
                     }`}></div>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-xs text-gray-500 mt-2">
                     pos-backend-bangachieu2.bangachieu2.workers.dev
                   </p>
                 </CardContent>
@@ -348,16 +350,16 @@ function App() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-gray-600">
                         Sản phẩm
                       </p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <p className="text-2xl font-bold text-gray-900">
                         {products.length}
                       </p>
                     </div>
                     <div className="w-3 h-3 bg-green-400 rounded-full"></div>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-xs text-gray-500 mt-2">
                     Đồng bộ thời gian thực
                   </p>
                 </CardContent>
@@ -376,7 +378,7 @@ function App() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-gray-600">
                         Status
                       </p>
                       <p className="text-2xl font-bold text-green-600">
@@ -385,7 +387,7 @@ function App() {
                     </div>
                     <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-xs text-gray-500 mt-2">
                     Tốc độ cao, độ trễ thấp
                   </p>
                 </CardContent>
@@ -460,7 +462,7 @@ function App() {
                                 {product.category_name}
                               </span>
                             </div>
-                            <h4 className="font-bold text-gray-900 dark:text-white mb-2 text-lg gradient-text-primary">
+                            <h4 className="font-bold text-gray-900 mb-2 text-lg gradient-text-primary">
                               {product.name}
                             </h4>
                             <p className="text-2xl font-bold gradient-text-success mb-4">
@@ -502,7 +504,7 @@ function App() {
                             <h3 className="text-xl font-bold gradient-text-primary mb-2">
                               Tạo đơn hàng mới
                             </h3>
-                            <p className="text-gray-600 dark:text-gray-400">
+                            <p className="text-gray-600">
                               Bắt đầu quy trình bán hàng với AI assistant
                             </p>
                           </div>
@@ -526,7 +528,7 @@ function App() {
                             <h3 className="text-xl font-bold gradient-text-primary mb-2">
                               Analytics Dashboard
                             </h3>
-                            <p className="text-gray-600 dark:text-gray-400">
+                            <p className="text-gray-600">
                               Phân tích doanh thu và insights kinh doanh
                             </p>
                           </div>

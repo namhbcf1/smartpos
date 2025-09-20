@@ -136,7 +136,7 @@ export function buildOrderClause(
     sortField = params.sortBy;
   }
   
-  return `ORDER BY ${sortField} ${params.sortOrder.toUpperCase()}`;
+  return `ORDER BY ${sortField} ${(params.sortOrder || 'ASC').toUpperCase()}`;
 }
 
 /**
@@ -195,21 +195,24 @@ export async function paginateProducts(
   env: Env,
   params: PaginationParams,
   filters: {
-    categoryId?: number;
+    category_id?: number;
     supplierId?: number;
     status?: string;
-    isActive?: boolean;
+    is_active?: boolean;
   } = {}
 ): Promise<PaginationResult<any>> {
-  const allowedSortFields = ['name', 'price', 'stock_quantity', 'created_at', 'updated_at'];
+  const allowedSortFields = ['name', 'price', 'stock', 'created_at', 'updated_at'];
   
   // Build WHERE conditions
   const conditions = ['1=1'];
   const bindings: any[] = [];
   
-  if (filters.categoryId) {
+  if ((filters as any).categoryId) {
     conditions.push('category_id = ?');
-    bindings.push(filters.categoryId);
+    bindings.push((filters as any).categoryId);
+  } else if (filters.category_id) {
+    conditions.push('category_id = ?');
+    bindings.push(filters.category_id);
   }
   
   if (filters.supplierId) {
@@ -222,9 +225,12 @@ export async function paginateProducts(
     bindings.push(filters.status);
   }
   
-  if (filters.isActive !== undefined) {
+  if ((filters as any).isActive !== undefined) {
     conditions.push('is_active = ?');
-    bindings.push(filters.isActive ? 1 : 0);
+    bindings.push((filters as any).isActive ? 1 : 0);
+  } else if (filters.is_active !== undefined) {
+    conditions.push('is_active = ?');
+    bindings.push(filters.is_active ? 1 : 0);
   }
   
   // Add search conditions

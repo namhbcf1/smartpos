@@ -87,8 +87,8 @@ export class InventoryForecastingService {
       SELECT 
         p.id as product_id,
         p.name,
-        p.stock_quantity as current_stock,
-        p.min_stock_level,
+        p.stock as current_stock,
+        p.min_stock,
         p.reorder_point as current_reorder_point,
         s.name as supplier_name,
         COALESCE(sp.average_lead_time, 7) as lead_time_days,
@@ -157,7 +157,7 @@ export class InventoryForecastingService {
     return {
       productId: productData.product_id,
       currentStock: productData.current_stock,
-      reorderLevel: Math.max(reorderLevel, productData.min_stock_level || 0),
+      reorderLevel: Math.max(reorderLevel, productData.min_stock || 0),
       reorderQuantity,
       leadTimeDays,
       averageDailyUsage: avgDailyUsage,
@@ -365,7 +365,7 @@ export class InventoryForecastingService {
     const onTimeScore = supplierData.on_time_rate || 0;
     const qualityScore = supplierData.quality_score || 0.8;
     
-    // Price competitiveness (lower cost = higher score)
+    // Price competitiveness (lower cost_price = higher score)
     const priceScore = supplierData.min_unit_cost > 0 ? 
       Math.min(1, supplierData.min_unit_cost / supplierData.avg_unit_cost) : 0.5;
 

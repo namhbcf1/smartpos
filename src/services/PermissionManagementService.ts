@@ -60,7 +60,7 @@ export class PermissionManagementService {
         WHERE type='table' AND name IN ('system_resources', 'roles', 'permissions')
       `).all();
 
-      if (tableCheck.length < 3) {
+      if (tableCheck.results && tableCheck.results.length < 3) {
         console.log('🔧 RBAC tables missing, initializing...');
         const rbacService = new RBACInitializationService(this.env);
         await rbacService.initializeRBAC();
@@ -122,7 +122,7 @@ export class PermissionManagementService {
       ORDER BY sr.display_name, sa.display_name
     `).bind(employeeId).all();
 
-    return permissions as EmployeePermission[];
+    return permissions.results as EmployeePermission[];
   }
 
   /**
@@ -148,7 +148,7 @@ export class PermissionManagementService {
     // Build matrix
     const matrix: PermissionMatrix = { resources: [] };
 
-    for (const resource of resources) {
+    for (const resource of resources.results || []) {
       // Get actions for this resource
       const actions = await this.env.DB.prepare(`
         SELECT DISTINCT sa.id, sa.name, sa.display_name, p.permission_key
@@ -158,7 +158,7 @@ export class PermissionManagementService {
         ORDER BY sa.display_name
       `).bind(resource.id).all();
 
-      const resourceActions = actions.map(action => {
+      const resourceActions = actions.results?.map((action: any) => {
         const permission = permissionMap.get(action.permission_key);
         return {
           id: action.id,
@@ -368,7 +368,7 @@ export class PermissionManagementService {
       ORDER BY r.is_system DESC, r.display_name
     `).all();
 
-    return templates as RoleTemplate[];
+    return (templates as any).results as RoleTemplate[];
   }
 
   /**
@@ -394,7 +394,7 @@ export class PermissionManagementService {
       ORDER BY r.display_name
     `).bind(employeeId).all();
 
-    return roles as RoleTemplate[];
+    return (roles as any).results as RoleTemplate[];
   }
 
   /**
@@ -428,6 +428,6 @@ export class PermissionManagementService {
       LIMIT ?
     `).bind(employeeId, limit).all();
 
-    return auditLog;
+    return (auditLog as any).results as any[];
   }
 }

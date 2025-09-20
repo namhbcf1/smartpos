@@ -96,7 +96,7 @@ export class EcommerceService {
    * Get online product catalog
    */
   async getOnlineProducts(filters: {
-    categoryId?: number;
+    category_id?: number;
     search?: string;
     minPrice?: number;
     maxPrice?: number;
@@ -120,7 +120,7 @@ export class EcommerceService {
         p.description,
         p.price,
         p.sale_price,
-        p.stock_quantity,
+        p.stock,
         p.images,
         c.name as category,
         p.tags,
@@ -136,9 +136,9 @@ export class EcommerceService {
     const bindings: any[] = [];
 
     // Apply filters
-    if (filters.categoryId) {
+    if (filters.category_id) {
       query += ' AND p.category_id = ?';
-      bindings.push(filters.categoryId);
+      bindings.push(filters.category_id);
     }
 
     if (filters.search) {
@@ -224,7 +224,7 @@ export class EcommerceService {
         p.description,
         p.price,
         p.sale_price,
-        p.stock_quantity,
+        p.stock,
         p.images,
         c.name as category,
         p.tags,
@@ -248,7 +248,7 @@ export class EcommerceService {
 
     // Get variants if any
     const variantsQuery = `
-      SELECT id, name, price, stock_quantity, attributes
+      SELECT id, name, price, stock, attributes
       FROM product_variants
       WHERE product_id = ? AND is_active = 1
     `;
@@ -256,7 +256,7 @@ export class EcommerceService {
     const variantsResult = await this.executor.execute(variantsQuery, [productId]);
     
     if (variantsResult.data && variantsResult.data.length > 0) {
-      product.variants = variantsResult.data.map(variant => ({
+      product.variants = variantsResult.data.map((variant: any) => ({
         ...variant,
         attributes: JSON.parse(variant.attributes || '{}'),
       }));
@@ -310,7 +310,7 @@ export class EcommerceService {
         if (!variant) {
           throw new Error(`Variant ${item.variantId} not found`);
         }
-        if (variant.stockQuantity < item.quantity) {
+        if ((variant as any).stock < item.quantity) {
           throw new Error(`Insufficient stock for variant ${variant.name}`);
         }
         price = variant.price;
@@ -413,12 +413,12 @@ export class EcommerceService {
       // Update stock
       if (item.variantId) {
         await this.executor.execute(
-          'UPDATE product_variants SET stock_quantity = stock_quantity - ? WHERE id = ?',
+          'UPDATE product_variants SET stock = stock - ? WHERE id = ?',
           [item.quantity, item.variantId]
         );
       } else {
         await this.executor.execute(
-          'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
+          'UPDATE products SET stock = stock - ? WHERE id = ?',
           [item.quantity, item.productId]
         );
       }
@@ -565,7 +565,7 @@ export class EcommerceService {
       return result;
     } catch (error) {
       console.error('Payment processing failed:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: (error as any).message };
     }
   }
 
@@ -581,8 +581,8 @@ export class EcommerceService {
       images: JSON.parse(data.images || '[]'),
       category: data.category || '',
       tags: JSON.parse(data.tags || '[]'),
-      isAvailable: data.is_active === 1 && data.stock_quantity > 0,
-      stockQuantity: data.stock_quantity,
+      isAvailable: data.is_active === 1 && data.stock > 0,
+      stockQuantity: data.stock,
       rating: parseFloat(data.rating) || 0,
       reviewCount: data.review_count || 0,
     };

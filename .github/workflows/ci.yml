@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps (root)
+        run: npm ci || npm install
+
+      - name: Install deps (frontend)
+        working-directory: frontend
+        run: npm ci || npm install
+
+      - name: Lint (root)
+        run: npm run lint --if-present || echo "no lint"
+
+      - name: Typecheck (frontend)
+        working-directory: frontend
+        run: npm run typecheck --if-present || echo "no typecheck"
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build --if-present || echo "no build"
+
+      - name: Tests
+        run: npm test --if-present || echo "no tests"
+

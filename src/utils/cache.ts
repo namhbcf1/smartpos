@@ -119,8 +119,7 @@ export class CacheManager {
     try {
       await env.CACHE.put(
         fullKey,
-        JSON.stringify(entry),
-        { expirationTtl: ttl }
+        JSON.stringify(entry)
       );
       this.stats.sets++;
     } catch (error) {
@@ -262,7 +261,9 @@ export class CacheManager {
     // Implement LRU eviction if cache is full
     if (this.memoryCache.size >= this.maxMemoryItems) {
       const firstKey = this.memoryCache.keys().next().value;
-      this.memoryCache.delete(firstKey);
+      if (firstKey) {
+        this.memoryCache.delete(firstKey);
+      }
     }
     
     this.memoryCache.set(key, entry);
@@ -314,7 +315,7 @@ export class CacheDecorators {
       const method = descriptor.value;
       
       descriptor.value = async function (...args: T): Promise<R> {
-        const env = this.env || args.find((arg: any) => arg?.CACHE);
+        const env = (this as any).env || args.find((arg: any) => arg?.CACHE);
         if (!env) {
           return method.apply(this, args);
         }
@@ -349,7 +350,7 @@ export class CacheDecorators {
       descriptor.value = async function (...args: any[]): Promise<any> {
         const result = await method.apply(this, args);
         
-        const env = this.env || args.find((arg: any) => arg?.CACHE);
+        const env = (this as any).env || args.find((arg: any) => arg?.CACHE);
         if (env) {
           const cache = CacheManager.getInstance();
           

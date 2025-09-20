@@ -73,7 +73,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               mb: 1
             }}
           >
-            Xin chào, {user?.fullName || user?.username}! 👋
+            Xin chào, {user?.full_name || user?.username}! 👋
           </Typography>
           <Typography
             variant="body1"

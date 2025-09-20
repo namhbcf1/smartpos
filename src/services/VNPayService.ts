@@ -142,7 +142,7 @@ export class VNPayService {
     const sortedParams: Record<string, string> = {};
     
     sortedKeys.forEach(key => {
-      sortedParams[key] = params[key];
+      sortedParams[key] = params[key] || '';
     });
 
     return sortedParams;

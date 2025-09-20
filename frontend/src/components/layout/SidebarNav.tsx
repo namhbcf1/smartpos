@@ -23,7 +23,8 @@ const sections = [
     { to: '/warranty', label: 'Warranty' },
   ]},
   { title: 'Báo cáo', links: [
-    { to: '/reports', label: 'Reports' },
+    { to: '/reports', label: 'Tổng hợp' },
+    { to: '/reports/advanced', label: 'Advanced' },
   ]},
   { title: 'Cài đặt', links: [
     { to: '/settings', label: 'Settings' },

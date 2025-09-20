@@ -22,10 +22,16 @@ const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 // Main authentication middleware
 export const authenticate: MiddlewareHandler<{
   Bindings: Env;
+  Variables: {
+    user?: any;
+    userId?: string;
+    tenantId?: string;
+    jwtPayload?: any;
+  };
 }> = async (c, next) => {
   try {
     // Get token from cookie or Authorization header
-    let token = c.req.cookie('auth_token');
+    let token = c.req.header('Cookie')?.split('auth_token=')[1]?.split(';')[0];
     let tokenSource = 'cookie';
 
     if (!token) {
@@ -61,7 +67,7 @@ export const authenticate: MiddlewareHandler<{
 
     // Verify JWT token
     try {
-      const payload = await verify<JwtPayload>(token, jwtSecret);
+      const payload = await verify(token, jwtSecret) as any;
       console.log('✅ JWT token verified successfully');
 
       // Validate token expiration
@@ -70,14 +76,17 @@ export const authenticate: MiddlewareHandler<{
         throw new Error('Token expired');
       }
 
-      // Store user info in context
+      // Store user and multi-tenant context
+      const userId = String(payload.sub || payload.userId || '1');
+      const tenantId = (payload as any).tenantId || 'default';
       c.set('user', {
-        id: payload.sub || payload.userId,
-        username: payload.username,
-        role: payload.role,
-        storeId: payload.store || payload.storeId || 1
+        id: userId,
+        username: (payload as any).username,
+        role: (payload as any).role,
+        storeId: (payload as any).store || (payload as any).storeId || 1
       });
-
+      c.set('userId', userId);
+      c.set('tenantId', tenantId);
       // Store JWT payload for logout and session management
       c.set('jwtPayload', payload);
 
@@ -132,7 +141,12 @@ export const authenticate: MiddlewareHandler<{
 };
 
 // Helper function to check if user has required role
-export const requireRole = (requiredRole: UserRole): MiddlewareHandler<{ Bindings: Env }> => {
+export const requireRole = (requiredRole: UserRole): MiddlewareHandler<{
+  Bindings: Env;
+  Variables: {
+    user?: any;
+  };
+}> => {
   return async (c, next) => {
     const user = c.get('user');
 
@@ -155,7 +169,7 @@ export const requireRole = (requiredRole: UserRole): MiddlewareHandler<{ Binding
       'affiliate': 0
     };
 
-    const userLevel = roleHierarchy[user.role as keyof typeof roleHierarchy] || 0;
+    const userLevel = roleHierarchy[(user?.role || '').toLowerCase() as keyof typeof roleHierarchy] || 0;
     const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0;
 
     if (userLevel < requiredLevel) {

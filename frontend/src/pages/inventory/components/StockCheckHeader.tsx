@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import {
   Box,
   Button,
@@ -6,13 +6,19 @@ import {
   Stack,
   Chip,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Paper,
+  Tooltip,
+  IconButton,
+  Divider
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
   Save as SaveIcon,
   Refresh as RefreshIcon,
-  Assignment as CheckIcon
+  Assignment as CheckIcon,
+  Download as DownloadIcon,
+  DoneAll as CompleteIcon
 } from '@mui/icons-material';
 import { StockCheckSession } from './types';
 
@@ -22,6 +28,8 @@ interface StockCheckHeaderProps {
   onSave: () => void;
   onRefresh: () => void;
   loading: boolean;
+  onExportCSV?: () => void;
+  onCompleteSession?: () => void;
 }
 
 export const StockCheckHeader: React.FC<StockCheckHeaderProps> = ({
@@ -29,7 +37,9 @@ export const StockCheckHeader: React.FC<StockCheckHeaderProps> = ({
   onBack,
   onSave,
   onRefresh,
-  loading
+  loading,
+  onExportCSV,
+  onCompleteSession
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -54,6 +64,7 @@ export const StockCheckHeader: React.FC<StockCheckHeaderProps> = ({
 
   return (
     <Box sx={{ mb: 3 }}>
+      <Paper elevation={0} sx={{ p: 2, borderRadius: 2, background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#fff' }}>
       <Stack
         direction={isMobile ? 'column' : 'row'}
         justifyContent="space-between"
@@ -71,7 +82,7 @@ export const StockCheckHeader: React.FC<StockCheckHeaderProps> = ({
           </Button>
           
           <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
+            <Typography variant="h5" component="h1" gutterBottom fontWeight="bold">
               <CheckIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
               Kiểm kho
             </Typography>
@@ -115,7 +126,26 @@ export const StockCheckHeader: React.FC<StockCheckHeaderProps> = ({
       </Stack>
 
       {session && (
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 2 }}>
+        <Box sx={{ mt: 2 }}>
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+            <Typography variant="body2" color="text.secondary">Tác vụ nhanh</Typography>
+            <Divider flexItem orientation="vertical" />
+            <Tooltip title="Xuất CSV">
+              <span>
+                <IconButton size="small" onClick={onExportCSV} disabled={loading || !session}>
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Hoàn tất phiên">
+              <span>
+                <IconButton size="small" onClick={onCompleteSession} disabled={loading || !session}>
+                  <CompleteIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
           <Stack direction="row" spacing={4}>
             <Box>
               <Typography variant="body2" color="text.secondary">
@@ -155,8 +185,10 @@ export const StockCheckHeader: React.FC<StockCheckHeaderProps> = ({
               </Typography>
             </Box>
           </Stack>
+          </Paper>
         </Box>
       )}
+      </Paper>
     </Box>
   );
 };

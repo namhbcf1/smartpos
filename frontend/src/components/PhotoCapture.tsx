@@ -7,107 +7,105 @@ import {
   Button,
   Box,
   Typography,
-  IconButton,
-  Alert,
   Card,
   CardContent,
   Grid,
-  Chip,
+  IconButton,
+  Tooltip,
+  Alert,
   LinearProgress,
-  Tooltip
+  Chip,
+  TextField
 } from '@mui/material';
 import {
   PhotoCamera as CameraIcon,
-  Close as CloseIcon,
   FlipCameraIos as FlipIcon,
-  Flash as FlashIcon,
-  Download as DownloadIcon,
-  Delete as DeleteIcon,
-  Check as CheckIcon,
-  Refresh as RefreshIcon
+  Close as CloseIcon,
+  Refresh as RetakeIcon,
+  Save as SaveIcon,
+  Upload as UploadIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material';
-import { useSnackbar } from 'notistack';
-
-interface CapturedPhoto {
-  id: string;
-  dataUrl: string;
-  timestamp: Date;
-  size: number;
-  filename: string;
-}
 
 interface PhotoCaptureProps {
   open: boolean;
   onClose: () => void;
-  onPhotosCapture: (photos: CapturedPhoto[]) => void;
-  maxPhotos?: number;
-  productName?: string;
-  stockInId?: string;
+  onCapture: (photoData: string, metadata?: PhotoMetadata) => void;
+  title?: string;
+  showMetadata?: boolean;
+}
+
+interface PhotoMetadata {
+  description: string;
+  tags: string[];
+  timestamp: string;
+  location?: string;
 }
 
 const PhotoCapture: React.FC<PhotoCaptureProps> = ({
   open,
   onClose,
-  onPhotosCapture,
-  maxPhotos = 5,
-  productName,
-  stockInId
+  onCapture,
+  title = 'Photo Capture',
+  showMetadata = true
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState('');
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
-  const [currentCamera, setCurrentCamera] = useState<'user' | 'environment'>('environment');
-  const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startCamera = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Stop existing stream
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
 
-      const constraints: MediaStreamConstraints = {
+      const constraints = {
         video: {
-          facingMode: currentCamera,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         }
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-      
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(newStream);
+
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject = newStream;
         videoRef.current.play();
-        setIsStreaming(true);
       }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      enqueueSnackbar('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.', { variant: 'error' });
+
+      setCameraActive(true);
+    } catch (err: any) {
+      console.error('Error starting camera:', err);
+      setError('Failed to access camera. Please check camera permissions.');
     } finally {
       setLoading(false);
     }
-  }, [currentCamera, enqueueSnackbar]);
+  }, [facingMode, stream]);
 
   const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
-    setIsStreaming(false);
-  }, []);
+    setCameraActive(false);
+  }, [stream]);
 
   const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current || capturedPhotos.length >= maxPhotos) {
-      return;
-    }
+    if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -115,301 +113,382 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
 
     if (!context) return;
 
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    // Draw video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const photoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    setCapturedPhoto(photoDataUrl);
+    stopCamera();
+  }, [stopCamera]);
 
-    // Convert to data URL
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    const timestamp = new Date();
-    const filename = `stock_in_${stockInId || 'new'}_${timestamp.getTime()}.jpg`;
+  const flipCamera = useCallback(() => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  }, []);
 
-    // Calculate approximate file size
-    const size = Math.round((dataUrl.length * 3) / 4);
+  const retakePhoto = useCallback(() => {
+    setCapturedPhoto(null);
+    startCamera();
+  }, [startCamera]);
 
-    const newPhoto: CapturedPhoto = {
-      id: `photo_${timestamp.getTime()}`,
-      dataUrl,
-      timestamp,
-      size,
-      filename
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setCapturedPhoto(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const handleSave = useCallback(() => {
+    if (!capturedPhoto) return;
+
+    const metadata: PhotoMetadata = {
+      description,
+      tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      timestamp: new Date().toISOString(),
     };
 
-    setCapturedPhotos(prev => [...prev, newPhoto]);
-    enqueueSnackbar('Đã chụp ảnh thành công!', { variant: 'success' });
-  }, [capturedPhotos.length, maxPhotos, stockInId, enqueueSnackbar]);
-
-  const deletePhoto = (photoId: string) => {
-    setCapturedPhotos(prev => prev.filter(photo => photo.id !== photoId));
-  };
-
-  const downloadPhoto = (photo: CapturedPhoto) => {
-    const link = document.createElement('a');
-    link.download = photo.filename;
-    link.href = photo.dataUrl;
-    link.click();
-  };
-
-  const handleSave = () => {
-    onPhotosCapture(capturedPhotos);
+    onCapture(capturedPhoto, showMetadata ? metadata : undefined);
     handleClose();
-  };
+  }, [capturedPhoto, description, tags, onCapture, showMetadata]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     stopCamera();
-    setCapturedPhotos([]);
+    setCapturedPhoto(null);
+    setDescription('');
+    setTags('');
+    setError(null);
     onClose();
-  };
+  }, [stopCamera, onClose]);
 
-  const switchCamera = () => {
-    setCurrentCamera(prev => prev === 'user' ? 'environment' : 'user');
-  };
+  const downloadPhoto = useCallback(() => {
+    if (!capturedPhoto) return;
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+    const link = document.createElement('a');
+    link.href = capturedPhoto;
+    link.download = `photo_${new Date().getTime()}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [capturedPhoto]);
 
-  // Start camera when dialog opens
   React.useEffect(() => {
-    if (open && !isStreaming) {
+    if (open && !capturedPhoto) {
       startCamera();
     }
+    
     return () => {
-      if (!open) {
-        stopCamera();
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [open, startCamera, stopCamera, isStreaming]);
+  }, [open, capturedPhoto, startCamera, stream]);
 
-  // Update camera when switching
   React.useEffect(() => {
-    if (open && isStreaming) {
+    if (cameraActive && facingMode) {
       startCamera();
     }
-  }, [currentCamera, open, isStreaming, startCamera]);
+  }, [facingMode, cameraActive, startCamera]);
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="lg"
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="md" 
       fullWidth
       PaperProps={{
         sx: { height: '90vh' }
       }}
     >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CameraIcon color="primary" />
-          <Typography variant="h6">
-            Chụp ảnh xác minh hàng hóa
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <CameraIcon sx={{ mr: 1 }} />
+            {title}
           </Typography>
-          {productName && (
-            <Chip label={productName} color="primary" size="small" />
-          )}
+          <IconButton onClick={handleClose}>
+            <CloseIcon />
+          </IconButton>
         </Box>
-        <IconButton onClick={handleClose}>
-          <CloseIcon />
-        </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
-        {loading && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" gutterBottom>
-              Đang khởi động camera...
-            </Typography>
-            <LinearProgress />
-          </Box>
+      <DialogContent sx={{ p: 2 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
         )}
 
-        <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-          {/* Camera View */}
+        {loading && <LinearProgress sx={{ mb: 2 }} />}
+
+        <Grid container spacing={2} sx={{ height: '100%' }}>
           <Grid item xs={12} md={8}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ 
-                  position: 'relative', 
-                  flexGrow: 1, 
-                  bgcolor: 'black', 
-                  borderRadius: 1,
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <video
-                    ref={videoRef}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                    playsInline
-                    muted
-                  />
-                  
-                  {!isStreaming && !loading && (
-                    <Box sx={{ 
-                      position: 'absolute', 
-                      color: 'white', 
-                      textAlign: 'center' 
-                    }}>
-                      <CameraIcon sx={{ fontSize: 64, mb: 2 }} />
-                      <Typography variant="h6">
-                        Camera chưa sẵn sàng
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <Box 
+                  sx={{ 
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'black',
+                    borderRadius: 1,
+                    overflow: 'hidden'
+                  }}
+                >
+                  {cameraActive && !capturedPhoto && (
+                    <>
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: 16,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          display: 'flex',
+                          gap: 2,
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Tooltip title="Flip Camera">
+                          <IconButton
+                            onClick={flipCamera}
+                            sx={{
+                              bgcolor: 'rgba(255, 255, 255, 0.9)',
+                              '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' }
+                            }}
+                          >
+                            <FlipIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <IconButton
+                          onClick={capturePhoto}
+                          sx={{
+                            bgcolor: 'white',
+                            width: 70,
+                            height: 70,
+                            border: '4px solid #fff',
+                            '&:hover': { bgcolor: '#f5f5f5' }
+                          }}
+                        >
+                          <CameraIcon sx={{ fontSize: 30 }} />
+                        </IconButton>
+                        <Tooltip title="Upload Photo">
+                          <IconButton
+                            onClick={() => fileInputRef.current?.click()}
+                            sx={{
+                              bgcolor: 'rgba(255, 255, 255, 0.9)',
+                              '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' }
+                            }}
+                          >
+                            <UploadIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </>
+                  )}
+
+                  {capturedPhoto && (
+                    <>
+                      <img
+                        src={capturedPhoto}
+                        alt="Captured"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain'
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: 16,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          display: 'flex',
+                          gap: 2,
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Tooltip title="Retake Photo">
+                          <IconButton
+                            onClick={retakePhoto}
+                            sx={{
+                              bgcolor: 'rgba(255, 255, 255, 0.9)',
+                              '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' }
+                            }}
+                          >
+                            <RetakeIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Download Photo">
+                          <IconButton
+                            onClick={downloadPhoto}
+                            sx={{
+                              bgcolor: 'rgba(255, 255, 255, 0.9)',
+                              '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' }
+                            }}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </>
+                  )}
+
+                  {!cameraActive && !capturedPhoto && (
+                    <Box sx={{ textAlign: 'center', color: 'white' }}>
+                      <CameraIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
+                      <Typography variant="h6" sx={{ mb: 2 }}>
+                        Camera Not Active
                       </Typography>
                       <Button
                         variant="contained"
                         onClick={startCamera}
-                        sx={{ mt: 2 }}
+                        startIcon={<CameraIcon />}
+                        sx={{ mr: 1 }}
                       >
-                        Khởi động camera
+                        Start Camera
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => fileInputRef.current?.click()}
+                        startIcon={<UploadIcon />}
+                        sx={{ color: 'white', borderColor: 'white' }}
+                      >
+                        Upload Photo
                       </Button>
                     </Box>
                   )}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-                  {/* Camera Controls */}
-                  {isStreaming && (
-                    <Box sx={{ 
-                      position: 'absolute', 
-                      bottom: 16, 
-                      left: '50%', 
-                      transform: 'translateX(-50%)',
-                      display: 'flex',
-                      gap: 2
-                    }}>
-                      <Tooltip title="Chuyển camera">
-                        <IconButton
-                          onClick={switchCamera}
-                          sx={{ 
-                            bgcolor: 'rgba(0,0,0,0.5)', 
-                            color: 'white',
-                            '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' }
-                          }}
-                        >
-                          <FlipIcon />
-                        </IconButton>
-                      </Tooltip>
-                      
-                      <Tooltip title="Chụp ảnh">
-                        <IconButton
-                          onClick={capturePhoto}
-                          disabled={capturedPhotos.length >= maxPhotos}
-                          sx={{ 
-                            bgcolor: 'primary.main', 
-                            color: 'white',
-                            width: 64,
-                            height: 64,
-                            '&:hover': { bgcolor: 'primary.dark' },
-                            '&:disabled': { bgcolor: 'grey.500' }
-                          }}
-                        >
-                          <CameraIcon sx={{ fontSize: 32 }} />
-                        </IconButton>
-                      </Tooltip>
+          {showMetadata && (
+            <Grid item xs={12} md={4}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Photo Details
+                  </Typography>
+                  
+                  <Box sx={{ mb: 2 }}>
+                    <TextField
+                      label="Description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      fullWidth
+                      multiline
+                      rows={4}
+                      placeholder="Add a description for this photo..."
+                      variant="outlined"
+                    />
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <TextField
+                      label="Tags"
+                      value={tags}
+                      onChange={(e) => setTags(e.target.value)}
+                      fullWidth
+                      placeholder="tag1, tag2, tag3..."
+                      variant="outlined"
+                      helperText="Separate tags with commas"
+                    />
+                  </Box>
+
+                  {tags && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Preview Tags:
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {tags.split(',').map((tag, index) => (
+                          <Chip
+                            key={index}
+                            label={tag.trim()}
+                            size="small"
+                            variant="outlined"
+                          />
+                        ))}
+                      </Box>
                     </Box>
                   )}
-                </Box>
 
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
-                  {capturedPhotos.length}/{maxPhotos} ảnh đã chụp
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Captured Photos */}
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Ảnh đã chụp ({capturedPhotos.length})
-                </Typography>
-                
-                {capturedPhotos.length === 0 ? (
-                  <Alert severity="info">
-                    Chưa có ảnh nào được chụp
-                  </Alert>
-                ) : (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 400, overflow: 'auto' }}>
-                    {capturedPhotos.map((photo) => (
-                      <Card key={photo.id} variant="outlined">
-                        <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <img
-                              src={photo.dataUrl}
-                              alt={`Captured ${photo.timestamp.toLocaleTimeString()}`}
-                              style={{
-                                width: 60,
-                                height: 60,
-                                objectFit: 'cover',
-                                borderRadius: 4
-                              }}
-                            />
-                            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                              <Typography variant="caption" noWrap>
-                                {photo.filename}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                {photo.timestamp.toLocaleTimeString('vi-VN')}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                {formatFileSize(photo.size)}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                              <Tooltip title="Tải xuống">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => downloadPhoto(photo)}
-                                >
-                                  <DownloadIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Xóa">
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => deletePhoto(photo.id)}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Photo Info:
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Timestamp: {new Date().toLocaleString()}
+                    </Typography>
+                    {capturedPhoto && (
+                      <Typography variant="body2" color="text.secondary">
+                        Status: Ready to save
+                      </Typography>
+                    )}
                   </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
         </Grid>
 
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        <canvas
+          ref={canvasRef}
+          style={{ display: 'none' }}
+        />
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          style={{ display: 'none' }}
+        />
       </DialogContent>
 
       <DialogActions>
         <Button onClick={handleClose}>
-          Hủy
+          Cancel
         </Button>
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          disabled={capturedPhotos.length === 0}
-          startIcon={<CheckIcon />}
-        >
-          Lưu ảnh ({capturedPhotos.length})
-        </Button>
+        {!cameraActive && !capturedPhoto && (
+          <Button
+            variant="contained"
+            onClick={startCamera}
+            startIcon={<CameraIcon />}
+          >
+            Start Camera
+          </Button>
+        )}
+        {capturedPhoto && (
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            startIcon={<SaveIcon />}
+            disabled={showMetadata && !description.trim()}
+          >
+            Save Photo
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

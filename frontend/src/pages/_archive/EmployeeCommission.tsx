@@ -52,7 +52,7 @@ import {
   employeeApi,
   formatEmployeeRole,
   formatEmployeeStatus
-} from '../services/employeeApi';
+} from '../../services/employeeApi';
 import {
   formatSalaryForDisplay,
   formatCommissionForDisplay

@@ -38,20 +38,27 @@ export interface Order {
 }
 
 export interface OrderItem {
-  id: number;
-  order_id: number;
-  product_id: number;
-  product_name: string;
-  product_sku: string;
-  product_image?: string;
-  quantity: number;
-  unit_price: number;
-  discount_amount: number;
-  discount_percentage: number;
-  tax_amount: number;
-  total_amount: number;
-  notes?: string;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  id: string; // TEXT PK per detailed schema
+  order_id: string; // TEXT NOT NULL FK → orders.id
+  product_id: string; // TEXT NOT NULL FK → products.id
+  variant_id?: string; // TEXT FK → product_variants.id
+  quantity: number; // INTEGER NOT NULL CHECK (quantity > 0)
+  unit_price_cents: number; // INTEGER NOT NULL CHECK (unit_price_cents >= 0)
+  total_price_cents: number; // INTEGER NOT NULL CHECK (total_price_cents >= 0)
+  discount_cents: number; // INTEGER DEFAULT 0 CHECK (discount_cents >= 0)
+  product_name: string; // TEXT Denormalized từ products.name
+  product_sku: string; // TEXT Denormalized từ products.sku
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+
+  // Legacy compatibility fields
+  product_image?: string; // For UI compatibility
+  discount_amount?: number; // Computed: discount_cents / 100
+  discount_percentage?: number; // For UI compatibility
+  tax_amount?: number; // For UI compatibility
+  total_amount?: number; // Computed: total_price_cents / 100
+  unit_price?: number; // Computed: unit_price_cents / 100
+  notes?: string; // Legacy field
+  status?: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'; // Legacy field
 }
 
 export interface OrderStatusHistory {
@@ -155,7 +162,7 @@ export interface Product {
   name: string;
   sku: string;
   price: number;
-  stock_quantity: number;
+  stock: number;
   image_url?: string;
   category_name?: string;
   is_active: boolean;

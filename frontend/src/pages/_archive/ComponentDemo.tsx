@@ -28,7 +28,7 @@ interface Product {
   category_name: string;
   price: number;
   cost_price: number;
-  stock_quantity: number;
+  stock: number;
 }
 
 const ComponentDemo = () => {
@@ -125,7 +125,7 @@ const ComponentDemo = () => {
                       <strong>Đã chọn:</strong> {selectedProduct.name}
                     </Typography>
                     <Typography variant="caption" display="block">
-                      SKU: {selectedProduct.sku} | Tồn: {selectedProduct.stock_quantity}
+                      SKU: {selectedProduct.sku} | Tồn: {selectedProduct.stock}
                     </Typography>
                   </Alert>
                 </Box>

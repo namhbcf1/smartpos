@@ -111,6 +111,27 @@ export class RealtimeCollaborationService {
   }
 
   /**
+   * Smoke test broadcast to all connected users
+   */
+  public async broadcastSmokeTest(message: string = 'collab_broadcast_test'): Promise<number> {
+    const payload = {
+      id: this.generateId(),
+      type: CollaborationEventType.DOCUMENT_EDIT,
+      documentId: 'smoke-test',
+      userId: 'system',
+      data: { message },
+      timestamp: Date.now()
+    } as any;
+
+    let delivered = 0;
+    for (const userId of this.websockets.keys()) {
+      await this.sendToUser(userId, payload);
+      delivered++;
+    }
+    return delivered;
+  }
+
+  /**
    * User joins collaboration session
    */
   async joinDocument(
@@ -137,7 +158,7 @@ export class RealtimeCollaborationService {
       await this.sendToUser(user.id, {
         id: this.generateId(),
         type: CollaborationEventType.SYNC_RESPONSE,
-        documentId,
+        documentId: documentId,
         userId: 'system',
         data: {
           document,
@@ -151,24 +172,20 @@ export class RealtimeCollaborationService {
       await this.broadcastToDocument(documentId, {
         id: this.generateId(),
         type: CollaborationEventType.USER_JOIN,
-        documentId,
+        documentId: documentId,
         userId: user.id,
         data: { user },
         timestamp: Date.now()
       }, user.id);
 
       log.info('User joined collaboration', {
-        documentId,
+        documentId: documentId,
         userId: user.id,
         userName: user.name
       });
 
     } catch (error) {
-      log.error('Failed to join collaboration', {
-        documentId,
-        userId: user.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to join collaboration', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       throw error;
     }
   }
@@ -196,8 +213,8 @@ export class RealtimeCollaborationService {
       await this.broadcastToDocument(documentId, {
         id: this.generateId(),
         type: CollaborationEventType.USER_LEAVE,
-        documentId,
-        userId,
+        documentId: documentId,
+        userId: userId,
         data: {},
         timestamp: Date.now()
       });
@@ -205,11 +222,7 @@ export class RealtimeCollaborationService {
       log.info('User left collaboration', { documentId, userId });
 
     } catch (error) {
-      log.error('Failed to leave collaboration', {
-        documentId,
-        userId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to leave collaboration', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -253,7 +266,7 @@ export class RealtimeCollaborationService {
       await this.broadcastToDocument(documentId, {
         id: this.generateId(),
         type: CollaborationEventType.DOCUMENT_EDIT,
-        documentId,
+        documentId: documentId,
         userId: operation.userId,
         data: { operation: transformedOperation, document },
         timestamp: Date.now(),
@@ -264,18 +277,14 @@ export class RealtimeCollaborationService {
       await this.persistDocument(document);
 
       log.info('Operation applied successfully', {
-        documentId,
+        documentId: documentId,
         operationType: operation.type,
         userId: operation.userId,
         version: document.version
       });
 
     } catch (error) {
-      log.error('Failed to apply operation', {
-        documentId,
-        operation,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to apply operation', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       throw error;
     }
   }
@@ -306,8 +315,8 @@ export class RealtimeCollaborationService {
       await this.broadcastToDocument(documentId, {
         id: this.generateId(),
         type: CollaborationEventType.LOCK_ACQUIRE,
-        documentId,
-        userId,
+        documentId: documentId,
+        userId: userId,
         data: { field },
         timestamp: Date.now()
       });
@@ -316,12 +325,7 @@ export class RealtimeCollaborationService {
       return true;
 
     } catch (error) {
-      log.error('Failed to acquire lock', {
-        documentId,
-        field,
-        userId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to acquire lock', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       return false;
     }
   }
@@ -348,8 +352,8 @@ export class RealtimeCollaborationService {
         await this.broadcastToDocument(documentId, {
           id: this.generateId(),
           type: CollaborationEventType.LOCK_RELEASE,
-          documentId,
-          userId,
+        documentId: documentId,
+        userId: userId,
           data: { field },
           timestamp: Date.now()
         });
@@ -358,12 +362,7 @@ export class RealtimeCollaborationService {
       }
 
     } catch (error) {
-      log.error('Failed to release lock', {
-        documentId,
-        field,
-        userId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to release lock', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -385,19 +384,15 @@ export class RealtimeCollaborationService {
         await this.broadcastToDocument(documentId, {
           id: this.generateId(),
           type: CollaborationEventType.CURSOR_MOVE,
-          documentId,
-          userId,
+        documentId: documentId,
+        userId: userId,
           data: { cursor },
           timestamp: Date.now()
         }, userId);
       }
 
     } catch (error) {
-      log.error('Failed to update cursor', {
-        documentId,
-        userId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to update cursor', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -442,11 +437,7 @@ export class RealtimeCollaborationService {
       };
 
     } catch (error) {
-      log.error('Failed to load document', {
-        documentId,
-        documentType,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to load document', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       throw error;
     }
   }
@@ -462,14 +453,14 @@ export class RealtimeCollaborationService {
           await this.env.DB.prepare(`
             UPDATE products 
             SET name = ?, description = ?, price = ?, cost_price = ?, 
-                stock_quantity = ?, updated_at = datetime('now')
+                stock = ?, updated_at = datetime('now')
             WHERE id = ?
           `).bind(
             document.content.name,
             document.content.description,
             document.content.price,
             document.content.cost_price,
-            document.content.stock_quantity,
+            document.content.stock,
             document.id
           ).run();
           break;
@@ -493,10 +484,7 @@ export class RealtimeCollaborationService {
       });
 
     } catch (error) {
-      log.error('Failed to persist document', {
-        documentId: document.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to persist document', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -670,15 +658,11 @@ export class RealtimeCollaborationService {
   private async sendToUser(userId: string, event: CollaborationEvent): Promise<void> {
     try {
       const websocket = this.websockets.get(userId);
-      if (websocket && websocket.readyState === WebSocket.READY_STATE_OPEN) {
+      if (websocket && websocket.readyState === WebSocket.OPEN) {
         websocket.send(JSON.stringify(event));
       }
     } catch (error) {
-      log.error('Failed to send event to user', {
-        userId,
-        eventType: event.type,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to send event to user', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 

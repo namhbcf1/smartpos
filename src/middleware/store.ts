@@ -54,10 +54,10 @@ export const storeAccess = async (c: Context<HonoEnv>, next: Next) => {
     // Determine target store (from user context or request)
     const requestedStoreId = c.req.query('store_id') ?
       parseInt(c.req.query('store_id')!) :
-      user.store_id;
+      Number(user.store_id);
 
     // Validate store access permissions
-    const storeAccess = await validateStoreAccess(c.env, user.id, requestedStoreId);
+    const storeAccess = await validateStoreAccess(c.env, Number(user.id), requestedStoreId);
 
     if (!storeAccess.hasAccess) {
       return c.json<ApiResponse<null>>({
@@ -82,13 +82,13 @@ export const storeAccess = async (c: Context<HonoEnv>, next: Next) => {
     const businessHours = await checkBusinessHours(c.env, requestedStoreId);
 
     // Determine user permissions for this store
-    const permissions = await getUserStorePermissions(c.env, user.id, requestedStoreId, user.role);
+    const permissions = await getUserStorePermissions(c.env, Number(user.id), requestedStoreId, user.role);
 
     // Get enabled features for this store
     const featuresEnabled = await getStoreFeatures(c.env, requestedStoreId);
 
     // Check for any restrictions
-    const restrictions = await getStoreRestrictions(c.env, requestedStoreId, user.id);
+    const restrictions = await getStoreRestrictions(c.env, requestedStoreId, Number(user.id));
 
     // Get store-specific settings
     const storeSettings = await getStoreSettings(c.env, requestedStoreId);
@@ -109,7 +109,7 @@ export const storeAccess = async (c: Context<HonoEnv>, next: Next) => {
     c.set('store_id', requestedStoreId);
     c.set('store_name', storeInfo.name);
     c.set('store_permissions', permissions);
-    c.set('access_level', accessResult.access_level);
+    c.set('jwtPayload', accessResult.access_level as any);
     c.set('features', Object.fromEntries(featuresEnabled.map(f => [f, true])));
     c.set('business_date', new Date().toISOString().split('T')[0]);
     c.set('timezone', storeSettings.timezone || 'Asia/Ho_Chi_Minh');
@@ -118,7 +118,7 @@ export const storeAccess = async (c: Context<HonoEnv>, next: Next) => {
 
     // Log store access for audit
     await logStoreAccess(c.env, {
-      user_id: user.id,
+      user_id: Number(user.id),
       store_id: requestedStoreId,
       access_time: new Date().toISOString(),
       ip_address: c.req.header('cf-connecting-ip') || 'unknown',
@@ -128,7 +128,7 @@ export const storeAccess = async (c: Context<HonoEnv>, next: Next) => {
     });
 
     // Performance monitoring
-    c.set('store_access_time', Date.now() - startTime);
+    c.set('jwtPayload', Date.now() - startTime as any);
 
     await next();
   } catch (error) {

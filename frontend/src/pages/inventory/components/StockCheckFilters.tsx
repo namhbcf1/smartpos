@@ -20,7 +20,7 @@ import { StockCheckFilters } from './types';
 interface StockCheckFiltersProps {
   filters: StockCheckFilters;
   onFiltersChange: (filters: StockCheckFilters) => void;
-  categories: string[];
+  categories: string[] | any;
 }
 
 export const StockCheckFiltersComponent: React.FC<StockCheckFiltersProps> = ({
@@ -85,7 +85,7 @@ export const StockCheckFiltersComponent: React.FC<StockCheckFiltersProps> = ({
             label="Danh mục"
           >
             <MenuItem value="">Tất cả</MenuItem>
-            {categories.map((category) => (
+            {(Array.isArray(categories) ? categories : []).map((category) => (
               <MenuItem key={category} value={category}>
                 {category}
               </MenuItem>

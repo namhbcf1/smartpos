@@ -61,10 +61,10 @@ export class ReturnsHandlers {
           success: true,
           data: result.returns,
           pagination: {
-            page: params.page,
-            limit: params.limit,
+            page: params.page || 1,
+            limit: params.limit || 20,
             total: result.total,
-            pages: Math.ceil(result.total / params.limit)
+            pages: Math.ceil(result.total / (params.limit || 20))
           },
           stats: result.stats
         };
@@ -78,8 +78,8 @@ export class ReturnsHandlers {
           success: true,
           data: [],
           pagination: {
-            page: params.page,
-            limit: params.limit,
+            page: params.page || 1,
+            limit: params.limit || 20,
             total: 0,
             pages: 0
           },

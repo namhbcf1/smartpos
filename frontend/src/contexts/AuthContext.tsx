@@ -3,9 +3,10 @@
 // Production-only, online-only operation
 
 import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { authAPI } from '../services/api';
+import { comprehensiveAPI } from '../services/business/comprehensiveApi';
+import { authAPI, setAuthToken } from '../services/api';
 import { User } from '../types/api';
-import { permissionService } from '../services/permissionService';
+import { permissionService } from '../services/permission/permissionService';
 
 interface AuthContextType {
   user: User | null;
@@ -42,21 +43,81 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const isMountedRef = useRef(true);
   const hasInitializedRef = useRef(false);
   const authCheckInProgressRef = useRef(false);
+  const authCheckPromiseRef = useRef<Promise<boolean> | null>(null);
 
-  // FINAL SOLUTION: NO AUTO AUTH CHECK - MANUAL ONLY
+  // AUTO LOGIN SOLUTION: Check authentication on app load
   useEffect(() => {
-    console.log('🔧 FINAL AUTH SOLUTION: Manual authentication only');
+    console.log('🔧 AUTO LOGIN: Checking authentication on app load');
 
-    // Immediately set to not loading and not authenticated
-    // No automatic API calls that can cause infinite loops
-    setIsLoading(false);
-    setIsAuthenticated(false);
-    setUser(null);
+    const initializeAuth = async () => {
+      if (authCheckInProgressRef.current || hasInitializedRef.current) {
+        console.log('Auth already initialized or in progress, skipping...');
+        setIsLoading(false);
+        return;
+      }
 
-    hasInitializedRef.current = true;
+      authCheckInProgressRef.current = true;
+      hasInitializedRef.current = true;
+
+      try {
+        // Check for existing token in sessionStorage
+        const existingToken = sessionStorage.getItem('auth_token');
+        console.log('Existing token found:', !!existingToken);
+
+        if (existingToken && existingToken.split('.').length === 3) {
+          console.log('Valid JWT format found, setting auth...');
+          setAuthToken(existingToken);
+
+          // Prefer session user, otherwise fetch from backend
+          const userStr = sessionStorage.getItem('user');
+          if (userStr) {
+            try {
+              const userData = JSON.parse(userStr);
+              setUser(userData);
+              setIsAuthenticated(true);
+              console.log('✅ Auto login from session successful');
+              return;
+            } catch (error) {
+              console.warn('Failed to parse user data:', error);
+            }
+          }
+
+          // Fallback: verify token and get user from backend
+          try {
+            const me = await comprehensiveAPI.auth.me();
+            if (me.success && me.data) {
+              setUser(me.data as any);
+              setIsAuthenticated(true);
+              sessionStorage.setItem('user', JSON.stringify(me.data));
+              console.log('✅ Auto login via /auth/me successful');
+              return;
+            }
+          } catch (err) {
+            console.warn('Auto login fallback /auth/me failed:', err);
+          }
+        }
+
+        console.log('No valid session found, user needs to login');
+        setIsAuthenticated(false);
+        setUser(null);
+
+      } catch (error) {
+        console.error('Auto login error:', error);
+        setIsAuthenticated(false);
+        setUser(null);
+      } finally {
+        console.log('Setting isLoading to false');
+        setIsLoading(false);
+        authCheckInProgressRef.current = false;
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(initializeAuth, 100);
 
     // Cleanup function to prevent memory leaks
     return () => {
+      clearTimeout(timeoutId);
       console.log('🧹 AuthProvider cleanup');
       isMountedRef.current = false;
       authCheckInProgressRef.current = false;
@@ -64,44 +125,56 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []); // Empty dependency array ensures this runs only once
 
   const clearStoredAuth = () => {
-    // Clear auth cookie (no localStorage/sessionStorage - security compliance)
-    document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    try {
+      document.cookie = 'auth_token=; Path=/; Max-Age=0; Secure; SameSite=None';
+    } catch (_) {}
+    try {
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('user');
+    } catch (_) {}
     setUser(null);
     setIsAuthenticated(false);
-
-    // Clear permissions
     permissionService.clearPermissions();
   };
 
-  // Login function
+  // Login function (real D1 auth)
   const login = async (username: string, password: string): Promise<void> => {
     try {
       setIsLoading(true);
+      console.log('🔐 Attempting login with real backend...');
 
-      const response = await authAPI.login({ username, password });
+      const res = await authAPI.login({ username, password } as any);
+      if (!res.success || !res.data?.token) {
+        throw new Error(res.message || 'Đăng nhập thất bại');
+      }
 
-      if (response.success && response.data) {
-        const { user: userData, token } = response.data;
-        
-        setUser(userData);
-        setIsAuthenticated(true);
+      const token = res.data.token;
+      const backendUser = res.data.user as any;
 
-        // Token stored in secure HttpOnly cookie by backend
-        // No localStorage/sessionStorage usage for security compliance
-
-        // Set token in API service (will read from cookie)
-        const { setAuthToken } = await import('../services/api');
-        setAuthToken(token);
-
-        // Load user permissions
-        try {
-          await permissionService.loadUserPermissions(userData.id);
-        } catch (error) {
-          console.error('Failed to load user permissions:', error);
+      // Persist token and user data for this tab session
+      try {
+        sessionStorage.setItem('auth_token', token);
+        if (backendUser) {
+          sessionStorage.setItem('user', JSON.stringify(backendUser));
         }
+      } catch (_) {}
+      setAuthToken(token);
 
-      } else {
-        throw new Error(response.message || response.error || 'Login failed');
+      // Trust backend user payload; fallback to fetching /auth/me later if needed
+      setUser(backendUser || null);
+      setIsAuthenticated(true);
+
+      console.log('✅ Login successful, auth state updated:', {
+        user: backendUser,
+        isAuthenticated: true
+      });
+
+      // Load user permissions (best-effort)
+      try {
+        const uid = (backendUser?.id ?? backendUser?.userId ?? '1').toString();
+        await permissionService.loadUserPermissions(uid);
+      } catch (error) {
+        console.error('Failed to load user permissions:', error);
       }
     } catch (error) {
       console.error('Login failed:', error);
@@ -117,7 +190,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setIsLoading(true);
 
-      await authAPI.logout();
+      await comprehensiveAPI.auth.logout();
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
@@ -129,7 +202,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Check authentication status
   const checkAuth = async (): Promise<boolean> => {
     try {
-      const response = await authAPI.me();
+      const response = await comprehensiveAPI.auth.me();
       
       if (response.success && response.data) {
         setUser(response.data);
@@ -156,27 +229,46 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Silent authentication check - single use only, no loops
   const checkAuthSilent = async (): Promise<boolean> => {
-    // Prevent multiple simultaneous silent checks
-    if (authCheckInProgressRef.current) {
-      console.log('🔄 Auth check already in progress, returning current state');
-      return isAuthenticated;
+    // De-duplicate concurrent checks
+    if (authCheckPromiseRef.current) {
+      console.log('🔄 Auth check already in progress (promise). Waiting...');
+      return authCheckPromiseRef.current;
     }
 
-    try {
+    authCheckPromiseRef.current = (async () => {
+      try {
       console.log('🔍 Manual silent auth check...');
       authCheckInProgressRef.current = true;
 
-      const response = await authAPI.me();
+      // Prefer sessionStorage token; fallback to cookie
+      let token = '' as string | null;
+      try {
+        token = sessionStorage.getItem('auth_token');
+      } catch (_) {}
+      if (!token) {
+        token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth_token='))
+          ?.split('=')[1] || null;
+      }
 
       if (!isMountedRef.current) return false;
 
-      if (response.success && response.data) {
-        console.log('✅ Silent auth check successful');
-        setUser(response.data);
-        setIsAuthenticated(true);
-        return true;
+      // Token must be a JWT (three dot-separated parts)
+      if (token && token.split('.').length === 3) {
+        try {
+          setAuthToken(token);
+        } catch (_) {}
+
+        // Verify and fetch user from backend
+        const me = await comprehensiveAPI.auth.me();
+        if (me.success && me.data) {
+          setUser(me.data as any);
+          setIsAuthenticated(true);
+          return true;
+        }
       } else {
-        console.log('❌ Silent auth check failed - no valid session');
+        console.log('❌ Silent auth check failed - no valid session token found');
         setUser(null);
         setIsAuthenticated(false);
         return false;
@@ -184,19 +276,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error: any) {
       if (!isMountedRef.current) return false;
 
-      // Handle 401 gracefully
-      if (error?.response?.status === 401 || error?.message?.includes('NO_TOKEN')) {
-        console.log('❌ Silent auth check: No valid authentication');
-      } else {
-        console.log('❌ Silent auth check error:', error);
-      }
-
+      console.log('❌ Silent auth check error:', error);
       setUser(null);
       setIsAuthenticated(false);
       return false;
     } finally {
       authCheckInProgressRef.current = false;
     }
+    })();
+
+    const result = await authCheckPromiseRef.current;
+    authCheckPromiseRef.current = null;
+    return result;
   };
 
   const value: AuthContextType = {

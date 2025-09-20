@@ -1,15 +1,43 @@
-export default function TopBar() {
-  return (
-    <header className="h-12 border-b px-4 flex items-center justify-between bg-white">
-      <div className="font-semibold">ComputerPOS</div>
-      <div className="flex items-center gap-3 text-sm">
-        <span className="inline-flex items-center gap-1 text-green-600"><span className="w-2 h-2 rounded-full bg-green-500"></span>Online</span>
-        <button className="px-2 py-1 border rounded">Tìm</button>
-        <button className="px-2 py-1 border rounded">Thông báo</button>
-        <button className="px-2 py-1 border rounded">Tài khoản</button>
-      </div>
-    </header>
-  )
+import * as React from 'react';
+import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
+import { Menu as MenuIcon, AccountCircle } from '@mui/icons-material';
+import { useAuth } from '../../contexts/AuthContext';
+
+interface TopBarProps {
+  onMenuToggle: () => void;
 }
 
+const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
+  const { user, logout } = useAuth();
 
+  return (
+    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <Toolbar>
+        <IconButton
+          color="inherit"
+          aria-label="toggle menu"
+          edge="start"
+          onClick={onMenuToggle}
+          sx={{ mr: 2 }}
+        >
+          <MenuIcon />
+        </IconButton>
+
+        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          Smart POS Pro
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ mr: 2 }}>
+            {user?.full_name || user?.username}
+          </Typography>
+          <IconButton color="inherit" onClick={logout}>
+            <AccountCircle />
+          </IconButton>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+};
+
+export default TopBar;

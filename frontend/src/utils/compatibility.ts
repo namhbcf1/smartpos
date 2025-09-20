@@ -142,7 +142,7 @@ function checkCPUMotherboardCompatibility(cpu: ComponentSpecs, motherboard: Comp
   
   // Check chipset compatibility
   const cpuGeneration = cpu.specifications.generation;
-  const mbChipset = motherboard.specifications.chipset;
+  // const mbChipset = motherboard.specifications.chipset;
   
   if (cpuSocket && SOCKET_COMPATIBILITY[cpuSocket as keyof typeof SOCKET_COMPATIBILITY]) {
     const supportedGenerations = SOCKET_COMPATIBILITY[cpuSocket as keyof typeof SOCKET_COMPATIBILITY];

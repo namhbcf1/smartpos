@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import api from '../../services/api/client'
@@ -13,10 +13,8 @@ import {
   Users,
   DollarSign,
   TrendingUp,
-  TrendingDown,
   RefreshCw,
   Eye,
-  Edit,
   Check,
   X,
   Clock,
@@ -24,27 +22,19 @@ import {
   MapPin,
   Phone,
   Mail,
-  CreditCard,
-  Banknote,
-  Zap,
   AlertCircle,
-  CheckCircle,
-  Info,
   Filter,
   Search,
   Download,
   Bell,
-  Star,
   MessageSquare,
-  Calendar,
   BarChart3,
   PieChart,
   Activity,
   Target,
   Award,
   Smartphone,
-  Monitor,
-  Tablet
+  Monitor
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -111,29 +101,56 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [platformFilter, setPlatformFilter] = useState<string>('all')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [paymentFilter, setPaymentFilter] = useState<string>('all')
+  const [dateRange, setDateRange] = useState<{from?: string; to?: string}>({})
+  const isOnline = useOnlineStatus()
 
+  const exportToCSV = (rows: Record<string, any>[], filename: string) => {
+    if (!rows || rows.length === 0) return
+    const headerSet = rows.reduce<Set<string>>((set, row) => {
+      Object.keys(row).forEach((k) => set.add(k))
+      return set
+    }, new Set<string>())
+    const headers = Array.from(headerSet)
+    const csv = [headers.join(',')]
+      .concat(rows.map(r => headers.map(h => JSON.stringify((r as any)[h] ?? '')).join(',')))
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  // Polling only (reuse existing Worker/REST); no WS dependency
   useEffect(() => {
-    if (isOnline) {
-      loadOnlineData()
-      // Set up real-time updates
-      const interval = setInterval(loadOnlineData, 30000) // Update every 30 seconds
-      return () => clearInterval(interval)
-    }
-  }, [isOnline])
+    if (!isOnline) return
+    loadOnlineData()
+    const interval = setInterval(loadOnlineData, 30000)
+    return () => clearInterval(interval)
+  }, [isOnline, statusFilter, platformFilter, paymentFilter, dateRange.from, dateRange.to])
 
   const loadOnlineData = async () => {
     try {
       const [ordersRes, statsRes] = await Promise.all([
-        api.get('/api/online-orders', {
+        api.get('/online-orders', {
           params: {
             limit: 100,
             include_customer: true,
             include_items: true,
             status: statusFilter !== 'all' ? statusFilter : undefined,
-            platform: platformFilter !== 'all' ? platformFilter : undefined
+            platform: platformFilter !== 'all' ? platformFilter : undefined,
+            payment_status: paymentFilter !== 'all' ? paymentFilter : undefined,
+            from: dateRange.from || undefined,
+            to: dateRange.to || undefined
           }
         }),
-        api.get('/api/online-stats', {
+        api.get('/online-stats', {
           params: {
             range: 'today',
             include_platforms: true,
@@ -155,7 +172,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setActionLoading(orderId)
     try {
-      await api.patch(`/api/online-orders/${orderId}`, {
+      await api.patch(`/online-orders/${orderId}`, {
         order_status: newStatus
       })
       toast.success('Đã cập nhật trạng thái đơn hàng')
@@ -191,19 +208,31 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                          order.customer.email.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === 'all' || order.order_status === statusFilter
     const matchesPlatform = platformFilter === 'all' || order.platform === platformFilter
+    const matchesPayment = paymentFilter === 'all' || order.payment_status === paymentFilter
+    const matchesDate = (() => {
+      if (!dateRange.from && !dateRange.to) return true
+      const created = new Date(order.created_at * 1000)
+      if (dateRange.from && created < new Date(dateRange.from)) return false
+      if (dateRange.to) {
+        const toDate = new Date(dateRange.to)
+        toDate.setHours(23,59,59,999)
+        if (created > toDate) return false
+      }
+      return true
+    })()
 
-    return matchesSearch && matchesStatus && matchesPlatform
+    return matchesSearch && matchesStatus && matchesPlatform && matchesPayment && matchesDate
   })
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-      case 'confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-      case 'processing': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-      case 'shipped': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
-      case 'delivered': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-      case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+      case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'confirmed': return 'bg-blue-100 text-blue-800'
+      case 'processing': return 'bg-purple-100 text-purple-800'
+      case 'shipped': return 'bg-indigo-100 text-indigo-800'
+      case 'delivered': return 'bg-green-100 text-green-800'
+      case 'cancelled': return 'bg-red-100 text-red-800'  
+      default: return 'bg-gray-100 text-gray-800'  
     }
   }
 
@@ -218,30 +247,30 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
 
   const getPlatformColor = (platform: string) => {
     switch (platform) {
-      case 'website': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-      case 'mobile_app': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-      case 'facebook': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
-      case 'shopee': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-      case 'lazada': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-      case 'tiki': return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+      case 'website': return 'bg-blue-100 text-blue-800'
+      case 'mobile_app': return 'bg-green-100 text-green-800'
+      case 'facebook': return 'bg-indigo-100 text-indigo-800'
+      case 'shopee': return 'bg-orange-100 text-orange-800'
+      case 'lazada': return 'bg-purple-100 text-purple-800'
+      case 'tiki': return 'bg-cyan-100 text-cyan-800'
+      default: return 'bg-gray-100 text-gray-800'
     }
   }
 
   if (!isOnline) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100  flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-6 p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md mx-4"
+          className="text-center space-y-6 p-8 bg-white rounded-2xl shadow-2xl max-w-md mx-4"
         >
-          <div className="mx-auto w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+          <div className="mx-auto w-20 h-20 rounded-full bg-red-100 flex items-center justify-center text-red-600">
             <WifiOff size={32} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Yêu cầu kết nối internet</h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Yêu cầu kết nối internet</h1>
+            <p className="text-gray-600">
               Tính năng bán hàng online cần kết nối internet để hoạt động
             </p>
           </div>
@@ -255,12 +284,12 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 ">
       {/* Enhanced Header */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-6 sticky top-0 z-40"
+        className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 px-6 py-6 sticky top-0 z-40"
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -271,7 +300,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
                 Bán hàng Online
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 flex items-center space-x-2">
+              <p className="text-gray-600 flex items-center space-x-2">
                 <Wifi className="w-4 h-4 text-green-500" />
                 <span>Theo dõi đơn hàng trực tuyến</span>
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -284,11 +313,37 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Làm mới
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => {
+              const rows = filteredOrders.map(o => ({
+                id: o.id,
+                order_number: o.order_number,
+                customer_name: o.customer.name,
+                customer_email: o.customer.email,
+                total_amount: o.total_amount,
+                payment_method: o.payment_method,
+                payment_status: o.payment_status,
+                order_status: o.order_status,
+                platform: o.platform,
+                created_at: new Date(o.created_at * 1000).toISOString()
+              }))
+              exportToCSV(rows, `online_orders_${new Date().toISOString().slice(0,10)}.csv`)
+            }}>
               <Download className="w-4 h-4 mr-2" />
               Xuất báo cáo
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => {
+              if (!('Notification' in window)) {
+                toast.error('Trình duyệt không hỗ trợ thông báo')
+                return
+              }
+              if (Notification.permission === 'granted') {
+                new Notification('Thông báo bán hàng online', { body: 'Bạn sẽ nhận được cập nhật đơn hàng theo thời gian thực.' })
+              } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then((perm) => {
+                  if (perm === 'granted') new Notification('Đã bật thông báo!')
+                })
+              }
+            }}>
               <Bell className="w-4 h-4 mr-2" />
               Thông báo
             </Button>
@@ -378,7 +433,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
             transition={{ delay: 0.1 }}
             className="grid grid-cols-1 lg:grid-cols-2 gap-6"
           >
-            <Card className="shadow-xl border-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg">
+            <Card className="shadow-xl border-0 bg-white/70 backdrop-blur-lg">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <PieChart className="w-5 h-5 text-blue-600" />
@@ -403,7 +458,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
               </CardContent>
             </Card>
 
-            <Card className="shadow-xl border-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg">
+            <Card className="shadow-xl border-0 bg-white/70 backdrop-blur-lg">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <BarChart3 className="w-5 h-5 text-purple-600" />
@@ -414,11 +469,11 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                 <div className="space-y-2">
                   {stats.hourly_sales?.slice(0, 6).map((hour) => (
                     <div key={hour.hour} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-sm text-gray-600">
                         {hour.hour}:00 - {hour.hour + 1}:00
                       </span>
                       <div className="flex items-center space-x-2">
-                        <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
                           <div
                             className="bg-purple-500 h-2 rounded-full"
                             style={{ width: `${(hour.orders / Math.max(...stats.hourly_sales.map(h => h.orders))) * 100}%` }}
@@ -440,9 +495,9 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="shadow-lg border-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg">
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-lg">
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -450,14 +505,14 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Tìm kiếm đơn hàng..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">Tất cả trạng thái</option>
                   <option value="pending">Chờ xử lý</option>
@@ -471,7 +526,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                 <select
                   value={platformFilter}
                   onChange={(e) => setPlatformFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">Tất cả nền tảng</option>
                   <option value="website">Website</option>
@@ -482,11 +537,46 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                   <option value="tiki">Tiki</option>
                 </select>
 
-                <Button variant="outline" className="w-full">
+                <select
+                  value={paymentFilter}
+                  onChange={(e) => setPaymentFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">Tất cả thanh toán</option>
+                  <option value="paid">Đã thanh toán</option>
+                  <option value="pending">Chưa thanh toán</option>
+                  <option value="failed">Thất bại</option>
+                  <option value="refunded">Hoàn tiền</option>
+                </select>
+
+                <Button variant="outline" className="w-full" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}>
                   <Filter className="w-4 h-4 mr-2" />
                   Lọc nâng cao
                 </Button>
               </div>
+
+              {showAdvancedFilters && (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Từ ngày</label>
+                    <input type="date" value={dateRange.from || ''} onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Đến ngày</label>
+                    <input type="date" value={dateRange.to || ''} onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900" />
+                  </div>
+                  <div className="flex items-end">
+                    <Button className="w-full" onClick={loadOnlineData}>
+                      Áp dụng
+                    </Button>
+                  </div>
+                  <div className="flex items-end">
+                    <Button variant="ghost" className="w-full" onClick={() => { setDateRange({}); setPaymentFilter('all'); setStatusFilter('all'); setPlatformFilter('all'); setSearchQuery(''); }}>
+                      Xóa bộ lọc
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -497,17 +587,17 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="shadow-xl border-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg">
+          <Card className="shadow-xl border-0 bg-white/70 backdrop-blur-lg">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <ShoppingCart className="w-5 h-5 text-blue-600" />
                   <span>Đơn hàng online</span>
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-full">
+                  <span className="px-2 py-1 bg-blue-100  text-blue-700 text-sm rounded-full">
                     {filteredOrders.length}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
                   <Activity className="w-4 h-4" />
                   <span>Cập nhật 30s trước</span>
                 </div>
@@ -517,17 +607,17 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
               {loading ? (
                 <div className="text-center py-12">
                   <RefreshCw className="w-12 h-12 mx-auto mb-4 text-blue-600 animate-spin" />
-                  <p className="text-gray-500 dark:text-gray-400">Đang tải đơn hàng...</p>
+                  <p className="text-gray-500">Đang tải đơn hàng...</p>
                 </div>
               ) : filteredOrders.length === 0 ? (
                 <div className="text-center py-12">
                   <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
                     {searchQuery || statusFilter !== 'all' || platformFilter !== 'all'
                       ? 'Không tìm thấy đơn hàng'
                       : 'Chưa có đơn hàng online'}
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400">
+                  <p className="text-gray-500">
                     {searchQuery || statusFilter !== 'all' || platformFilter !== 'all'
                       ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'
                       : 'Các đơn hàng từ website và ứng dụng sẽ hiển thị ở đây'}
@@ -544,7 +634,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ delay: index * 0.05 }}
                       >
-                        <Card className="border-0 bg-gray-50 dark:bg-gray-700/50 hover:shadow-lg transition-all duration-200">
+                        <Card className="border-0 bg-gray-50 hover:shadow-lg transition-all duration-200">
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
@@ -553,10 +643,10 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                                     {getPlatformIcon(order.platform)}
                                   </div>
                                   <div>
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                    <h3 className="text-lg font-bold text-gray-900">
                                       #{order.order_number}
                                     </h3>
-                                    <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                                    <div className="flex items-center space-x-4 text-sm text-gray-500">
                                       <div className="flex items-center space-x-1">
                                         <Users className="w-4 h-4" />
                                         <span>{order.customer.name}</span>
@@ -587,16 +677,16 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                                   </span>
                                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                                     order.payment_status === 'paid'
-                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-yellow-100 text-yellow-800'
                                   }`}>
                                     {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
                                   </span>
                                 </div>
 
                                 {order.notes && (
-                                  <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                                  <div className="mb-3 p-3 bg-blue-50 rounded-lg">
+                                    <p className="text-sm text-blue-700">
                                       <strong>Ghi chú:</strong> {order.notes}
                                     </p>
                                   </div>
@@ -605,14 +695,14 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
 
                               <div className="flex items-center space-x-4">
                                 <div className="text-right">
-                                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                  <div className="text-2xl font-bold text-green-600">
                                     {order.total_amount?.toLocaleString('vi-VN')} ₫
                                   </div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  <div className="text-sm text-gray-500">
                                     {order.payment_method}
                                   </div>
                                   {order.tracking_number && (
-                                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                    <div className="text-xs text-blue-600 mt-1">
                                       Mã vận đơn: {order.tracking_number}
                                     </div>
                                   )}
@@ -692,7 +782,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                                       onClick={() => cancelOrder(order.id)}
                                       disabled={actionLoading === order.id}
                                       variant="outline"
-                                      className="w-24 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                      className="w-24 text-red-600 hover:text-red-700 hover:bg-red-50"
                                     >
                                       <X className="w-4 h-4 mr-1" />
                                       Hủy
@@ -726,16 +816,16 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50 ">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    <h3 className="text-xl font-bold text-gray-900">
                       Chi tiết đơn hàng #{selectedOrder.order_number}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-gray-600 mt-1">
                       Đặt hàng lúc {new Date(selectedOrder.created_at * 1000).toLocaleString('vi-VN')}
                     </p>
                   </div>
@@ -743,7 +833,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowOrderDetail(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-gray-500 hover:text-gray-700"
                   >
                     <X className="w-5 h-5" />
                   </Button>
@@ -835,7 +925,7 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                   <CardContent>
                     <div className="space-y-3">
                       {selectedOrder.items?.map((item) => (
-                        <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                           <div>
                             <h4 className="font-medium">{item.name}</h4>
                             <p className="text-sm text-gray-500">SKU: {item.sku}</p>
@@ -862,14 +952,14 @@ const OnlineSalesPage: React.FC<OnlineSalesPageProps> = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-700 dark:text-gray-300">{selectedOrder.notes}</p>
+                      <p className="text-gray-700">{selectedOrder.notes || 'Không có ghi chú'}</p>
                     </CardContent>
                   </Card>
                 )}
               </div>
 
               {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-end space-x-3">
                   <Button variant="outline" onClick={() => setShowOrderDetail(false)}>
                     Đóng

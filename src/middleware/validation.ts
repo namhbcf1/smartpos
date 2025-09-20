@@ -122,9 +122,9 @@ export const validateQuery = <T extends z.ZodSchema>(schema: T) => {
       const validatedQuery = schema.parse(processedQuery);
 
       // Store validation results in context
-      c.set('validatedQuery', validatedQuery);
-      c.set('validationWarnings', warnings);
-      c.set('validationMetadata', {
+      c.set('jwtPayload', validatedQuery as any);
+      c.set('jwtPayload', warnings as any);
+      c.set('jwtPayload', {
         validation_time: Date.now() - startTime,
         schema_version: '1.0',
         business_rules_applied: warnings.map(w => w.business_rule).filter(Boolean)
@@ -133,7 +133,7 @@ export const validateQuery = <T extends z.ZodSchema>(schema: T) => {
       await next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors: ValidationError[] = error.errors.map(err => ({
+        const validationErrors: ValidationError[] = (error as any).errors.map((err: any) => ({
           field: err.path.join('.'),
           code: err.code,
           message: getVietnameseErrorMessage(err),
@@ -145,7 +145,7 @@ export const validateQuery = <T extends z.ZodSchema>(schema: T) => {
           success: false,
           data: null,
           message: 'Dữ liệu query không hợp lệ',
-          errors: validationErrors
+          errors: validationErrors as any
         }, 400);
       }
 
@@ -175,7 +175,7 @@ export const validateBody = <T extends z.ZodSchema>(schema: T) => {
         body = await c.req.json();
       } else if (contentType?.includes('application/x-www-form-urlencoded')) {
         const formData = await c.req.formData();
-        body = Object.fromEntries(formData.entries());
+        body = Object.fromEntries((formData as any).entries());
       } else {
         return c.json<ApiResponse<null>>({
           success: false,
@@ -191,9 +191,9 @@ export const validateBody = <T extends z.ZodSchema>(schema: T) => {
       const validatedBody = schema.parse(processedBody.data);
 
       // Store validation results
-      c.set('validatedBody', validatedBody);
-      c.set('validationWarnings', processedBody.warnings);
-      c.set('validationMetadata', {
+      c.set('jwtPayload', validatedBody as any);
+      c.set('jwtPayload', processedBody.warnings as any);
+      c.set('jwtPayload', {
         validation_time: Date.now() - startTime,
         schema_version: '1.0',
         business_rules_applied: processedBody.businessRulesApplied
@@ -202,7 +202,7 @@ export const validateBody = <T extends z.ZodSchema>(schema: T) => {
       await next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors: ValidationError[] = error.errors.map(err => ({
+        const validationErrors: ValidationError[] = (error as any).errors.map((err: any) => ({
           field: err.path.join('.'),
           code: err.code,
           message: getVietnameseErrorMessage(err),
@@ -214,7 +214,7 @@ export const validateBody = <T extends z.ZodSchema>(schema: T) => {
           success: false,
           data: null,
           message: 'Dữ liệu request không hợp lệ',
-          errors: validationErrors
+          errors: validationErrors as any
         }, 400);
       }
 
@@ -253,7 +253,7 @@ export const validateParams = <T extends z.ZodSchema>(schema: T) => {
               received: 'string',
               path: [key],
               message: `${key} phải là số nguyên dương`
-            }]);
+            } as any]);
           }
 
           // Business rule: Check for reasonable ID ranges
@@ -291,9 +291,9 @@ export const validateParams = <T extends z.ZodSchema>(schema: T) => {
       const validatedParams = schema.parse(processedParams);
 
       // Store results in context
-      c.set('validatedParams', validatedParams);
-      c.set('validationWarnings', warnings);
-      c.set('validationMetadata', {
+      c.set('jwtPayload', validatedParams as any);
+      c.set('jwtPayload', warnings as any);
+      c.set('jwtPayload', {
         validation_time: Date.now() - startTime,
         schema_version: '1.0',
         business_rules_applied: warnings.map(w => w.business_rule).filter(Boolean)
@@ -302,7 +302,7 @@ export const validateParams = <T extends z.ZodSchema>(schema: T) => {
       await next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors: ValidationError[] = error.errors.map(err => ({
+        const validationErrors: ValidationError[] = (error as any).errors.map((err: any) => ({
           field: err.path.join('.'),
           code: err.code,
           message: getVietnameseErrorMessage(err),
@@ -314,7 +314,7 @@ export const validateParams = <T extends z.ZodSchema>(schema: T) => {
           success: false,
           data: null,
           message: 'Tham số đường dẫn không hợp lệ',
-          errors: validationErrors
+          errors: validationErrors as any
         }, 400);
       }
 
@@ -406,35 +406,66 @@ export function getValidated<T>(c: Context<HonoEnv>): T {
 }
 
 /**
+ * Generic request validation middleware
+ */
+export const validateRequest = <T extends z.ZodSchema>(schema: T) => {
+  return async (c: Context<HonoEnv>, next: Next) => {
+    try {
+      const body = await c.req.json();
+      const validatedData = schema.parse(body);
+      c.set('jwtPayload', validatedData as any);
+      await next();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          data: null,
+          message: 'Dữ liệu request không hợp lệ',
+          errors: (error as any).errors.map((err: any) => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        }, 400);
+      }
+      return c.json<ApiResponse<null>>({
+        success: false,
+        data: null,
+        message: 'Lỗi validate request'
+      }, 500);
+    }
+  };
+};
+
+/**
  * Convert Zod error messages to Vietnamese
  */
 function getVietnameseErrorMessage(error: z.ZodIssue): string {
   switch (error.code) {
     case z.ZodIssueCode.invalid_type:
-      return `Kiểu dữ liệu không hợp lệ. Mong đợi ${error.expected}, nhận được ${error.received}`;
+      return `Kiểu dữ liệu không hợp lệ. Mong đợi ${(error as any).expected}, nhận được ${(error as any).received}`;
     case z.ZodIssueCode.too_small:
-      if (error.type === 'string') {
+      if ((error as any).type === 'string') {
         return `Chuỗi quá ngắn. Tối thiểu ${error.minimum} ký tự`;
-      } else if (error.type === 'number') {
+      } else if ((error as any).type === 'number') {
         return `Số quá nhỏ. Tối thiểu ${error.minimum}`;
       }
       return `Giá trị quá nhỏ. Tối thiểu ${error.minimum}`;
     case z.ZodIssueCode.too_big:
-      if (error.type === 'string') {
+      if ((error as any).type === 'string') {
         return `Chuỗi quá dài. Tối đa ${error.maximum} ký tự`;
-      } else if (error.type === 'number') {
+      } else if ((error as any).type === 'number') {
         return `Số quá lớn. Tối đa ${error.maximum}`;
       }
       return `Giá trị quá lớn. Tối đa ${error.maximum}`;
-    case z.ZodIssueCode.invalid_string:
-      if (error.validation === 'email') {
+    case 'invalid_string' as any:
+      if ((error as any).validation === 'email') {
         return 'Định dạng email không hợp lệ';
-      } else if (error.validation === 'url') {
+      } else if ((error as any).validation === 'url') {
         return 'Định dạng URL không hợp lệ';
       }
       return 'Định dạng chuỗi không hợp lệ';
-    case z.ZodIssueCode.invalid_enum_value:
-      return `Giá trị không hợp lệ. Các giá trị cho phép: ${error.options.join(', ')}`;
+    case 'invalid_enum_value' as any:
+      return `Giá trị không hợp lệ. Các giá trị cho phép: ${(error as any).options.join(', ')}`;
     default:
       return error.message || 'Dữ liệu không hợp lệ';
   }

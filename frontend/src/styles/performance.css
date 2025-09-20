@@ -1,0 +1,65 @@
+/* Performance optimizations */
+
+/* Performance optimizations */
+
+/* Reduce animations on mobile - more conservative approach */
+@media (max-width: 768px) {
+  .animate-pulse,
+  .animate-bounce,
+  .animate-spin {
+    animation-duration: 1s;
+  }
+  
+  /* Only reduce complex animations, keep simple ones */
+  .animate-fade-in,
+  .animate-slide-up {
+    animation-duration: 0.2s;
+  }
+}
+
+/* Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Optimize images */
+img {
+  max-width: 100%;
+  height: auto;
+  loading: lazy;
+}
+
+/* Optimize scroll performance */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Optimize transform performance */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Optimize repaints */
+.no-repaint {
+  contain: layout style paint;
+}
+
+/* Optimize font loading */
+@font-face {
+  font-family: 'Inter';
+  font-display: swap;
+}
+
+/* Optimize critical CSS */
+.critical {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}

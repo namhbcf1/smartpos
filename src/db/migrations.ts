@@ -263,9 +263,199 @@ const migrations: Migration[] = [
     name: 'Initial database schema',
     version: 1,
     up: [
-      // This would contain the initial schema creation
-      // For now, we'll assume it's already created
-      'SELECT 1' // Placeholder
+      // ==========================================
+      // CORE TABLES - PRODUCTION SCHEMA
+      // ==========================================
+
+      // Stores table
+      `CREATE TABLE IF NOT EXISTS stores (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        address TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT NOT NULL,
+        tax_number TEXT,
+        business_license TEXT,
+        website TEXT,
+        logo_url TEXT,
+        manager_id TEXT,
+        timezone TEXT NOT NULL DEFAULT 'UTC',
+        currency TEXT NOT NULL DEFAULT 'VND',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+
+      // Users table
+      `CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        username TEXT UNIQUE,
+        password_hash TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        phone TEXT,
+        avatar_url TEXT,
+        role TEXT NOT NULL DEFAULT 'staff',
+        store_id TEXT NOT NULL DEFAULT 'store-1',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        email_verified INTEGER NOT NULL DEFAULT 0,
+        phone_verified INTEGER NOT NULL DEFAULT 0,
+        last_login_at TEXT,
+        failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+        locked_until TEXT,
+        password_reset_token TEXT,
+        password_reset_expires TEXT,
+        two_factor_secret TEXT,
+        two_factor_enabled INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (store_id) REFERENCES stores(id)
+      )`,
+
+      // Categories table
+      `CREATE TABLE IF NOT EXISTS categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        parent_id TEXT,
+        image_url TEXT,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (parent_id) REFERENCES categories(id)
+      )`,
+
+      // Brands table
+      `CREATE TABLE IF NOT EXISTS brands (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        website TEXT,
+        logo_url TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+
+      // Suppliers table
+      `CREATE TABLE IF NOT EXISTS suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        phone TEXT,
+        email TEXT,
+        address TEXT,
+        tax_number TEXT,
+        payment_terms_days INTEGER NOT NULL DEFAULT 30,
+        lead_time_days INTEGER NOT NULL DEFAULT 7,
+        default_currency TEXT NOT NULL DEFAULT 'VND',
+        rating INTEGER NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+        notes TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+
+      // Products table - SCHEMA COMPLIANT
+      `CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        sku TEXT UNIQUE NOT NULL,
+        barcode TEXT UNIQUE,
+        description TEXT,
+        category_id TEXT,
+        brand_id TEXT,
+        supplier_id TEXT,
+        store_id TEXT NOT NULL DEFAULT 'store-1',
+        price_cents INTEGER NOT NULL CHECK (price_cents >= 0),
+        cost_price_cents INTEGER NOT NULL CHECK (cost_price_cents >= 0),
+        stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+        min_stock INTEGER NOT NULL DEFAULT 0,
+        max_stock INTEGER NOT NULL DEFAULT 100,
+        unit TEXT NOT NULL DEFAULT 'piece',
+        weight_grams INTEGER CHECK (weight_grams > 0),
+        dimensions TEXT,
+        image_url TEXT,
+        images TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        is_serialized INTEGER NOT NULL DEFAULT 0,
+        category_name TEXT,
+        brand_name TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (category_id) REFERENCES categories(id),
+        FOREIGN KEY (brand_id) REFERENCES brands(id),
+        FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
+        FOREIGN KEY (store_id) REFERENCES stores(id)
+      )`,
+
+      // Customers table - SCHEMA COMPLIANT
+      `CREATE TABLE IF NOT EXISTS customers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE,
+        phone TEXT,
+        address TEXT,
+        date_of_birth TEXT,
+        gender TEXT,
+        customer_type TEXT NOT NULL DEFAULT 'regular' CHECK (customer_type IN ('regular', 'vip', 'wholesale')),
+        loyalty_points INTEGER NOT NULL DEFAULT 0 CHECK (loyalty_points >= 0),
+        total_spent_cents INTEGER NOT NULL DEFAULT 0 CHECK (total_spent_cents >= 0),
+        visit_count INTEGER NOT NULL DEFAULT 0 CHECK (visit_count >= 0),
+        last_visit TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+
+      // Orders table - SCHEMA COMPLIANT
+      `CREATE TABLE IF NOT EXISTS orders (
+        id TEXT PRIMARY KEY,
+        order_number TEXT UNIQUE NOT NULL,
+        customer_id TEXT,
+        user_id TEXT NOT NULL,
+        store_id TEXT NOT NULL DEFAULT 'store-1',
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'cancelled', 'refunded')),
+        subtotal_cents INTEGER NOT NULL DEFAULT 0 CHECK (subtotal_cents >= 0),
+        discount_cents INTEGER NOT NULL DEFAULT 0 CHECK (discount_cents >= 0),
+        tax_cents INTEGER NOT NULL DEFAULT 0 CHECK (tax_cents >= 0),
+        total_cents INTEGER NOT NULL DEFAULT 0 CHECK (total_cents >= 0),
+        notes TEXT,
+        receipt_printed INTEGER NOT NULL DEFAULT 0,
+        customer_name TEXT,
+        customer_phone TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (customer_id) REFERENCES customers(id),
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (store_id) REFERENCES stores(id)
+      )`,
+
+      // Order items table - SCHEMA COMPLIANT
+      `CREATE TABLE IF NOT EXISTS order_items (
+        id TEXT PRIMARY KEY,
+        order_id TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        variant_id TEXT,
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        unit_price_cents INTEGER NOT NULL CHECK (unit_price_cents >= 0),
+        total_price_cents INTEGER NOT NULL CHECK (total_price_cents >= 0),
+        discount_cents INTEGER NOT NULL DEFAULT 0 CHECK (discount_cents >= 0),
+        product_name TEXT NOT NULL,
+        product_sku TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id)
+      )`,
+
+      // Insert default store
+      `INSERT OR IGNORE INTO stores (id, name, address, phone, email)
+       VALUES ('store-1', 'SmartPOS Store', '123 Main Street', '+84123456789', 'store@smartpos.com')`,
+
+      // Insert default admin user (using plain text password for development)
+      `INSERT OR IGNORE INTO users (id, email, username, password_hash, full_name, role)
+       VALUES ('admin', 'admin@smartpos.com', 'admin', 'admin123', 'Administrator', 'admin')`
     ],
     down: [
       'DROP TABLE IF EXISTS activity_logs',
@@ -295,7 +485,7 @@ const migrations: Migration[] = [
       'CREATE INDEX IF NOT EXISTS idx_sales_user_date ON sales(user_id, created_at)',
       'CREATE INDEX IF NOT EXISTS idx_sales_customer_date ON sales(customer_id, created_at)',
       'CREATE INDEX IF NOT EXISTS idx_products_category_active ON products(category_id, is_active)',
-      'CREATE INDEX IF NOT EXISTS idx_products_stock_alert ON products(stock_quantity, stock_alert_threshold)',
+      'CREATE INDEX IF NOT EXISTS idx_products_stock_alert ON products(stock, min_stock)',
       'CREATE INDEX IF NOT EXISTS idx_inventory_product_date ON inventory_transactions(product_id, created_at)',
       'CREATE INDEX IF NOT EXISTS idx_customers_group_active ON customers(customer_group, deleted_at)',
       'CREATE INDEX IF NOT EXISTS idx_activity_logs_user_date ON activity_logs(user_id, created_at)'
@@ -334,12 +524,12 @@ const migrations: Migration[] = [
          p.id,
          p.name,
          p.sku,
-         p.stock_quantity,
-         p.stock_alert_threshold,
+         p.stock,
+         p.min_stock,
          c.name as category_name,
          CASE 
-           WHEN p.stock_quantity = 0 THEN 'out_of_stock'
-           WHEN p.stock_quantity <= p.stock_alert_threshold THEN 'low_stock'
+           WHEN p.stock = 0 THEN 'out_of_stock'
+           WHEN p.stock <= p.min_stock THEN 'low_stock'
            ELSE 'in_stock'
          END as stock_status
        FROM products p
@@ -618,6 +808,182 @@ const migrations: Migration[] = [
       'DROP TABLE IF EXISTS product_warranty_configs'
     ],
     dependencies: ['performance_views']
+  }
+  ,
+  {
+    id: 'expenses_table',
+    name: 'Add expenses table for financial tracking',
+    version: 5,
+    up: [
+      `CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        expense_type TEXT NOT NULL,
+        expense_date DATE NOT NULL,
+        amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+        updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
+        created_by INTEGER
+      )`,
+      'CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date)',
+      'CREATE INDEX IF NOT EXISTS idx_expenses_type ON expenses(expense_type)',
+      // Optional: mirror into financial_transactions for unified reporting
+      `CREATE TRIGGER IF NOT EXISTS trg_expenses_insert_financial
+        AFTER INSERT ON expenses
+        BEGIN
+          INSERT INTO financial_transactions (
+            date, transaction_type, category, amount, payment_method, reference_number, reference_id, reference_type, notes
+          ) VALUES (
+            NEW.expense_date, 'expense', NEW.expense_type, NEW.amount, 'cash', NULL, NEW.id, 'expense', NEW.notes
+          );
+        END`,
+      `CREATE TRIGGER IF NOT EXISTS trg_expenses_update_financial
+        AFTER UPDATE ON expenses
+        BEGIN
+          UPDATE financial_transactions
+          SET date = NEW.expense_date,
+              category = NEW.expense_type,
+              amount = NEW.amount,
+              notes = NEW.notes,
+              updated_at = datetime('now')
+          WHERE reference_type = 'expense' AND reference_id = NEW.id;
+        END`,
+      `CREATE TRIGGER IF NOT EXISTS trg_expenses_delete_financial
+        AFTER DELETE ON expenses
+        BEGIN
+          DELETE FROM financial_transactions
+          WHERE reference_type = 'expense' AND reference_id = OLD.id;
+        END`
+    ],
+    down: [
+      'DROP TRIGGER IF EXISTS trg_expenses_delete_financial',
+      'DROP TRIGGER IF EXISTS trg_expenses_update_financial',
+      'DROP TRIGGER IF EXISTS trg_expenses_insert_financial',
+      'DROP INDEX IF EXISTS idx_expenses_type',
+      'DROP INDEX IF EXISTS idx_expenses_date',
+      'DROP TABLE IF EXISTS expenses'
+    ],
+    dependencies: ['warranty_system']
+  }
+  ,
+  {
+    id: 'cycle_count_v1',
+    name: 'Add cycle count sessions and items tables',
+    version: 6,
+    up: [
+      `CREATE TABLE IF NOT EXISTS cycle_count_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        store_id INTEGER,
+        created_by INTEGER,
+        status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','finalized','cancelled')),
+        notes TEXT,
+        created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+        finalized_at DATETIME
+      )`,
+      `CREATE TABLE IF NOT EXISTS cycle_count_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        expected_quantity INTEGER NOT NULL,
+        counted_quantity INTEGER NOT NULL,
+        difference INTEGER GENERATED ALWAYS AS (counted_quantity - expected_quantity) STORED,
+        created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (session_id) REFERENCES cycle_count_sessions(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      )`,
+      'CREATE INDEX IF NOT EXISTS idx_cycle_items_session ON cycle_count_items(session_id)',
+      'CREATE INDEX IF NOT EXISTS idx_cycle_items_product ON cycle_count_items(product_id)'
+    ],
+    down: [
+      'DROP INDEX IF EXISTS idx_cycle_items_product',
+      'DROP INDEX IF EXISTS idx_cycle_items_session',
+      'DROP TABLE IF EXISTS cycle_count_items',
+      'DROP TABLE IF EXISTS cycle_count_sessions'
+    ],
+    dependencies: ['expenses_table']
+  },
+  {
+    id: 'advanced_tables',
+    name: 'Add advanced tables for file uploads, purchases, serials, warranty, payments',
+    version: 7,
+    up: [
+      // File uploads table
+      `CREATE TABLE IF NOT EXISTS file_uploads (
+        id TEXT PRIMARY KEY,
+        original_name TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        file_type TEXT NOT NULL,
+        file_size INTEGER NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
+        description TEXT,
+        uploaded_by TEXT NOT NULL,
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        deleted_at DATETIME,
+        status TEXT DEFAULT 'active' CHECK (status IN ('active', 'deleted', 'archived'))
+      )`,
+      // Payment transactions table
+      `CREATE TABLE IF NOT EXISTS payment_transactions (
+        id TEXT PRIMARY KEY,
+        transaction_id TEXT NOT NULL UNIQUE,
+        order_id TEXT,
+        amount DECIMAL(10,2) NOT NULL,
+        currency TEXT DEFAULT 'VND',
+        payment_method TEXT NOT NULL,
+        gateway TEXT NOT NULL,
+        status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'cancelled', 'refunded')),
+        gateway_transaction_id TEXT,
+        gateway_response TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`,
+      // Payment refunds table
+      `CREATE TABLE IF NOT EXISTS payment_refunds (
+        id TEXT PRIMARY KEY,
+        payment_transaction_id TEXT NOT NULL,
+        refund_amount DECIMAL(10,2) NOT NULL,
+        reason TEXT,
+        status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
+        gateway_refund_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (payment_transaction_id) REFERENCES payment_transactions(id)
+      )`,
+      // Purchase orders table
+      `CREATE TABLE IF NOT EXISTS purchase_orders (
+        id TEXT PRIMARY KEY,
+        supplier_id TEXT NOT NULL,
+        order_number TEXT NOT NULL UNIQUE,
+        order_date DATETIME NOT NULL,
+        expected_delivery_date DATETIME,
+        status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'ordered', 'received', 'cancelled')),
+        subtotal REAL NOT NULL DEFAULT 0,
+        tax_amount REAL NOT NULL DEFAULT 0,
+        total_amount REAL NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_by TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`,
+      // Indexes
+      'CREATE INDEX IF NOT EXISTS idx_file_uploads_category ON file_uploads(category)',
+      'CREATE INDEX IF NOT EXISTS idx_file_uploads_status ON file_uploads(status)',
+      'CREATE INDEX IF NOT EXISTS idx_payment_transactions_status ON payment_transactions(status)',
+      'CREATE INDEX IF NOT EXISTS idx_payment_transactions_method ON payment_transactions(payment_method)',
+      'CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier ON purchase_orders(supplier_id)',
+      'CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)'
+    ],
+    down: [
+      'DROP INDEX IF EXISTS idx_purchase_orders_status',
+      'DROP INDEX IF EXISTS idx_purchase_orders_supplier',
+      'DROP INDEX IF EXISTS idx_payment_transactions_method',
+      'DROP INDEX IF EXISTS idx_payment_transactions_status',
+      'DROP INDEX IF EXISTS idx_file_uploads_status',
+      'DROP INDEX IF EXISTS idx_file_uploads_category',
+      'DROP TABLE IF EXISTS purchase_orders',
+      'DROP TABLE IF EXISTS payment_refunds',
+      'DROP TABLE IF EXISTS payment_transactions',
+      'DROP TABLE IF EXISTS file_uploads'
+    ],
+    dependencies: []
   }
 ];
 

@@ -1,49 +1,54 @@
-import { Box, Button, Typography, Container, Paper } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
-import { Error as ErrorIcon } from '@mui/icons-material';
+import React from 'react';
+import { Container, Typography, Box, Button, Card, CardContent } from '@mui/material';
+import { Home, ArrowBack, Search } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
-const NotFound = () => {
+export default function NotFound() {
+  const navigate = useNavigate();
+
   return (
-    <Container maxWidth="md">
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          mt: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-        }}
-      >
-        <ErrorIcon sx={{ fontSize: 100, color: 'error.main', mb: 2 }} />
-        
-        <Typography variant="h2" component="h1" gutterBottom>
-          404
-        </Typography>
-        
-        <Typography variant="h5" component="h2" gutterBottom>
-          Page Not Found
-        </Typography>
-        
-        <Typography variant="body1" color="text.secondary" paragraph>
-          The page you are looking for doesn't exist or has been moved.
-        </Typography>
-        
-        <Box sx={{ mt: 4 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            component={RouterLink}
-            to="/"
-            size="large"
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
-      </Paper>
+    <Container maxWidth="sm" sx={{ py: 8 }}>
+      <Card>
+        <CardContent sx={{ textAlign: 'center', py: 6 }}>
+          <Typography variant="h1" sx={{ fontSize: '6rem', fontWeight: 'bold', color: 'primary.main', mb: 2 }}>
+            404
+          </Typography>
+          
+          <Typography variant="h4" gutterBottom>
+            Trang không tìm thấy
+          </Typography>
+          
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            Xin lỗi, trang bạn đang tìm kiếm không tồn tại hoặc đã bị di chuyển.
+          </Typography>
+          
+          <Box display="flex" gap={2} justifyContent="center" flexWrap="wrap">
+            <Button 
+              variant="contained" 
+              startIcon={<Home />}
+              onClick={() => navigate('/dashboard')}
+            >
+              Về trang chủ
+            </Button>
+            
+            <Button 
+              variant="outlined" 
+              startIcon={<ArrowBack />}
+              onClick={() => navigate(-1)}
+            >
+              Quay lại
+            </Button>
+            
+            <Button 
+              variant="outlined" 
+              startIcon={<Search />}
+              onClick={() => navigate('/products')}
+            >
+              Tìm kiếm sản phẩm
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
     </Container>
   );
-};
-
-export default NotFound; 
+}

@@ -1,58 +1,47 @@
-// Sales Management Types
+// Sales Management Types - DB Schema Compliant (Orders Table)
 export interface Sale {
-  id: number;
-  receipt_number: string;
-  customer_id?: number;
-  customer_name?: string;
-  customer_phone?: string;
-  customer_email?: string;
-  subtotal: number;
-  discount_amount: number;
-  discount_percentage: number;
-  tax_amount: number;
-  total_amount: number;
-  paid_amount: number;
-  change_amount: number;
-  payment_status: 'pending' | 'paid' | 'partial' | 'refunded' | 'cancelled';
-  payment_method: 'cash' | 'card' | 'bank_transfer' | 'e_wallet' | 'multiple';
-  status: 'draft' | 'completed' | 'cancelled' | 'refunded';
+  id: string; // TEXT PK per DB schema
+  order_number: string; // TEXT UNIQUE NOT NULL
+  customer_id?: string; // TEXT FK → customers.id
+  user_id: string; // TEXT NOT NULL FK → users.id (cashier)
+  store_id: string; // TEXT NOT NULL FK → stores.id
+  status: 'draft' | 'pending' | 'completed' | 'cancelled' | 'refunded'; // per DB schema
+  subtotal_cents: number; // INTEGER CHECK (subtotal_cents >= 0)
+  discount_cents: number; // INTEGER DEFAULT 0 CHECK (discount_cents >= 0)
+  tax_cents: number; // INTEGER DEFAULT 0 CHECK (tax_cents >= 0)
+  total_cents: number; // INTEGER CHECK (total_cents >= 0)
   notes?: string;
-  cashier_id: number;
-  cashier_name: string;
-  store_id: number;
-  store_name: string;
-  sale_date: string;
+  receipt_printed: boolean; // INTEGER DEFAULT 0
+  customer_name?: string; // Denormalized from customers.name
+  customer_phone?: string; // Denormalized from customers.phone
   created_at: string;
   updated_at: string;
-  items_count: number;
   items?: SaleItem[];
   payments?: SalePayment[];
 }
 
 export interface SaleItem {
-  id: number;
-  sale_id: number;
-  product_id: number;
-  product_name: string;
-  product_sku: string;
-  quantity: number;
-  unit_price: number;
-  discount_amount: number;
-  discount_percentage: number;
-  tax_amount: number;
-  total_amount: number;
-  notes?: string;
+  id: string; // TEXT PK per DB schema
+  order_id: string; // TEXT NOT NULL FK → orders.id
+  product_id: string; // TEXT NOT NULL FK → products.id
+  variant_id?: string; // TEXT FK → product_variants.id
+  quantity: number; // INTEGER NOT NULL CHECK (quantity > 0)
+  unit_price_cents: number; // INTEGER NOT NULL CHECK (unit_price_cents >= 0)
+  total_price_cents: number; // INTEGER NOT NULL CHECK (total_price_cents >= 0)
+  discount_cents: number; // INTEGER DEFAULT 0 CHECK (discount_cents >= 0)
+  product_name: string; // Denormalized from products.name
+  product_sku: string; // Denormalized from products.sku
+  created_at: string;
 }
 
 export interface SalePayment {
-  id: number;
-  sale_id: number;
-  payment_method: string;
-  amount: number;
-  reference?: string;
-  status: 'pending' | 'completed' | 'failed';
-  fee_amount?: number;
-  processed_at?: string;
+  id: string; // TEXT PK per DB schema
+  order_id: string; // TEXT NOT NULL FK → orders.id
+  payment_method_id: string; // TEXT NOT NULL FK → payment_methods.id
+  amount_cents: number; // INTEGER NOT NULL CHECK (amount_cents > 0)
+  reference?: string; // Mã giao dịch từ gateway
+  status: 'pending' | 'completed' | 'failed' | 'refunded'; // per DB schema
+  processed_at: string; // TEXT DEFAULT (datetime('now'))
   created_at: string;
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
-import apiService from '../services/api';
+import apiService from '../services/api/client';
 
 // Hook for paginated data
 export const usePaginatedQuery = <T>(
@@ -270,8 +270,8 @@ export const useMutation = <T, R = any>() => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
-      const fullUrl = `${API_URL}${endpoint || ''}`;
+      const { API_V1_BASE_URL } = await import('../services/api');
+      const fullUrl = `${API_V1_BASE_URL}${endpoint || ''}`;
 
       let response: any;
       switch (method) {
@@ -330,13 +330,9 @@ export const useDeleteMutation = () => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
-      const fullUrl = `${API_URL}${endpoint}`;
-
-      const response = await axios.delete(fullUrl, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        withCredentials: true,
-      });
+      // Use authenticated API client instead of raw axios
+      const apiClient = (await import('../services/api/client')).default;
+      const response = await apiClient.delete(endpoint);
 
       if (response.data.success) {
         return true;
@@ -365,13 +361,9 @@ export const useCreateMutation = <T, R = any>() => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
-      const fullUrl = `${API_URL}${endpoint}`;
-
-      const response = await axios.post(fullUrl, data, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        withCredentials: true,
-      });
+      // Use authenticated API client instead of raw axios
+      const apiClient = (await import('../services/api/client')).default;
+      const response = await apiClient.post(endpoint, data);
 
       if (response.data.success) {
         return response.data.data;
@@ -400,13 +392,9 @@ export const useUpdateMutation = <T, R = any>() => {
       setLoading(true);
       setError(null);
 
-      const API_URL = 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1';
-      const fullUrl = `${API_URL}${endpoint}`;
-
-      const response = await axios.put(fullUrl, data, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        withCredentials: true,
-      });
+      // Use authenticated API client instead of raw axios
+      const apiClient = (await import('../services/api/client')).default;
+      const response = await apiClient.put(endpoint, data);
 
       if (response.data.success) {
         return response.data.data;

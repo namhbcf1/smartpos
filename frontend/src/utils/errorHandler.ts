@@ -64,7 +64,7 @@ export function handleApiError(
     fallbackMessage = 'Đã xảy ra lỗi khi kết nối với máy chủ',
     retryCallback,
     retryDelay = 3000,
-    maxRetries = 3
+    // maxRetries = 3
   } = options;
 
   const apiError = createApiError(error);
@@ -88,7 +88,7 @@ export function handleApiError(
   } else if (apiError.status === 404) {
     // Not found error
     console.warn('Resource not found');
-  } else if (apiError.status >= 500) {
+  } else if (apiError.status && apiError.status >= 500) {
     // Server error - might want to retry
     console.error('Server error - considering retry');
     if (retryCallback && retryDelay > 0) {

@@ -94,7 +94,7 @@ export interface LowStockAlert {
   product_name: string;
   sku: string;
   current_stock: number;
-  min_stock_level: number;
+  min_stock: number;
   category_name: string;
   last_restocked: string;
   supplier_name?: string;

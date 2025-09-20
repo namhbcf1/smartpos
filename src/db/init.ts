@@ -1,6 +1,6 @@
 import { Env } from '../types';
 // SCHEMA FIXED: Use unified schema as single source of truth
-import schema from '../schema-unified.sql';
+import { schema } from '../schema';
 
 /**
  * Initialize the database with schema and seed data
@@ -37,14 +37,14 @@ async function cacheInitialData(env: Env): Promise<void> {
     SELECT * FROM categories ORDER BY sort_order, name
   `).all();
   
-  await env.CACHE.put('categories:all', JSON.stringify(categories.results), { expirationTtl: 3600 });
+  await env.CACHE.put('categories:all', JSON.stringify(categories.results));
   
   // Cache active products
   const products = await env.DB.prepare(`
     SELECT 
       p.id, p.name, p.description, p.sku, p.barcode, 
       p.price, p.cost_price, p.tax_rate, 
-      p.stock_quantity, p.status, p.image_url, 
+      p.stock, p.status, p.image_url, 
       p.category_id, c.name as category_name
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
@@ -53,7 +53,7 @@ async function cacheInitialData(env: Env): Promise<void> {
     LIMIT 100
   `).all();
   
-  await env.CACHE.put('products:active', JSON.stringify(products.results), { expirationTtl: 3600 });
+  await env.CACHE.put('products:active', JSON.stringify(products.results));
   
   // Cache settings
   const settings = await env.DB.prepare(`
@@ -65,7 +65,7 @@ async function cacheInitialData(env: Env): Promise<void> {
     return acc;
   }, {});
   
-  await env.CACHE.put('settings:1', JSON.stringify(settingsObject), { expirationTtl: 3600 });
+  await env.CACHE.put('settings:1', JSON.stringify(settingsObject));
 }
 
 /**

@@ -38,7 +38,7 @@ import {
   Save as SaveIcon,
   Cancel as CancelIcon
 } from '@mui/icons-material';
-import { useSnackbar } from 'notistack';
+import toast from 'react-hot-toast';
 import { formatCurrency } from '../config/constants';
 
 interface Sale {
@@ -102,7 +102,7 @@ const itemConditions = [
 
 export default function CreateReturn() {
   const navigate = useNavigate();
-  const { enqueueSnackbar } = useSnackbar();
+  // Toast notifications
   
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
@@ -122,30 +122,15 @@ export default function CreateReturn() {
     try {
       setLoading(true);
       // Search sales using real API (rules.md compliant)
-      const mockResults: Sale[] = [
-        {
-          id: 1,
-          sale_number: 'SAL-2024-001',
-          customer_name: 'Nguyễn Văn A',
-          customer_phone: '0123456789',
-          total_amount: 1500000,
-          created_at: '2024-01-15T10:30:00Z',
-          items: [
-            {
-              id: 1,
-              product_id: 1,
-              product_name: 'iPhone 15 Pro',
-              product_sku: 'IP15P-256-BLU',
-              quantity: 1,
-              unit_price: 1500000,
-              total_amount: 1500000
-            }
-          ]
-        }
-      ];
-      setSearchResults(mockResults);
+      // Search sales from D1 Cloudflare
+      const response = await apiClient.get(`/sales/search?q=${saleSearchQuery}`);
+      if (response.data.success) {
+        setSearchResults(response.data.data || []);
+      } else {
+        setSearchResults([]);
+      }
     } catch (error) {
-      enqueueSnackbar('Lỗi khi tìm kiếm đơn hàng', { variant: 'error' });
+      toast.error('Lỗi khi tìm kiếm đơn hàng');
     } finally {
       setLoading(false);
     }
@@ -184,18 +169,18 @@ export default function CreateReturn() {
 
   const handleSubmit = async () => {
     if (!selectedSale) {
-      enqueueSnackbar('Vui lòng chọn đơn hàng', { variant: 'error' });
+      toast.error('Vui lòng chọn đơn hàng');
       return;
     }
 
     const itemsToReturn = returnItems.filter(item => item.quantity_returned > 0);
     if (itemsToReturn.length === 0) {
-      enqueueSnackbar('Vui lòng chọn ít nhất một sản phẩm để trả', { variant: 'error' });
+      toast.error('Vui lòng chọn ít nhất một sản phẩm để trả');
       return;
     }
 
     if (!returnReason) {
-      enqueueSnackbar('Vui lòng chọn lý do trả hàng', { variant: 'error' });
+      toast.error('Vui lòng chọn lý do trả hàng');
       return;
     }
 
@@ -214,10 +199,10 @@ export default function CreateReturn() {
       // Create return using real API (rules.md compliant)
       console.log('Creating return:', returnData);
       
-      enqueueSnackbar('Tạo phiếu trả hàng thành công!', { variant: 'success' });
+      toast.success('Tạo phiếu trả hàng thành công!');
       navigate('/returns');
     } catch (error) {
-      enqueueSnackbar('Lỗi khi tạo phiếu trả hàng', { variant: 'error' });
+      toast.error('Lỗi khi tạo phiếu trả hàng');
     } finally {
       setLoading(false);
     }

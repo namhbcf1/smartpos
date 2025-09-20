@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 import {
   Box,
   Button,
@@ -51,7 +52,7 @@ import {
   CheckCircle as CheckIcon,
   Error as ErrorIcon
 } from '@mui/icons-material';
-import { usePaginatedQuery, useUpdateMutation } from '../../hooks/useApiData';
+import { usePaginatedQuery, useUpdateMutation } from '../../../hooks/useApiData';
 import { formatCurrency } from '../../utils/format';
 import api from '../../services/api';
 import realtimeService from '../../services/realtime';
@@ -63,13 +64,13 @@ interface Product {
   description: string;
   sku: string;
   barcode: string | null;
-  categoryId: number;
+  category_id: number;
   price: number;
-  costPrice: number;
+  cost_price: number;
   taxRate: number;
-  stockQuantity: number;
-  stockAlertThreshold: number;
-  isActive: boolean;
+  stock: number;
+  min_stock: number;
+  is_active: boolean;
   imageUrl: string | null;
   warrantyPeriodMonths?: number;
   warrantyType?: string;
@@ -127,19 +128,19 @@ const ProductEdit: React.FC = () => {
     description: '',
     sku: '',
     barcode: '',
-    categoryId: '',
+    category_id: '',
 
     // Pricing
     price: '',
-    costPrice: '',
+    cost_price: '',
     taxRate: '',
     discountEligible: true,
 
     // Inventory - Enhanced with serial tracking
-    stockQuantity: '',
+    stock: '',
     calculatedStock: 0,
-    stockAlertThreshold: '',
-    minStockLevel: '',
+    min_stock: '',
+    min_stock: '',
     maxStockLevel: '',
     reorderPoint: '',
     reorderQuantity: '',
@@ -173,7 +174,7 @@ const ProductEdit: React.FC = () => {
     tags: [] as string[],
 
     // Status
-    isActive: true,
+    is_active: true,
     isFeatured: false,
     isDigital: false,
     requiresShipping: true,
@@ -242,19 +243,13 @@ const ProductEdit: React.FC = () => {
         console.log('🔍 Fetching product with ID:', id);
 
         // Use standard products endpoint with authentication
-        const response = await fetch(`https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/products/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
+        const response = await api.get(`/products/${id}`);
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!response.data.success) {
+          throw new Error(`API Error: ${response.data.message || 'Failed to fetch product'}`);
         }
 
-        const apiResponse = await response.json();
+        const apiResponse = response.data;
 
         console.log('📦 API Response:', apiResponse);
 
@@ -280,19 +275,19 @@ const ProductEdit: React.FC = () => {
             description: productData.description || '',
             sku: productData.sku || '',
             barcode: productData.barcode || '',
-            categoryId: productData.categoryId?.toString() || '',
+            category_id: (productData.category_id ?? productData.categoryId)?.toString() || '',
 
             // Pricing
             price: productData.price?.toString() || '',
-            costPrice: productData.costPrice?.toString() || '',
+            cost_price: (productData.cost_price ?? productData.costPrice)?.toString() || '',
             taxRate: productData.taxRate?.toString() || '',
             discountEligible: productData.discountEligible ?? true,
 
             // Inventory
-            stockQuantity: productData.stockQuantity?.toString() || '',
+            stock: (productData.stock ?? productData.stockQuantity)?.toString() || '',
             calculatedStock: 0, // Will be updated by fetchSerialNumbers
-            stockAlertThreshold: productData.stockAlertThreshold?.toString() || '',
-            minStockLevel: productData.minStockLevel?.toString() || '',
+            min_stock: (productData.min_stock ?? productData.minStockLevel ?? productData.stockAlertThreshold)?.toString() || '',
+            min_stock: (productData.min_stock ?? productData.minStockLevel ?? productData.stockAlertThreshold)?.toString() || '',
             maxStockLevel: productData.maxStockLevel?.toString() || '',
             reorderPoint: productData.reorderPoint?.toString() || '',
             reorderQuantity: productData.reorderQuantity?.toString() || '',
@@ -326,7 +321,7 @@ const ProductEdit: React.FC = () => {
             tags: productData.tags || [],
 
             // Status
-            isActive: productData.isActive ?? true,
+            is_active: productData.is_active ?? productData.isActive ?? true,
             isFeatured: productData.isFeatured ?? false,
             isDigital: productData.isDigital ?? false,
             requiresShipping: productData.requiresShipping ?? true,
@@ -450,14 +445,14 @@ const ProductEdit: React.FC = () => {
         description: formData.description,
         sku: formData.sku,
         barcode: formData.barcode || null,
-        category_id: parseInt(formData.categoryId),
+        category_id: parseInt(formData.category_id),
         price: parseFloat(formData.price),
-        cost_price: parseFloat(formData.costPrice),
+        cost_price: parseFloat(formData.cost_price),
         tax_rate: parseFloat(formData.taxRate),
-        stock_quantity: stockCalculationMode === 'auto' ? formData.calculatedStock : parseInt(formData.stockQuantity),
-        stock_alert_threshold: parseInt(formData.stockAlertThreshold),
+        stock: stockCalculationMode === 'auto' ? formData.calculatedStock : parseInt(formData.stock),
+        min_stock: parseInt(formData.min_stock || '0'),
         track_quantity: stockCalculationMode === 'auto',
-        is_active: formData.isActive,
+        is_active: formData.is_active,
         warranty_period_months: parseInt(formData.warrantyPeriodMonths),
         warranty_type: formData.warrantyType
       };
@@ -628,7 +623,7 @@ const ProductEdit: React.FC = () => {
                   size="small"
                   onClick={() => handleStockCalculationModeChange('manual')}
                 >
-                  Thủ công ({formData.stockQuantity || 0})
+                  Thủ công ({formData.stock || 0})
                 </Button>
                 <Button
                   variant={stockCalculationMode === 'auto' ? 'contained' : 'outlined'}
@@ -705,8 +700,8 @@ const ProductEdit: React.FC = () => {
                 <FormControl fullWidth>
                   <InputLabel>Danh mục</InputLabel>
                   <Select
-                    value={formData.categoryId}
-                    onChange={(e) => handleInputChange('categoryId', e.target.value)}
+                    value={formData.category_id}
+                    onChange={(e) => handleInputChange('category_id', e.target.value)}
                     label="Danh mục"
                     required
                   >
@@ -742,8 +737,8 @@ const ProductEdit: React.FC = () => {
                   fullWidth
                   label="Giá vốn"
                   type="number"
-                  value={formData.costPrice}
-                  onChange={(e) => handleInputChange('costPrice', e.target.value)}
+                  value={formData.cost_price}
+                  onChange={(e) => handleInputChange('cost_price', e.target.value)}
                   required
                 />
               </Grid>
@@ -770,8 +765,8 @@ const ProductEdit: React.FC = () => {
                   fullWidth
                   label={stockCalculationMode === 'auto' ? 'Số lượng tồn kho (Tự động)' : 'Số lượng tồn kho'}
                   type="number"
-                  value={stockCalculationMode === 'auto' ? formData.calculatedStock : formData.stockQuantity}
-                  onChange={(e) => handleInputChange('stockQuantity', e.target.value)}
+                  value={stockCalculationMode === 'auto' ? formData.calculatedStock : formData.stock}
+                  onChange={(e) => handleInputChange('stock', e.target.value)}
                   disabled={stockCalculationMode === 'auto'}
                   InputProps={{
                     endAdornment: stockCalculationMode === 'auto' && (
@@ -788,8 +783,8 @@ const ProductEdit: React.FC = () => {
                   fullWidth
                   label="Ngưỡng cảnh báo tồn kho"
                   type="number"
-                  value={formData.stockAlertThreshold}
-                  onChange={(e) => handleInputChange('stockAlertThreshold', e.target.value)}
+                  value={formData.min_stock}
+                  onChange={(e) => handleInputChange('min_stock', e.target.value)}
                 />
               </Grid>
 
@@ -829,8 +824,8 @@ const ProductEdit: React.FC = () => {
                   fullWidth
                   label="Tồn kho tối thiểu"
                   type="number"
-                  value={formData.minStockLevel}
-                  onChange={(e) => handleInputChange('minStockLevel', e.target.value)}
+                  value={formData.min_stock}
+                  onChange={(e) => handleInputChange('min_stock', e.target.value)}
                 />
               </Grid>
 
@@ -839,8 +834,8 @@ const ProductEdit: React.FC = () => {
                   fullWidth
                   label="Tồn kho tối đa"
                   type="number"
-                  value={formData.maxStockLevel}
-                  onChange={(e) => handleInputChange('maxStockLevel', e.target.value)}
+                  value={formData.max_stock}
+                  onChange={(e) => handleInputChange('max_stock', e.target.value)}
                 />
               </Grid>
 
@@ -887,8 +882,8 @@ const ProductEdit: React.FC = () => {
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={formData.isActive}
-                      onChange={(e) => handleInputChange('isActive', e.target.checked)}
+                      checked={formData.is_active}
+                      onChange={(e) => handleInputChange('is_active', e.target.checked)}
                     />
                   }
                   label="Kích hoạt sản phẩm"

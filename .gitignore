@@ -1,0 +1,10 @@
+node_modules
+dist
+.wrangler
+.dev.vars
+**/.DS_Store
+
+# # Git ignore rules
+
+# TODO: Thêm nội dung cho file .gitignore
+node_modules

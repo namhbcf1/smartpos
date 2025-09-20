@@ -1,435 +1,301 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
-  Typography,
   Box,
+  Typography,
   Grid,
   Card,
   CardContent,
   Button,
   Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   Divider,
   Alert,
-  Paper,
-  Stack,
-  useTheme,
-  useMediaQuery,
-  Fab,
-  Tooltip,
+  CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Paper
 } from '@mui/material';
-import {
-  Computer as PCIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Memory as RAMIcon,
-  Storage as StorageIcon,
-  Videocam as GPUIcon,
-  Power as PSUIcon,
-  DeviceHub as MotherboardIcon,
-  AcUnit as CoolerIcon,
-  Inventory as CaseIcon,
-  Save as SaveIcon,
-  Share as ShareIcon,
-  Build as BuildIcon,
-} from '@mui/icons-material';
-import { useSnackbar } from 'notistack';
-import PCCompatibilityChecker from '../components/PCCompatibilityChecker';
-import { formatCurrency } from '../config/constants';
+import { toast } from 'react-hot-toast';
+import api from '../../services/api';
 
-// 🖥️ PC Component Types (same as in PCCompatibilityChecker)
+// Vietnamese PC Component Types
 interface PCComponent {
-  id: number;
+  id: string;
   name: string;
-  type: 'cpu' | 'motherboard' | 'ram' | 'gpu' | 'storage' | 'psu' | 'case' | 'cooler';
+  type: string;
+  price: number;
   brand: string;
   model: string;
-  price: number;
-  specifications: {
-    [key: string]: any;
-  };
-  compatibility: {
-    socket?: string;
-    chipset?: string;
-    memoryType?: string;
-    powerRequirement?: number;
-    formFactor?: string;
-    interface?: string;
-  };
+  specifications: Record<string, any>;
 }
 
-interface PCBuild {
-  id?: number;
+interface ComponentType {
+  type: string;
   name: string;
-  components: {
-    cpu?: PCComponent;
-    motherboard?: PCComponent;
-    ram?: PCComponent[];
-    gpu?: PCComponent;
-    storage?: PCComponent[];
-    psu?: PCComponent;
-    case?: PCComponent;
-    cooler?: PCComponent;
-  };
-  totalPrice: number;
-  estimatedPerformance: {
-    gaming: number;
-    productivity: number;
-    overall: number;
-  };
+  icon: string;
+  required: boolean;
+  multiple?: boolean;
 }
 
-// 🎨 Component Type Configurations
-const componentTypes = [
-  { type: 'cpu', name: 'CPU', icon: <PCIcon />, required: true },
-  { type: 'motherboard', name: 'Motherboard', icon: <MotherboardIcon />, required: true },
-  { type: 'ram', name: 'RAM', icon: <RAMIcon />, required: true, multiple: true },
-  { type: 'gpu', name: 'GPU', icon: <GPUIcon />, required: false },
-  { type: 'storage', name: 'Storage', icon: <StorageIcon />, required: true, multiple: true },
-  { type: 'psu', name: 'PSU', icon: <PSUIcon />, required: true },
-  { type: 'case', name: 'Case', icon: <CaseIcon />, required: true },
-  { type: 'cooler', name: 'Cooler', icon: <CoolerIcon />, required: false },
+const componentTypes: ComponentType[] = [
+  { type: 'cpu', name: 'CPU', icon: '🖥️', required: true },
+  { type: 'motherboard', name: 'Bo mạch chủ', icon: '🔌', required: true },
+  { type: 'ram', name: 'RAM', icon: '💾', required: true },
+  { type: 'gpu', name: 'Card đồ họa', icon: '🎮', required: false },
+  { type: 'storage', name: 'Ổ cứng', icon: '💿', required: true },
+  { type: 'psu', name: 'Nguồn máy tính', icon: '⚡', required: true },
+  { type: 'case', name: 'Thùng máy', icon: '📦', required: true },
+  { type: 'cooling', name: 'Tản nhiệt', icon: '❄️', required: false }
 ];
 
-// 🎯 Components will be loaded from API (100% online)
-const loadComponentsFromAPI = async (): Promise<PCComponent[]> => {
-  try {
-    // In a real implementation, this would fetch from /api/v1/pc-components
-    // For now, return empty array to force online-only behavior
-    return [];
-  } catch (error) {
-    console.error('Failed to load PC components from API:', error);
-    return [];
-  }
-};
-
-// Mock data removed - using 100% real Cloudflare D1 data
-
-
 const PCBuilder: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { enqueueSnackbar } = useSnackbar();
-
-  const [selectedComponents, setSelectedComponents] = useState<PCComponent[]>([]);
-  const [componentSelectorOpen, setComponentSelectorOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState<string>('');
-  const [savedBuilds, setSavedBuilds] = useState<PCBuild[]>([]);
+  const [selectedComponents, setSelectedComponents] = useState<Record<string, PCComponent>>({});
   const [availableComponents, setAvailableComponents] = useState<PCComponent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [compatibilityIssues, setCompatibilityIssues] = useState<string[]>([]);
+  const [buildResult, setBuildResult] = useState<string>('');
 
-  // � Load components from API on mount
+  // Fetch components from D1 Cloudflare
   useEffect(() => {
-    const loadComponents = async () => {
-      setLoading(true);
+    const fetchComponents = async () => {
       try {
-        // Load components from Cloudflare D1 database only
-        const components = await loadComponentsFromAPI();
-        setAvailableComponents(components || []);
-
-        if (!components || components.length === 0) {
-          enqueueSnackbar('Không có linh kiện nào trong cơ sở dữ liệu', { variant: 'info' });
+        setLoading(true);
+        const response = await api.get('/pc-components');
+        
+        if (response.data.success) {
+          setAvailableComponents(response.data.data || []);
+          console.log('📦 PC Components loaded from D1:', response.data.data?.length || 0);
+        } else {
+          console.log('No PC components found in D1 database');
+          setAvailableComponents([]);
         }
       } catch (error) {
-        console.error('Failed to load components from API:', error);
-        enqueueSnackbar('Lỗi khi tải danh sách linh kiện', { variant: 'error' });
+        console.error('Error fetching PC components from D1:', error);
         setAvailableComponents([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadComponents();
+    fetchComponents();
   }, []);
 
-  // �🔍 Filter components by type
   const getComponentsByType = (type: string) => {
     return availableComponents.filter(component => component.type === type);
   };
 
-  // ➕ Add component to build
-  const handleAddComponent = (component: PCComponent) => {
-    const existingComponent = selectedComponents.find(c => c.type === component.type);
-    const typeConfig = componentTypes.find(t => t.type === component.type);
-
-    if (existingComponent && !typeConfig?.multiple) {
-      // Replace existing component
-      setSelectedComponents(prev => 
-        prev.map(c => c.type === component.type ? component : c)
-      );
-      enqueueSnackbar(`Đã thay thế ${typeConfig?.name}`, { variant: 'info' });
-    } else {
-      // Add new component
-      setSelectedComponents(prev => [...prev, component]);
-      enqueueSnackbar(`Đã thêm ${component.name}`, { variant: 'success' });
+  const handleComponentSelect = (type: string, componentId: string) => {
+    if (!componentId) {
+      const newSelected = { ...selectedComponents };
+      delete newSelected[type];
+      setSelectedComponents(newSelected);
+      return;
     }
-    setComponentSelectorOpen(false);
+
+    const component = availableComponents.find(c => c.id === componentId);
+    if (component) {
+      setSelectedComponents(prev => ({
+        ...prev,
+        [type]: component
+      }));
+    }
   };
 
-  // ❌ Remove component from build
-  const handleRemoveComponent = (componentId: number) => {
-    setSelectedComponents(prev => prev.filter(c => c.id !== componentId));
-    enqueueSnackbar('Đã xóa linh kiện', { variant: 'info' });
+  const canBuildPC = () => {
+    const requiredTypes = componentTypes.filter(t => t.required);
+    return requiredTypes.every(t => selectedComponents[t.type]);
   };
 
-  // 💾 Save build
-  const handleSaveBuild = (build: PCBuild) => {
-    const newBuild = { ...build, id: Date.now() };
-    setSavedBuilds(prev => [...prev, newBuild]);
-    enqueueSnackbar(`Đã lưu cấu hình "${build.name}"`, { variant: 'success' });
+  const calculateTotalPrice = () => {
+    return Object.values(selectedComponents).reduce((total, component) => total + component.price, 0);
   };
 
-  // 🎨 Get component type info
-  const getComponentTypeInfo = (type: string) => {
-    return componentTypes.find(t => t.type === type);
+  const checkCompatibility = () => {
+    const issues: string[] = [];
+    
+    // Check CPU and motherboard socket compatibility
+    const cpu = selectedComponents.cpu;
+    const motherboard = selectedComponents.motherboard;
+    
+    if (cpu && motherboard) {
+      if (cpu.specifications.socket !== motherboard.specifications.socket) {
+        issues.push(`CPU ${cpu.name} không tương thích với bo mạch ${motherboard.name} (socket khác nhau)`);
+      }
+    }
+
+    // Check RAM compatibility
+    const ram = selectedComponents.ram;
+    if (ram && motherboard) {
+      if (ram.specifications.speed > 3200 && motherboard.specifications.chipset === 'B660') {
+        issues.push(`RAM ${ram.name} có thể không chạy được tốc độ tối đa trên bo mạch ${motherboard.name}`);
+      }
+    }
+
+    setCompatibilityIssues(issues);
+    return issues.length === 0;
   };
 
-  // 📊 Get build summary
-  const getBuildSummary = () => {
-    const summary = componentTypes.map(typeConfig => {
-      const components = selectedComponents.filter(c => c.type === typeConfig.type);
-      return {
-        ...typeConfig,
-        components,
-        hasComponent: components.length > 0,
-        isComplete: !typeConfig.required || components.length > 0,
-      };
-    });
-    return summary;
+  const handleBuildPC = () => {
+    if (!canBuildPC()) {
+      toast.error('Vui lòng chọn đủ linh kiện bắt buộc');
+      return;
+    }
+
+    const isCompatible = checkCompatibility();
+    if (!isCompatible) {
+      toast.error('Có vấn đề về tương thích giữa các linh kiện');
+      return;
+    }
+
+    const totalPrice = calculateTotalPrice();
+    const result = `PC đã được xây dựng thành công với tổng giá ${formatCurrency(totalPrice)}!`;
+    setBuildResult(result);
+    toast.success('Xây dựng PC thành công!');
   };
 
-  const buildSummary = getBuildSummary();
-  const totalPrice = selectedComponents.reduce((sum, component) => sum + component.price, 0);
-  const isComplete = buildSummary.every(item => item.isComplete);
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  const totalPrice = calculateTotalPrice();
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      {/* 🏗️ Header */}
-      <Box mb={4}>
-        <Typography variant="h4" gutterBottom display="flex" alignItems="center" gap={2}>
-          <BuildIcon color="primary" fontSize="large" />
-          PC Builder
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Xây dựng cấu hình PC tối ưu với kiểm tra tương thích tự động
-        </Typography>
-      </Box>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        PC Builder - Xây dựng máy tính
+      </Typography>
 
-      <Grid container spacing={3}>
-        {/* 🛠️ Component Selection */}
-        <Grid item xs={12} lg={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Chọn linh kiện
-              </Typography>
-              
-              <Grid container spacing={2}>
-                {buildSummary.map((item) => (
-                  <Grid item xs={12} sm={6} md={4} key={item.type}>
-                    <Paper
-                      sx={{
-                        p: 2,
-                        border: item.hasComponent ? '2px solid' : '1px solid',
-                        borderColor: item.hasComponent 
-                          ? 'success.main' 
-                          : item.required 
-                            ? 'warning.main' 
-                            : 'divider',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: theme.shadows[4],
-                        }
-                      }}
-                      onClick={() => {
-                        setSelectedType(item.type);
-                        setComponentSelectorOpen(true);
-                      }}
-                    >
-                      <Box display="flex" alignItems="center" gap={1} mb={1}>
-                        {item.icon}
-                        <Typography variant="subtitle1" fontWeight={600}>
-                          {item.name}
-                        </Typography>
-                        {item.required && (
-                          <Chip label="Bắt buộc" size="small" color="warning" />
-                        )}
-                      </Box>
-                      
-                      {item.components.length > 0 ? (
-                        <Box>
-                          {item.components.map((component, index) => (
-                            <Box key={component.id} display="flex" alignItems="center" justifyContent="space-between">
-                              <Typography variant="body2" noWrap>
-                                {component.name}
-                              </Typography>
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveComponent(component.id);
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          ))}
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Chưa chọn
-                        </Typography>
-                      )}
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
+      {/* Online-only Alert */}
+      <Alert severity="info" sx={{ mb: 3 }}>
+        Chức năng này yêu cầu kết nối internet để hoạt động
+      </Alert>
 
-          {/* 🔍 Compatibility Checker */}
-          <Box mt={3}>
-            <PCCompatibilityChecker
-              selectedComponents={selectedComponents}
-              onComponentRemove={handleRemoveComponent}
-              onBuildSave={handleSaveBuild}
-            />
-          </Box>
-        </Grid>
+      {/* Component Selection */}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3 }}>
+        <Box sx={{ flex: { lg: 2 } }}>
+          <Paper elevation={2} sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Chọn linh kiện
+            </Typography>
 
-        {/* 📊 Build Summary */}
-        <Grid item xs={12} lg={4}>
-          <Stack spacing={3}>
-            {/* Price Summary */}
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Tổng kết
-                </Typography>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="body1">Tổng giá:</Typography>
-                  <Typography variant="h5" color="primary.main">
-                    {formatCurrency(totalPrice)}
+            {componentTypes.map((componentType) => (
+              <Box key={componentType.type} sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle1">
+                    {componentType.icon} {componentType.name}
                   </Typography>
+                  {selectedComponents[componentType.type] && (
+                    <Chip 
+                      label="Đã chọn" 
+                      color="success" 
+                      sx={{ width: 'auto' }}
+                    />
+                  )}
                 </Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="body2">Linh kiện:</Typography>
-                  <Typography variant="body2">
-                    {selectedComponents.length} / {componentTypes.filter(t => t.required).length} bắt buộc
-                  </Typography>
-                </Box>
-                <Chip 
-                  label={isComplete ? 'Hoàn thành' : 'Chưa đủ linh kiện'}
-                  color={isComplete ? 'success' : 'warning'}
-                  fullWidth
-                />
-              </CardContent>
-            </Card>
 
-            {/* Saved Builds */}
-            {savedBuilds.length > 0 && (
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Cấu hình đã lưu
-                  </Typography>
-                  <List dense>
-                    {savedBuilds.slice(-3).map((build) => (
-                      <ListItem key={build.id}>
-                        <ListItemText
-                          primary={build.name}
-                          secondary={formatCurrency(build.totalPrice)}
-                        />
-                        <ListItemSecondaryAction>
-                          <Chip 
-                            label={`${build.estimatedPerformance.overall}/100`}
-                            size="small"
-                            color={build.estimatedPerformance.overall >= 80 ? 'success' : 'warning'}
-                          />
-                        </ListItemSecondaryAction>
-                      </ListItem>
+                <FormControl fullWidth>
+                  <InputLabel>Chọn {componentType.name}</InputLabel>
+                  <Select
+                    value={selectedComponents[componentType.type]?.id || ''}
+                    onChange={(e) => handleComponentSelect(componentType.type, e.target.value)}
+                    label={`Chọn ${componentType.name}`}
+                  >
+                    <MenuItem value="">
+                      <em>Chưa chọn</em>
+                    </MenuItem>
+                    {getComponentsByType(componentType.type).map((component) => (
+                      <MenuItem key={component.id} value={component.id}>
+                        {component.name} - {formatCurrency(component.price)}
+                      </MenuItem>
                     ))}
-                  </List>
-                </CardContent>
-              </Card>
-            )}
-          </Stack>
-        </Grid>
-      </Grid>
+                  </Select>
+                </FormControl>
+              </Box>
+            ))}
+          </Paper>
+        </Box>
 
-      {/* 🛒 Component Selector Dialog */}
-      <Dialog 
-        open={componentSelectorOpen} 
-        onClose={() => setComponentSelectorOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          Chọn {getComponentTypeInfo(selectedType)?.name}
-        </DialogTitle>
-        <DialogContent>
-          <List>
-            {getComponentsByType(selectedType).map((component) => (
-              <React.Fragment key={component.id}>
-                <ListItem
-                  button
-                  onClick={() => handleAddComponent(component)}
-                >
+        <Box sx={{ flex: { lg: 1 } }}>
+          <Paper elevation={2} sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Tổng quan
+            </Typography>
+
+            <List>
+              {Object.entries(selectedComponents).map(([type, component]) => (
+                <ListItem key={type} sx={{ px: 0 }}>
                   <ListItemText
                     primary={component.name}
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="primary.main">
-                          {formatCurrency(component.price)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {component.brand} • {component.model}
-                        </Typography>
-                      </Box>
-                    }
+                    secondary={`${componentTypes.find(t => t.type === type)?.name} - ${formatCurrency(component.price)}`}
                   />
                 </ListItem>
-                <Divider />
-              </React.Fragment>
+              ))}
+            </List>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Typography variant="h6" gutterBottom>
+              Tổng tiền: {formatCurrency(totalPrice)}
+            </Typography>
+
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleBuildPC}
+              disabled={!canBuildPC()}
+              sx={{ mt: 2 }}
+            >
+              Xây dựng PC
+            </Button>
+          </Paper>
+        </Box>
+      </Box>
+
+      {/* Compatibility Check */}
+      {compatibilityIssues.length > 0 && (
+        <Paper elevation={2} sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h6" color="warning.main" gutterBottom>
+            Cảnh báo tương thích
+          </Typography>
+          <List>
+            {compatibilityIssues.map((issue, index) => (
+              <ListItem key={index} sx={{ px: 0 }}>
+                <ListItemText primary={issue} />
+              </ListItem>
             ))}
           </List>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setComponentSelectorOpen(false)}>
-            Đóng
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 🚀 Quick Add FAB */}
-      {isMobile && (
-        <Tooltip title="Thêm linh kiện">
-          <Fab
-            color="primary"
-            sx={{ position: 'fixed', bottom: 16, right: 16 }}
-            onClick={() => {
-              const nextRequired = buildSummary.find(item => item.required && !item.hasComponent);
-              if (nextRequired) {
-                setSelectedType(nextRequired.type);
-                setComponentSelectorOpen(true);
-              }
-            }}
-          >
-            <AddIcon />
-          </Fab>
-        </Tooltip>
+        </Paper>
       )}
-    </Container>
+
+      {/* Build Result */}
+      {buildResult && (
+        <Paper elevation={2} sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Kết quả xây dựng PC
+          </Typography>
+          <Typography variant="body1" paragraph>
+            {buildResult}
+          </Typography>
+        </Paper>
+      )}
+    </Box>
   );
 };
 

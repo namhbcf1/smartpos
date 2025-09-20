@@ -175,10 +175,7 @@ export class ErrorHandlingService {
 
       if (circuitState.failureCount >= circuitConfig.failureThreshold) {
         circuitState.state = CircuitState.OPEN;
-        log.error(`Circuit breaker OPEN for ${operationName}`, { 
-          failureCount: circuitState.failureCount,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        log.error(`Circuit breaker OPEN for ${operationName}`, error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       }
 
       throw error;
@@ -237,7 +234,7 @@ export class ErrorHandlingService {
     const strategy = this.recoveryStrategies.get(errorType);
     
     if (!strategy) {
-      log.error(`No recovery strategy for error type: ${errorType}`, { error: error.message });
+      log.error(`No recovery strategy for error type: ${errorType}`, error);
       throw error;
     }
 
@@ -252,18 +249,13 @@ export class ErrorHandlingService {
         try {
           await strategy.recoveryAction();
         } catch (recoveryError) {
-          log.error(`Recovery action failed for ${errorType}`, { 
-            error: recoveryError instanceof Error ? recoveryError.message : 'Unknown error'
-          });
+          log.error(`Recovery action failed for ${errorType}`, recoveryError instanceof Error ? recoveryError : new Error(recoveryError instanceof Error ? recoveryError.message : 'Unknown error'));
         }
       }
 
       return fallbackResult;
     } catch (fallbackError) {
-      log.error(`Fallback action failed for ${errorType}`, { 
-        originalError: error.message,
-        fallbackError: fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
-      });
+      log.error(`Fallback action failed for ${errorType}`, error instanceof Error ? error : new Error('Unknown error'));
       throw error; // Throw original error if fallback fails
     }
   }
@@ -276,7 +268,7 @@ export class ErrorHandlingService {
       return await this.executeWithCircuitBreaker(serviceName, operation);
     } catch (error) {
       log.warn(`Service degradation for ${serviceName}`, { 
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
 
       // Return degraded response based on service
@@ -355,9 +347,7 @@ export class ErrorHandlingService {
       await this.env.DB.prepare('SELECT 1').first();
       log.info('Database connection test successful');
     } catch (error) {
-      log.error('Database connection test failed', { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Database connection test failed', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       throw error;
     }
   }
@@ -380,7 +370,7 @@ export class ErrorHandlingService {
     try {
       const result = await this.env.DB.prepare(`
         SELECT COUNT(*) as total_products,
-               SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) as out_of_stock
+               SUM(CASE WHEN stock <= 0 THEN 1 ELSE 0 END) as out_of_stock
         FROM products WHERE is_active = 1
       `).first();
       

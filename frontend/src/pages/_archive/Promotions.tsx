@@ -55,7 +55,7 @@ import {
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { formatCurrency } from '../config/constants';
-import api from '../services/api';
+import api from '../../services/api';
 
 // Types
 interface Promotion {

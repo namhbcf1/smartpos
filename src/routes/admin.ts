@@ -16,9 +16,9 @@ app.use('*', authenticate);
 /**
  * POST /admin/initialize-rbac - Initialize RBAC system (admin only)
  */
-app.post('/initialize-rbac', async (c) => {
+app.post('/initialize-rbac', async (c: any) => {
   try {
-    const user = c.get('user');
+    const user = c.get('jwtPayload') as any;
     
     // Only allow admin users to initialize RBAC
     if (!user || user.role !== 'admin') {
@@ -55,9 +55,9 @@ app.post('/initialize-rbac', async (c) => {
 /**
  * GET /admin/rbac-status - Check RBAC system status
  */
-app.get('/rbac-status', async (c) => {
+app.get('/rbac-status', async (c: any) => {
   try {
-    const user = c.get('user');
+    const user = c.get('jwtPayload') as any;
     
     if (!user || user.role !== 'admin') {
       return c.json({
@@ -103,9 +103,9 @@ app.get('/rbac-status', async (c) => {
 /**
  * POST /admin/reset-rbac - Reset and reinitialize RBAC system (admin only)
  */
-app.post('/reset-rbac', async (c) => {
+app.post('/reset-rbac', async (c: any) => {
   try {
-    const user = c.get('user');
+    const user = c.get('jwtPayload') as any;
     
     if (!user || user.role !== 'admin') {
       return c.json({
@@ -155,9 +155,9 @@ app.post('/reset-rbac', async (c) => {
 /**
  * GET /admin/system-info - Get system information
  */
-app.get('/system-info', async (c) => {
+app.get('/system-info', async (c: any) => {
   try {
-    const user = c.get('user');
+    const user = c.get('jwtPayload') as any;
     
     if (!user || user.role !== 'admin') {
       return c.json({
@@ -192,7 +192,7 @@ app.get('/system-info', async (c) => {
         database_statistics: statistics,
         environment: 'production',
         api_version: '1.0.0',
-        rbac_enabled: statistics.system_resources > 0,
+        rbac_enabled: (statistics.system_resources || 0) > 0,
         checked_by: user.username,
         timestamp: new Date().toISOString()
       }

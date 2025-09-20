@@ -358,15 +358,15 @@ export function DataTable<T extends Record<string, any>>({
       <div className={cn("w-full", className)}>
         {title && (
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
             {description && (
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{description}</p>
+              <p className="text-gray-600 mt-1">{description}</p>
             )}
           </div>
         )}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg">
+        <div className="bg-white  rounded-xl border border-gray-200 shadow-lg">
           <div className="h-64 flex items-center justify-center">
-            <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400">
+            <div className="flex items-center space-x-3 text-gray-500">
               <Loader2 className="w-6 h-6 animate-spin" />
               <span className="text-sm font-medium">Đang tải dữ liệu...</span>
             </div>
@@ -382,13 +382,13 @@ export function DataTable<T extends Record<string, any>>({
       <div className={cn("w-full", className)}>
         {title && (
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
             {description && (
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{description}</p>
+              <p className="text-gray-600 mt-1">{description}</p>
             )}
           </div>
         )}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-700 shadow-lg">
+        <div className="bg-white  rounded-xl border border-red-200 shadow-lg">
           <div className="h-64 flex items-center justify-center">
             <div className="flex items-center space-x-3 text-red-500">
               <AlertCircle className="w-6 h-6" />
@@ -409,21 +409,21 @@ export function DataTable<T extends Record<string, any>>({
       <div className={cn("w-full", className)}>
         {title && (
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
             {description && (
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{description}</p>
+              <p className="text-gray-600 mt-1">{description}</p>
             )}
           </div>
         )}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg">
+        <div className="bg-white  rounded-xl border border-gray-200 shadow-lg">
           <div className="h-64 flex items-center justify-center">
             {empty || (
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                   <AlertCircle className="w-8 h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Không có dữ liệu</h3>
-                <p className="text-gray-500 dark:text-gray-400">Chưa có dữ liệu để hiển thị</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Không có dữ liệu</h3>
+                <p className="text-gray-500">Không có dữ liệu để hiển thị</p>
               </div>
             )}
           </div>
@@ -439,10 +439,10 @@ export function DataTable<T extends Record<string, any>>({
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             {title && (
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
             )}
             {description && (
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{description}</p>
+              <p className="text-gray-600 mt-1">{description}</p>
             )}
           </div>
           {actions && (
@@ -454,7 +454,7 @@ export function DataTable<T extends Record<string, any>>({
       )}
 
       {/* Enhanced Controls */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white p-4 rounded-xl border border-gray-200">
         <div className="flex flex-1 gap-3 items-center">
           {searchable && (
             <div className="relative flex-1 max-w-md">
@@ -502,8 +502,8 @@ export function DataTable<T extends Record<string, any>>({
 
           {/* Selection Actions */}
           {selectedRows.size > 0 && (
-            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-300 dark:border-gray-600">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-300">
+              <span className="text-sm text-gray-600">
                 Đã chọn {selectedRows.size}
               </span>
               <Button variant="destructive" size="sm">
@@ -516,7 +516,7 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Enhanced Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+      <div className="bg-white  rounded-xl border border-gray-200 shadow-lg overflow-hidden">
         <div
           className={cn(
             "overflow-auto",
@@ -530,7 +530,7 @@ export function DataTable<T extends Record<string, any>>({
             tableClassName
           )}>
             <thead className={cn(
-              "bg-gray-50 dark:bg-gray-900/50",
+              "bg-gray-50",
               stickyHeader && "sticky top-0 z-10",
               headerClassName
             )}>
@@ -541,7 +541,7 @@ export function DataTable<T extends Record<string, any>>({
                       type="checkbox"
                       checked={selectedRows.size === paginatedData.length && paginatedData.length > 0}
                       onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500  focus:ring-2 "
                     />
                   </th>
                 )}
@@ -551,12 +551,12 @@ export function DataTable<T extends Record<string, any>>({
                     <th
                       key={String(column.key)}
                       className={cn(
-                        'px-4 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700',
-                        column.sortable && 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors',
-                        column.align === 'center' && 'text-center',
-                        column.align === 'right' && 'text-right',
-                        column.fixed === 'left' && 'sticky left-0 z-20 bg-gray-50 dark:bg-gray-900',
-                        column.fixed === 'right' && 'sticky right-0 z-20 bg-gray-50 dark:bg-gray-900'
+                        "px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200",
+                        column.sortable && "cursor-pointer hover:bg-gray-100 transition-colors",
+                        column.align === "center" && "text-center",
+                        column.align === "right" && "text-right",
+                        column.fixed === "left" && "sticky left-0 z-20 bg-gray-50",
+                        column.fixed === "right" && "sticky right-0 z-20 bg-gray-50"
                       )}
                       style={{
                         width: column.width,
@@ -583,9 +583,9 @@ export function DataTable<T extends Record<string, any>>({
                                   transition={{ duration: 0.2 }}
                                 >
                                   {sortConfig.direction === 'asc' ? (
-                                    <SortAsc className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    <SortAsc className="w-4 h-4 text-blue-600" />
                                   ) : (
-                                    <SortDesc className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    <SortDesc className="w-4 h-4 text-blue-600" />
                                   )}
                                 </motion.div>
                               ) : (
@@ -605,13 +605,13 @@ export function DataTable<T extends Record<string, any>>({
                   </th>
                 ))}
                 {(onEdit || onDelete || onView) && (
-                  <th className="w-32 px-4 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                  <th className="w-32 px-4 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
                     Thao tác
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white divide-y divide-gray-200">
               <AnimatePresence>
                 {paginatedData.map((row, rowIndex) => {
                   const globalIndex = startIndex + rowIndex
@@ -629,12 +629,12 @@ export function DataTable<T extends Record<string, any>>({
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.2, delay: rowIndex * 0.02 }}
                       className={cn(
-                        'group transition-all duration-200',
-                        'hover:bg-gray-50 dark:hover:bg-gray-700/50',
-                        onRowClick && 'cursor-pointer',
-                        isSelected && 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700',
-                        striped && rowIndex % 2 === 0 && 'bg-gray-50/50 dark:bg-gray-800/50',
-                        bordered && 'border border-gray-200 dark:border-gray-700',
+                        "group transition-all duration-200",
+                        "hover:bg-gray-50",
+                        onRowClick && "cursor-pointer",
+                        isSelected && "bg-blue-50 border-blue-200",
+                        striped && rowIndex % 2 === 0 && "bg-gray-50/50",
+                        bordered && "border border-gray-200",
                         rowClassNameValue
                       )}
                       onClick={() => onRowClick?.(row, globalIndex)}
@@ -648,7 +648,7 @@ export function DataTable<T extends Record<string, any>>({
                                 e.stopPropagation()
                                 handleRowSelection(rowKey, e.target.checked)
                               }}
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500  focus:ring-2 "
                             />
                           </td>
                         )}
@@ -665,12 +665,12 @@ export function DataTable<T extends Record<string, any>>({
                               <td
                                 key={String(column.key)}
                                 className={cn(
-                                  'px-4 py-4 text-sm transition-colors',
-                                  compact ? 'py-2' : 'py-4',
-                                  column.align === 'center' && 'text-center',
-                                  column.align === 'right' && 'text-right',
-                                  column.fixed === 'left' && 'sticky left-0 z-10 bg-white dark:bg-gray-800',
-                                  column.fixed === 'right' && 'sticky right-0 z-10 bg-white dark:bg-gray-800',
+                                  "px-4 py-4 text-sm transition-colors",
+                                  compact ? "py-2" : "py-4",
+                                  column.align === "center" && "text-center",
+                                  column.align === "right" && "text-right",
+                                  column.fixed === "left" && "sticky left-0 z-10 bg-white",
+                                  column.fixed === "right" && "sticky right-0 z-10 bg-white",
                                   cellClassNameValue
                                 )}
                                 style={{
@@ -747,12 +747,12 @@ export function DataTable<T extends Record<string, any>>({
                     className="px-4 py-12 text-center"
                   >
                     <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                         <AlertCircle className="w-6 h-6 text-gray-400" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">Không có dữ liệu</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <h3 className="text-sm font-medium text-gray-900">Không có dữ liệu</h3>
+                        <p className="text-xs text-gray-500 mt-1">
                           {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu để hiển thị'}
                         </p>
                       </div>
@@ -767,15 +767,15 @@ export function DataTable<T extends Record<string, any>>({
 
       {/* Enhanced Pagination */}
       {pagination && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-gray-800 px-6 py-4 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-6 py-4 rounded-xl border border-gray-200">
+          <div className="flex items-center space-x-4 text-sm text-gray-600">
             <span>
-              Hiển thị <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> đến{' '}
-              <span className="font-medium text-gray-900 dark:text-white">{endIndex}</span> của{' '}
-              <span className="font-medium text-gray-900 dark:text-white">{sortedData.length}</span> kết quả
+              Hiển thị <span className="font-medium text-gray-900">{startIndex + 1}</span> đến{' '}
+              <span className="font-medium text-gray-900">{Math.min(endIndex, totalItems)}</span> của{' '}
+              <span className="font-medium text-gray-900">{totalItems}</span> kết quả
             </span>
             {selectedRows.size > 0 && (
-              <span className="text-blue-600 dark:text-blue-400">
+              <span className="text-blue-600">
                 • Đã chọn {selectedRows.size}
               </span>
             )}

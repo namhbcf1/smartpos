@@ -44,7 +44,7 @@ interface ProductsTableProps {
   onViewDetails: (product: Product) => void;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: number) => void;
-  onToggleStatus: (productId: number, isActive: boolean) => void;
+  onToggleStatus: (productId: number, is_active: boolean) => void;
   onToggleFeatured: (productId: number, isFeatured: boolean) => void;
   loading: boolean;
 }
@@ -75,10 +75,10 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   };
 
   const getStockStatus = (product: Product) => {
-    if (product.stock_quantity <= 0) {
+    if (product.stock <= 0) {
       return { label: 'Hết hàng', color: 'error' as const, icon: <WarningIcon /> };
     }
-    if (product.stock_quantity <= product.min_stock_level) {
+    if (product.stock <= product.min_stock) {
       return { label: 'Sắp hết', color: 'warning' as const, icon: <WarningIcon /> };
     }
     return { label: 'Còn hàng', color: 'success' as const, icon: <StockIcon /> };
@@ -159,7 +159,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                           Tồn kho
                         </Typography>
                         <Typography variant="body1" fontWeight="bold">
-                          {product.stock_quantity} {product.unit}
+                          {product.stock} {product.unit}
                         </Typography>
                         <Chip
                           icon={stockStatus.icon}
@@ -297,7 +297,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                   <TableCell align="center">
                     <Box>
                       <Typography variant="body2" fontWeight="medium">
-                        {product.stock_quantity} {product.unit}
+                        {product.stock} {product.unit}
                       </Typography>
                       <Chip
                         icon={stockStatus.icon}

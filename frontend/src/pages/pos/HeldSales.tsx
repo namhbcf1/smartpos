@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import api from '../../services/api/client'
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
+import { useAuth } from '../../hooks/useAuth'
+import { formatCurrency } from '../../lib/utils'
 import {
   Clock,
   Play,
@@ -25,7 +27,8 @@ import {
   Download,
   FileText,
   Timer,
-  TrendingUp
+  TrendingUp,
+  X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -82,15 +85,11 @@ export default function HeldSales() {
   const loadHeldSales = async () => {
     setLoading(true)
     try {
-      const res = await api.get('/api/sales', {
-        params: {
-          status: 'held',
-          limit: 50,
-          include_customer: true,
-          include_items_count: true
-        }
+      const res = await api.get('/sales', {
+        params: { status: 'held', limit: 50, include_customer: true, include_items_count: true }
       })
-      setItems(res.data.data || [])
+      const responseData = res.data?.data || res.data || []
+      setItems(Array.isArray(responseData) ? responseData : [])
     } catch (error) {
       console.error('Failed to load held sales:', error)
       toast.error('Không thể tải danh sách hóa đơn tạm giữ')
@@ -101,7 +100,7 @@ export default function HeldSales() {
 
   const loadSaleDetail = async (id: string) => {
     try {
-      const res = await api.get(`/api/sales/${id}`)
+      const res = await api.get(`/sales/${id}`)
       setSelectedSale(res.data)
       setShowDetail(true)
     } catch (error) {
@@ -113,7 +112,7 @@ export default function HeldSales() {
   const resumeSale = async (id: string) => {
     setActionLoading(id)
     try {
-      await api.post(`/api/sales/${id}/hold`, { action: 'resume' })
+      await api.post(`/sales/${id}/hold`, { action: 'resume' })
       toast.success('Đã tiếp tục hóa đơn')
       await loadHeldSales()
     } catch (error) {
@@ -129,7 +128,7 @@ export default function HeldSales() {
 
     setActionLoading(id)
     try {
-      await api.delete(`/api/sales/${id}`)
+      await api.delete(`/sales/${id}`)
       toast.success('Đã xóa hóa đơn')
       await loadHeldSales()
     } catch (error) {
@@ -140,19 +139,19 @@ export default function HeldSales() {
     }
   }
 
-  const filteredItems = items.filter(item =>
-    item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredItems = Array.isArray(items) ? items.filter(item =>
+    item.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.customer_phone?.includes(searchQuery)
-  )
+  ) : []
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 ">
       {/* Enhanced Header */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-6 sticky top-0 z-40"
+        className="bg-white/80  backdrop-blur-lg shadow-lg border-b border-gray-200/50 px-6 py-6 sticky top-0 z-40">
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -163,7 +162,7 @@ export default function HeldSales() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
                 Hóa đơn tạm giữ
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600">
                 Quản lý các hóa đơn đang tạm giữ
               </p>
             </div>
@@ -187,9 +186,9 @@ export default function HeldSales() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          className="mb-6">
         >
-          <Card className="shadow-lg border-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg">
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-lg">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="flex-1 relative">
@@ -199,7 +198,7 @@ export default function HeldSales() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Tìm kiếm theo mã hóa đơn, tên khách hàng hoặc số điện thoại..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300  rounded-xl bg-white  text-gray-900  placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                   />
                 </div>
                 <Button variant="outline">
@@ -216,7 +215,7 @@ export default function HeldSales() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6"
+          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         >
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
             <CardContent className="p-6">
@@ -286,12 +285,12 @@ export default function HeldSales() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="shadow-xl border-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg">
+          <Card className="shadow-xl border-0 bg-white/70 backdrop-blur-lg">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <FileText className="w-5 h-5 text-blue-600" />
                 <span>Danh sách hóa đơn tạm giữ</span>
-                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-full">
+                <span className="px-2 py-1 bg-blue-100  text-blue-700 text-sm rounded-full">
                   {filteredItems.length}
                 </span>
               </CardTitle>
@@ -300,15 +299,15 @@ export default function HeldSales() {
               {loading ? (
                 <div className="text-center py-12">
                   <RefreshCw className="w-12 h-12 mx-auto mb-4 text-blue-600 animate-spin" />
-                  <p className="text-gray-500 dark:text-gray-400">Đang tải danh sách...</p>
+                  <p className="text-gray-500 tải danh sách...</p>">
                 </div>
               ) : filteredItems.length === 0 ? (
                 <div className="text-center py-12">
                   <Archive className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
                     {searchQuery ? 'Không tìm thấy hóa đơn' : 'Chưa có hóa đơn tạm giữ'}
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400">
+                  <p className="text-gray-500">
                     {searchQuery ? 'Thử tìm kiếm với từ khóa khác' : 'Các hóa đơn tạm giữ sẽ hiển thị ở đây'}
                   </p>
                 </div>
@@ -323,7 +322,7 @@ export default function HeldSales() {
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ delay: index * 0.05 }}
                       >
-                        <Card className="border-0 bg-gray-50 dark:bg-gray-700/50 hover:shadow-lg transition-all duration-200">
+                        <Card className="border-0 bg-gray-50 hover:shadow-lg transition-all duration-200">
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
@@ -332,10 +331,10 @@ export default function HeldSales() {
                                     <FileText className="w-6 h-6 text-white" />
                                   </div>
                                   <div>
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                    <h3 className="text-lg font-bold text-gray-900">
                                       #{item.id}
                                     </h3>
-                                    <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                                    <div className="flex items-center space-x-4 text-sm text-gray-500">
                                       <div className="flex items-center space-x-1">
                                         <Clock className="w-4 h-4" />
                                         <span>{new Date(item.created_at * 1000).toLocaleString('vi-VN')}</span>
@@ -357,8 +356,8 @@ export default function HeldSales() {
                                 </div>
 
                                 {item.notes && (
-                                  <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                                  <div className="mb-3 p-3 bg-blue-50 rounded-lg">
+                                    <p className="text-sm text-blue-700">
                                       <strong>Ghi chú:</strong> {item.notes}
                                     </p>
                                   </div>
@@ -367,11 +366,11 @@ export default function HeldSales() {
 
                               <div className="flex items-center space-x-4">
                                 <div className="text-right">
-                                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                  <div className="text-2xl font-bold text-green-600">
                                     {item.total?.toLocaleString('vi-VN')} ₫
                                   </div>
                                   {item.payment_method && (
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    <div className="text-sm text-gray-500">
                                       {item.payment_method}
                                     </div>
                                   )}
@@ -382,7 +381,7 @@ export default function HeldSales() {
                                     size="sm"
                                     onClick={() => loadSaleDetail(item.id)}
                                     variant="outline"
-                                    className="w-24"
+                                    className="w-24">
                                   >
                                     <Eye className="w-4 h-4 mr-1" />
                                     Xem
@@ -391,7 +390,7 @@ export default function HeldSales() {
                                     size="sm"
                                     onClick={() => resumeSale(item.id)}
                                     disabled={actionLoading === item.id}
-                                    className="w-24 bg-green-600 hover:bg-green-700 text-white"
+                                    className="w-24 bg-green-600 hover:bg-green-700 text-white">
                                   >
                                     {actionLoading === item.id ? (
                                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -407,7 +406,7 @@ export default function HeldSales() {
                                     onClick={() => deleteSale(item.id)}
                                     disabled={actionLoading === item.id}
                                     variant="outline"
-                                    className="w-24 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="w-24 text-red-600 hover:text-red-700 hover:bg-red-50">
                                   >
                                     <Trash2 className="w-4 h-4 mr-1" />
                                     Xóa
@@ -434,22 +433,22 @@ export default function HeldSales() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
             >
               {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 ">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    <h3 className="text-xl font-bold text-gray-900">
                       Chi tiết hóa đơn #{selectedSale.id}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-gray-600 mt-1">
                       Tạm giữ lúc {new Date(selectedSale.created_at * 1000).toLocaleString('vi-VN')}
                     </p>
                   </div>
@@ -457,7 +456,7 @@ export default function HeldSales() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDetail(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-gray-500 hover:text-gray-700 ">
                   >
                     <X className="w-5 h-5" />
                   </Button>
@@ -534,8 +533,8 @@ export default function HeldSales() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {selectedSale.items?.map((item) => (
-                        <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      {Array.isArray(selectedSale.items) && selectedSale.items.map((item) => (
+                        <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                           <div>
                             <h4 className="font-medium">{item.name}</h4>
                             <p className="text-sm text-gray-500">SKU: {item.sku}</p>
@@ -562,14 +561,14 @@ export default function HeldSales() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-700 dark:text-gray-300">{selectedSale.notes}</p>
+                      <p className="text-gray-700">
                     </CardContent>
                   </Card>
                 )}
               </div>
 
               {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-end space-x-3">
                   <Button variant="outline" onClick={() => setShowDetail(false)}>
                     Đóng
@@ -579,7 +578,7 @@ export default function HeldSales() {
                       resumeSale(selectedSale.id)
                       setShowDetail(false)
                     }}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-green-600 hover:bg-green-700 text-white">
                   >
                     <Play className="w-4 h-4 mr-2" />
                     Tiếp tục hóa đơn

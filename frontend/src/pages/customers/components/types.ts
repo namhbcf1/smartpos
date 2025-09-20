@@ -1,56 +1,36 @@
-// Customer Management Types
+// Customer Management Types - DB Schema Compliant
 export interface Customer {
-  id: number;
+  id: string; // TEXT PK per DB schema
   name: string;
-  email: string;
-  phone: string;
+  email?: string; // Optional per DB schema
+  phone?: string; // Optional per DB schema
   address?: string;
-  city?: string;
-  district?: string;
-  ward?: string;
-  postal_code?: string;
-  date_of_birth?: string;
+  date_of_birth?: string; // ISO 8601: '1990-05-15'
   gender?: 'male' | 'female' | 'other';
-  customer_type: 'individual' | 'business';
-  tax_code?: string;
-  company_name?: string;
-  loyalty_points: number;
-  total_spent: number;
-  total_orders: number;
-  last_order_date?: string;
-  status: 'active' | 'inactive' | 'blocked';
-  notes?: string;
+  customer_type: 'regular' | 'vip' | 'wholesale'; // per DB schema
+  loyalty_points: number; // CHECK (loyalty_points >= 0)
+  total_spent_cents: number; // VND x 100, CHECK (total_spent_cents >= 0)
+  visit_count: number; // CHECK (visit_count >= 0)
+  last_visit?: string; // ISO 8601
+  is_active: boolean; // 0=inactive, 1=active
   created_at: string;
   updated_at: string;
-  avatar_url?: string;
-  preferred_contact_method?: 'email' | 'phone' | 'sms';
-  tags?: string[];
 }
 
 export interface CustomerFormData {
   name: string;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   address?: string;
-  city?: string;
-  district?: string;
-  ward?: string;
-  postal_code?: string;
-  date_of_birth?: string;
+  date_of_birth?: string; // ISO 8601: '1990-05-15'
   gender?: 'male' | 'female' | 'other';
-  customer_type: 'individual' | 'business';
-  tax_code?: string;
-  company_name?: string;
-  notes?: string;
-  preferred_contact_method?: 'email' | 'phone' | 'sms';
-  tags?: string[];
+  customer_type: 'regular' | 'vip' | 'wholesale'; // per DB schema
 }
 
 export interface CustomerFilters {
   search: string;
-  customer_type: 'all' | 'individual' | 'business';
-  status: 'all' | 'active' | 'inactive' | 'blocked';
-  city: string;
+  customer_type: 'all' | 'regular' | 'vip' | 'wholesale'; // per DB schema
+  is_active: 'all' | 'active' | 'inactive';
   loyalty_tier: 'all' | 'bronze' | 'silver' | 'gold' | 'platinum';
   date_range: {
     start?: string;

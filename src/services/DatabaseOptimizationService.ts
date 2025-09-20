@@ -52,7 +52,7 @@ export class DatabaseOptimizationService {
 
       await this.env.DB.prepare(`
         CREATE INDEX IF NOT EXISTS idx_products_stock_alert 
-        ON products(stock_quantity, stock_alert_threshold, is_active)
+        ON products(stock, min_stock, is_active)
       `).run();
 
       await this.env.DB.prepare(`
@@ -158,7 +158,7 @@ export class DatabaseOptimizationService {
       const recommendations: IndexRecommendation[] = [];
 
       // Check for missing indexes on frequently queried columns
-      if (tableStats.products > 1000) {
+      if ((tableStats.products as number) > 1000) {
         recommendations.push({
           table: 'products',
           columns: ['category_id', 'is_active'],
@@ -167,7 +167,7 @@ export class DatabaseOptimizationService {
         });
       }
 
-      if (tableStats.sales > 500) {
+      if ((tableStats.sales as number) > 500) {
         recommendations.push({
           table: 'sales',
           columns: ['created_at', 'sale_status'],
@@ -176,7 +176,7 @@ export class DatabaseOptimizationService {
         });
       }
 
-      if (tableStats.sale_items > 2000) {
+      if ((tableStats.sale_items as number) > 2000) {
         recommendations.push({
           table: 'sale_items',
           columns: ['product_id'],
@@ -185,10 +185,22 @@ export class DatabaseOptimizationService {
         });
       }
 
-      return {
-        slow_queries: [], // TODO: Implement query monitoring
-        recommendations
-      };
+      // Retrieve slow queries from in-memory monitor if available (utils/database DatabaseMonitor)
+      let slowQueries: QueryPerformanceMetrics[] = [];
+      try {
+        const { DatabaseMonitor } = await import('../utils/database');
+        const stats = DatabaseMonitor.getStats();
+        const breakdown = stats.queryBreakdown || {};
+        const entries = Object.entries(breakdown) as Array<[string, { count: number; avgTime: number; slowQueries: number; }]>;
+        slowQueries = entries
+          .map(([q, s]) => ({ query: q, execution_time: s.avgTime, rows_affected: 0, timestamp: new Date().toISOString() }))
+          .sort((a, b) => b.execution_time - a.execution_time)
+          .slice(0, 10);
+      } catch (e) {
+        // ignore
+      }
+
+      return { slow_queries: slowQueries, recommendations };
     } catch (error) {
       console.error('Error analyzing query performance:', error);
       return { slow_queries: [], recommendations: [] };
@@ -215,18 +227,32 @@ export class DatabaseOptimizationService {
         this.env.DB.prepare('SELECT COUNT(*) as count FROM categories').first<{ count: number }>()
       ]);
 
-      const totalRecords = recordCounts.reduce((sum, result) => sum + (result?.count || 0), 0);
+      const totalRecords = recordCounts.reduce((sum: number, result: any) => sum + (result?.count || 0), 0);
 
       // Get performance analysis
       const performanceAnalysis = await this.analyzeQueryPerformance();
 
+      // Heuristic DB size and fragmentation (D1 has no direct API)
+      const pageCount = await this.env.DB.prepare(`PRAGMA page_count`).first<{ page_count: number }>() as any;
+      const pageSize = await this.env.DB.prepare(`PRAGMA page_size`).first<{ page_size: number }>() as any;
+      const sizeBytes = (pageCount?.page_count || 0) * (pageSize?.page_size || 0);
+
+      // Estimate fragmentation as ratio of indexes to tables and slow query percentage
+      const idxCount = await this.env.DB.prepare(`SELECT COUNT(*) as count FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'`).first<{ count: number }>();
+      const fragmentation = (() => {
+        const totalTbl = tables?.count || 1;
+        const idx = idxCount?.count || 0;
+        const ratio = totalTbl > 0 ? Math.max(0, 1 - Math.min(1, idx / (totalTbl * 2))) : 0.5;
+        return Math.round(ratio * 100);
+      })();
+
       return {
         total_tables: tables?.count || 0,
         total_records: totalRecords,
-        database_size: 0, // TODO: Calculate actual database size
+        database_size: sizeBytes,
         slow_queries: performanceAnalysis.slow_queries,
         index_recommendations: performanceAnalysis.recommendations,
-        fragmentation_level: 0 // TODO: Calculate fragmentation
+        fragmentation_level: fragmentation
       };
     } catch (error) {
       console.error('Error getting database health:', error);

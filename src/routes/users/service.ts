@@ -9,7 +9,7 @@ export class UserService {
 
   constructor(private env: Env) {
     this.db = new UserDatabase(env);
-    this.cache = new CacheManager(env);
+    this.cache = CacheManager.getInstance();
   }
 
   // Initialize service
@@ -116,7 +116,7 @@ export class UserService {
   async getUserById(id: number): Promise<User | null> {
     try {
       const cacheKey = CacheKeys.user(id);
-      const cached = await this.cache.get<User>(cacheKey);
+      const cached = await this.cache.get<User>(this.env, cacheKey);
       if (cached) return cached;
 
       const user = await this.env.DB.prepare(`
@@ -131,7 +131,7 @@ export class UserService {
       if (user) {
         // Remove password hash from response
         delete (user as any).password_hash;
-        await this.cache.set(cacheKey, user, 300); // Cache for 5 minutes
+        await this.cache.set(this.env, cacheKey, user, { ttl: 300 }); // Cache for 5 minutes
       }
 
       return user || null;
@@ -280,7 +280,7 @@ export class UserService {
       `).bind(userId).run();
 
       // Clear cache
-      await this.cache.delete(CacheKeys.usersList());
+      await this.cache.delete(this.env, 'users:list');
 
       const newUser = await this.getUserById(userId);
       if (!newUser) {
@@ -350,8 +350,8 @@ export class UserService {
       `).bind(...bindings).run();
 
       // Clear cache
-      await this.cache.delete(CacheKeys.user(id));
-      await this.cache.delete(CacheKeys.usersList());
+      await this.cache.delete(this.env, CacheKeys.user(id));
+      await this.cache.delete(this.env, 'users:list');
 
       const updatedUser = await this.getUserById(id);
       if (!updatedUser) {
@@ -391,8 +391,8 @@ export class UserService {
       `).bind(deletedBy, id).run();
 
       // Clear cache
-      await this.cache.delete(CacheKeys.user(id));
-      await this.cache.delete(CacheKeys.usersList());
+      await this.cache.delete(this.env, CacheKeys.user(id));
+      await this.cache.delete(this.env, 'users:list');
     } catch (error) {
       console.error('Error deleting user:', error);
       throw error;
@@ -424,7 +424,7 @@ export class UserService {
       `).bind(userId).run();
 
       // Clear cache
-      await this.cache.delete(CacheKeys.user(userId));
+      await this.cache.delete(this.env, CacheKeys.user(userId));
     } catch (error) {
       console.error('Error updating last login:', error);
       throw error;

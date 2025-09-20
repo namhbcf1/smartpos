@@ -48,8 +48,8 @@ interface RecentSale {
 interface LowStockProduct {
   id: number;
   name: string;
-  stock_quantity: number;
-  stock_alert_threshold: number;
+  stock: number;
+  min_stock: number;
   category_name?: string;
 }
 

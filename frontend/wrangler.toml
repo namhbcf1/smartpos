@@ -1,21 +1,32 @@
-name = "pos-frontend-bangachieu2"
+name = "namhbcf-uk"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "dist"
 
 [env.production]
-name = "pos-frontend-bangachieu2"
+name = "namhbcf-uk"
 
 [env.production.vars]
-VITE_API_URL = "https://pos-backend-bangachieu2.bangachieu2.workers.dev"
+VITE_API_BASE_URL = "https://namhbcf-api.bangachieu2.workers.dev"
+VITE_API_VERSION = "v1"
 VITE_APP_NAME = "ComputerPOS Pro"
 VITE_APP_VERSION = "1.0.0"
 VITE_ENVIRONMENT = "production"
+VITE_FRONTEND_URL = "https://namhbcf-uk.pages.dev"
+VITE_CLOUDFLARE_WS_URL = "wss://namhbcf-api.bangachieu2.workers.dev/realtime"
+VITE_R2_UPLOAD_URL = "https://namhbcf-api.bangachieu2.workers.dev/r2/upload"
+VITE_ENABLE_REAL_TIME = "true"
+VITE_ENABLE_NOTIFICATIONS = "true"
+VITE_ENABLE_ANALYTICS = "true"
+
+[deploy]
+# Always deploy dist after build via npm script
+command = "npm run build:deploy"
 
 [env.preview]
-name = "pos-system-bangachieu2-preview"
+name = "namhbcf-uk-preview"
 
 [env.preview.vars]
-VITE_API_URL = "https://pos-backend-bangachieu2.bangachieu2.workers.dev"
+VITE_API_BASE_URL = "https://namhbcf-api.bangachieu2.workers.dev"
 VITE_APP_NAME = "ComputerPOS Pro (Preview)"
 VITE_APP_VERSION = "1.0.0-preview"
 VITE_ENVIRONMENT = "preview"

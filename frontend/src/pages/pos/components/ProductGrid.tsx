@@ -112,8 +112,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <Grid container spacing={2}>
       {Array.isArray(products) && products.map((product) => {
-        const stockStatus = getStockStatus(product.stock_quantity, product.min_stock_level);
-        const isOutOfStock = product.stock_quantity <= 0;
+        const stockStatus = getStockStatus(product.stock, product.min_stock);
+        const isOutOfStock = product.stock <= 0;
         
         return (
           <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
@@ -204,7 +204,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                   <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
                     <StockIcon fontSize="small" color="action" />
                     <Typography variant="body2" color="text.secondary">
-                      {product.stock_quantity} {product.unit}
+                      {product.stock} {product.unit}
                     </Typography>
                   </Stack>
                 </Box>

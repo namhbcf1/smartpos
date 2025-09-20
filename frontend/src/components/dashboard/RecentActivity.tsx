@@ -39,8 +39,8 @@ interface RecentSale {
 interface LowStockProduct {
   id: number;
   name: string;
-  stock_quantity: number;
-  stock_alert_threshold: number;
+  stock: number;
+  min_stock: number;
   category_name?: string;
 }
 
@@ -206,13 +206,13 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                             </Typography>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
                               <Chip 
-                                label={`Còn ${product.stock_quantity}`}
+                                label={`Còn ${product.stock}`}
                                 size="small" 
                                 color="warning"
                                 variant="outlined"
                               />
                               <Typography variant="caption" color="text.secondary">
-                                Tối thiểu: {product.stock_alert_threshold}
+                                Tối thiểu: {product.min_stock}
                               </Typography>
                             </Box>
                           </Box>

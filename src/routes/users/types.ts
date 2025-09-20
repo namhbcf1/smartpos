@@ -1,60 +1,40 @@
-// User Management Types for Backend
+// User Management Types for Backend - Following detailed schema
 export interface User {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   username: string;
   email: string;
+  password_hash: string;
   full_name: string;
-  phone?: string;
-  role: 'admin' | 'manager' | 'cashier' | 'staff';
-  store_id?: number;
-  store_name?: string;
+  role: 'admin' | 'manager' | 'cashier' | 'employee'; // Default 'employee' per detailed schema
   is_active: boolean;
-  avatar_url?: string;
-  last_login?: string;
-  login_count: number;
-  permissions?: string[];
-  settings?: Record<string, any>;
+  last_login?: string; // ISO 8601 format
   created_at: string;
   updated_at: string;
-  created_by?: number;
-  updated_by?: number;
 }
 
 export interface UserCreateData {
   username: string;
   email: string;
-  password: string;
+  password: string; // Will be hashed to password_hash
   full_name: string;
-  phone?: string;
-  role: 'admin' | 'manager' | 'cashier' | 'staff';
-  store_id?: number;
+  role: 'admin' | 'manager' | 'cashier' | 'employee';
   is_active?: boolean;
-  avatar_url?: string;
-  permissions?: string[];
-  settings?: Record<string, any>;
 }
 
 export interface UserUpdateData {
   username?: string;
   email?: string;
-  password?: string;
+  password?: string; // Will be hashed to password_hash
   full_name?: string;
-  phone?: string;
-  role?: 'admin' | 'manager' | 'cashier' | 'staff' | 'sales_agent' | 'affiliate' | 'inventory';
-  store_id?: number;
+  role?: 'admin' | 'manager' | 'cashier' | 'employee';
   is_active?: boolean;
-  avatar_url?: string;
-  permissions?: string[];
-  settings?: Record<string, any>;
-  updated_by?: number;
 }
 
 export interface UserQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  role?: 'admin' | 'manager' | 'cashier' | 'staff';
-  store_id?: number;
+  role?: 'admin' | 'manager' | 'cashier' | 'employee';
   is_active?: boolean;
   sort_by?: 'username' | 'email' | 'full_name' | 'role' | 'created_at' | 'last_login';
   sort_order?: 'asc' | 'desc';
@@ -67,14 +47,13 @@ export interface UserStats {
   admin_count: number;
   manager_count: number;
   cashier_count: number;
-  staff_count: number;
+  employee_count: number; // Changed from staff_count
   recent_logins: number;
-  stores_count: number;
 }
 
 export interface UserSession {
   id: string;
-  user_id: number;
+  user_id: string; // TEXT according to detailed schema
   token: string;
   refresh_token?: string;
   expires_at: string;
@@ -108,14 +87,12 @@ export interface UserPermission {
 }
 
 export interface Role {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   name: string;
   description?: string;
-  permissions: string[];
+  permissions: string[]; // JSON array per detailed schema
   is_active: boolean;
-  user_count: number;
   created_at: string;
-  updated_at: string;
 }
 
 export interface UserProfile {

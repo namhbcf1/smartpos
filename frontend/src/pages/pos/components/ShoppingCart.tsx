@@ -173,7 +173,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
                       <IconButton
                         size="small"
                         onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                        disabled={item.quantity >= item.product.stock_quantity}
+                        disabled={item.quantity >= item.product.stock}
                       >
                         <AddIcon fontSize="small" />
                       </IconButton>

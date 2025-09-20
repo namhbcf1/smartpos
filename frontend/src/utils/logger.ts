@@ -216,7 +216,7 @@ class ProductionLogger {
     if (level === 'error' || level === 'critical') {
       try {
         // Send to monitoring service (implement based on your monitoring solution)
-        fetch('/api/logs', {
+        fetch('/logs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -250,4 +250,4 @@ export const logInfo = logger.info.bind(logger);
 export const logDebug = logger.debug.bind(logger);
 
 // Export for advanced usage
-export { ProductionLogger, LogLevel };
+export { ProductionLogger };

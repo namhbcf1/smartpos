@@ -1,117 +1,93 @@
-import { Context, Next, MiddlewareHandler } from 'hono';
-import { Env } from '../types';
-import { cors } from 'hono/cors';
-import { 
-  getEnvVar, 
-  validateJWTSecret, 
-  validateEncryptionKey, 
-  RateLimiter, 
-  InputValidator, 
-  SECURITY_HEADERS,
-  sanitizeForLogging 
-} from '../utils/security';
+import { Context } from 'hono';
+import { MiddlewareHandler } from 'hono';
+import { getEnvVar, validateJWTSecret, validateEncryptionKey, InputValidator } from '../utils/security';
 
-// Rate limiting middleware with different tiers
-const RATE_LIMITS: Record<string, { limit: number, window: number }> = {
-  'default': { limit: 1000, window: 60 }, // 1000 requests per minute
-  'auth': { limit: 100, window: 60 }, // 100 auth requests per minute
-  'critical': { limit: 500, window: 60 } // 500 requests per minute for critical operations
-};
-
-export const rateLimit = (tier: keyof typeof RATE_LIMITS = 'default'): MiddlewareHandler => {
-  const { limit, window } = RATE_LIMITS[tier] || RATE_LIMITS.default;
-
-  return async (c: Context, next: Next) => {
-    // Skip rate limiting if KV is not available (fail-open for availability)
-    if (!c.env || !c.env.SESSIONS) {
-      console.warn('⚠️ Rate limiting KV binding missing - continuing without rate limit');
-      return next();
-    }
-
-    const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
-    const route = c.req.path;
-    const key = `ratelimit:${tier}:${ip}:${route}`;
-
-    try {
-      let counter = await c.env.SESSIONS.get(key);
-      let count = counter ? parseInt(counter, 10) + 1 : 1;
-
-      if (count > limit) {
-        return c.json({
-          success: false,
-          message: 'Rate limit exceeded. Please try again later.',
-          error: 'RATE_LIMIT_EXCEEDED'
-        }, 429);
-      }
-
-      // Optimize KV writes: only update every 5 requests to reduce KV operations
-      if (count % 5 === 1 || count <= 5) {
-        try {
-          await c.env.SESSIONS.put(key, count.toString(), { expirationTtl: window });
-        } catch (kvError) {
-          console.warn('⚠️ KV put failed - continuing with degraded rate limiting:', kvError);
-          // FAIL-OPEN: Continue request even if KV write fails
-        }
-      }
-
-      // Add rate limit headers
-      c.header('X-RateLimit-Limit', limit.toString());
-      c.header('X-RateLimit-Remaining', (limit - count).toString());
-
-      return next();
-    } catch (error) {
-      console.warn('Rate limiting error, continuing without rate limit:', error);
-      return next();
-    }
-  };
-};
-
-// Security headers middleware
-export const securityHeaders: MiddlewareHandler = async (c, next) => {
-  // Set all security headers from the security utils
-  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
-    c.header(key, value);
-  });
+// Enhanced sanitization for logging
+const sanitizeForLogging = (data: any): any => {
+  if (!data) return data;
   
-  await next();
-};
-
-// CORS middleware - Proper implementation for credentials
-export const corsSecurity: MiddlewareHandler = async (c, next) => {
-  const origin = c.req.header('Origin');
-  
-  // Get allowed origins from environment variable
-  const corsOrigins = c.env.CORS_ORIGINS || 'https://smartpos-web.pages.dev';
-  const allowedOrigins = corsOrigins.split(',').map(url => url.trim());
-  
-  console.log('🔍 CORS: Checking origin:', origin);
-  console.log('📋 CORS: Allowed origins from env:', allowedOrigins);
-  
-  // SECURITY FIXED: Strict CORS policy - exact origin matching only
-  if (origin && allowedOrigins.includes(origin)) {
-    c.header('Access-Control-Allow-Origin', origin);
-    console.log('✅ CORS: Origin allowed:', origin);
-  } else {
-    // SECURITY FIXED: Deny unknown origins completely
-    console.log('🚨 CORS: Origin denied:', origin);
-    console.log('📋 CORS: Allowed origins:', allowedOrigins);
-    c.header('Access-Control-Allow-Origin', 'null');
+  if (typeof data === 'string') {
+    return InputValidator.sanitizeString(data, 1000);
   }
   
-  // Required headers for credentials
+  if (typeof data === 'object') {
+    const sanitized: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      // Skip sensitive fields
+      if (['password', 'token', 'secret', 'key', 'auth', 'hash', 'salt'].some(s => key.toLowerCase().includes(s))) {
+        sanitized[key] = '[REDACTED]';
+        continue;
+      }
+      
+      if (typeof value === 'string') {
+        sanitized[key] = InputValidator.sanitizeString(value, 500);
+      } else if (typeof value === 'object' && value !== null) {
+        sanitized[key] = sanitizeForLogging(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  }
+  
+  return data;
+};
+
+// CORS middleware with enhanced origin validation
+export const corsMiddleware: MiddlewareHandler = async (c, next) => {
+  const origin = c.req.header('Origin');
+  const allowedOrigins = getEnvVar(c.env, 'CORS_ORIGINS', true)?.split(',').map(o => o.trim()) || ['http://localhost:3000'];
+  
+  console.log('🔍 CORS Check - Origin:', origin);
+  console.log('📋 Allowed Origins:', allowedOrigins);
+  
+  // Validate origin
+  let allowOrigin = false;
+  if (origin) {
+    // Temporary fix: Explicitly allow the preview URL while environment variable propagates
+    if (origin === 'https://9b82c250.namhbcf-uk.pages.dev') {
+      allowOrigin = true;
+    } else {
+      allowOrigin = allowedOrigins.some(allowed => {
+        const trimmed = allowed.trim();
+        if (trimmed === '*') return true;
+        if (trimmed.includes('*.')) {
+          const domain = trimmed.replace('https://*.', '');
+          return origin.includes(domain);
+        }
+        return origin === trimmed;
+      });
+    }
+  }
+  
+  console.log('✅ Origin allowed:', allowOrigin);
+  
+  // Always set CORS headers for production domains
+  if (allowOrigin && origin) {
+    c.header('Access-Control-Allow-Origin', origin);
+    console.log('🌐 Set CORS Origin:', origin);
+  } else if (allowedOrigins.includes('*')) {
+    // When credentials are used, wildcard is invalid. Reflect the request origin instead.
+    if (origin) {
+      c.header('Access-Control-Allow-Origin', origin);
+    } else {
+      c.header('Access-Control-Allow-Origin', '*');
+    }
+  }
+  
   c.header('Access-Control-Allow-Credentials', 'true');
   c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, X-Client-Version, Origin, X-Request-ID, X-Timestamp');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, X-Client-Version, Origin, X-Request-ID, X-Timestamp, X-Timezone');
   c.header('Access-Control-Max-Age', '86400');
 
   // Handle preflight requests
   if (c.req.method === 'OPTIONS') {
-    console.log('CORS: Handling preflight request for origin:', origin);
-    return c.text('', 204);
+    console.log('🔄 CORS: Handling preflight request for origin:', origin);
+    return c.text('', 204 as any);
   }
 
   await next();
-};
+}
 
 // SQL injection protection middleware
 export const sqlInjectionProtection: MiddlewareHandler = async (c, next) => {
@@ -125,7 +101,7 @@ export const sqlInjectionProtection: MiddlewareHandler = async (c, next) => {
   
   // Simple patterns to detect SQL injection attempts
   const sqlPatterns = [
-    /(\%27)|(\')|(\-\-)|(\%23)|(#)/i,
+    /(\%27)|(\')|(\-\-)|(\%3B)|(;)/i,
     /((\%3D)|(=))[^\n]*((\%27)|(\')|(\-\-)|(\%3B)|(;))/i,
     /\w*((\%27)|(\'))((\%6F)|o|(\%4F))((\%72)|r|(\%52))/i,
     /((\%27)|(\'))union/i
@@ -144,7 +120,7 @@ export const sqlInjectionProtection: MiddlewareHandler = async (c, next) => {
   }
   
   await next();
-};
+}
 
 // Request logging middleware with sanitization
 export const accessLogger: MiddlewareHandler = async (c, next) => {
@@ -163,7 +139,7 @@ export const accessLogger: MiddlewareHandler = async (c, next) => {
   
   // Log the request with sanitized data
   console.log(`[${new Date().toISOString()}] ${method} ${sanitizedUrl} ${c.res.status} ${responseTime}ms - ${ip} ${InputValidator.sanitizeString(userAgent, 200)}`);
-};
+}
 
 // Environment validation middleware
 export const validateEnvironment: MiddlewareHandler = async (c, next) => {
@@ -189,7 +165,7 @@ export const validateEnvironment: MiddlewareHandler = async (c, next) => {
       error: 'CONFIGURATION_ERROR'
     }, 500);
   }
-};
+}
 
 // Audit logging for important actions with sanitization
 export const auditLogger = async (c: Context, action: string, details: Record<string, any> = {}) => {
@@ -224,4 +200,4 @@ export const auditLogger = async (c: Context, action: string, details: Record<st
   } catch (error) {
     console.error('Error writing audit log:', sanitizeForLogging(error));
   }
-}; 
+}

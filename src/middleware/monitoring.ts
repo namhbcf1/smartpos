@@ -103,7 +103,7 @@ export const performanceMonitoring = async (c: Context<{ Bindings: Env }>, next:
       path,
       duration,
       error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    } as any);
 
     throw error;
   }
@@ -230,7 +230,7 @@ export const databaseMonitoring = async (c: Context<{ Bindings: Env }>, next: Ne
                       duration,
                       operation: stmtProp,
                       error: error instanceof Error ? error.message : 'Unknown error'
-                    });
+                    } as any);
                     
                     throw error;
                   }
@@ -374,7 +374,7 @@ function classifyError(error: any): ErrorType {
  */
 async function recordError(c: Context<{ Bindings: Env }>, error: any, errorType: ErrorType): Promise<void> {
   try {
-    const user = c.get('user');
+    const user = (c as any).get('user') || {};
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const stackTrace = error instanceof Error ? error.stack : null;
     
@@ -398,7 +398,7 @@ async function recordError(c: Context<{ Bindings: Env }>, error: any, errorType:
     log.error('Failed to record error in tracking system', {
       originalError: error instanceof Error ? error.message : 'Unknown error',
       dbError: dbError instanceof Error ? dbError.message : 'Unknown error'
-    });
+    } as any);
   }
 }
 

@@ -21,10 +21,10 @@ export const validate = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
         requestData = await c.req.json();
       } else if (contentType.includes('application/x-www-form-urlencoded')) {
         const formData = await c.req.formData();
-        requestData = Object.fromEntries(formData.entries());
+        requestData = Object.fromEntries((formData as any).entries());
       } else if (contentType.includes('multipart/form-data')) {
         const formData = await c.req.formData();
-        requestData = Object.fromEntries(formData.entries());
+        requestData = Object.fromEntries((formData as any).entries());
       } else {
         // Default to JSON if content-type is not specified
         try {
@@ -41,7 +41,7 @@ export const validate = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
         const errors: ValidationErrors = {};
         
         // Format lỗi validation
-        result.error.errors.forEach((err) => {
+        (result.error as any).errors.forEach((err: any) => {
           const path = err.path.join('.');
           if (!errors[path]) {
             errors[path] = [];
@@ -88,7 +88,7 @@ export const validateQuery = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
         const errors: ValidationErrors = {};
         
         // Format lỗi validation
-        result.error.errors.forEach((err) => {
+        (result.error as any).errors.forEach((err: any) => {
           const path = err.path.join('.');
           if (!errors[path]) {
             errors[path] = [];

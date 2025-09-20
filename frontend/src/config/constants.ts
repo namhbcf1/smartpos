@@ -1,10 +1,10 @@
 // Layout constants
 export const drawerWidth = 240;
 
-// API endpoints - Updated to include all advanced endpoints
+// API endpoints - Updated to remove /api/v1 prefix (backend adds it automatically)
 export const API_ENDPOINTS = {
   // Authentication
-  LOGIN: '/auth/login',
+  LOGIN: '/simple-login',
   LOGOUT: '/auth/logout',
   USER: '/auth/me-fixed', // Using fixed endpoint that works
   REFRESH_TOKEN: '/auth/refresh-token',
@@ -20,80 +20,98 @@ export const API_ENDPOINTS = {
 
   // Advanced Inventory Management
   INVENTORY_ADVANCED: {
-    OVERVIEW: '/api/v1/inventory-advanced/overview',
-    ITEMS: '/api/v1/inventory-advanced/items',
-    STATS: '/api/v1/inventory-advanced/stats',
-    ALERTS: '/api/v1/inventory-advanced/alerts',
-    MOVEMENT: '/api/v1/inventory-advanced/movement',
-    MOVEMENTS: '/api/v1/inventory-advanced/movements',
-    FORECASTING: '/api/v1/inventory-advanced/forecasting',
-    OPTIMIZATION: '/api/v1/inventory-advanced/optimization',
-    VALUATION: '/api/v1/inventory-advanced/valuation',
-    TURNOVER: '/api/v1/inventory-advanced/turnover'
+    OVERVIEW: '/inventory-advanced/overview',
+    ITEMS: '/inventory-advanced/items',
+    STATS: '/inventory-advanced/stats',
+    ALERTS: '/inventory-advanced/alerts',
+    MOVEMENT: '/inventory-advanced/movement',
+    MOVEMENTS: '/inventory-advanced/movements',
+    FORECASTING: '/inventory-advanced/forecasting',
+    OPTIMIZATION: '/inventory-advanced/optimization',
+    VALUATION: '/inventory-advanced/valuation',
+    TURNOVER: '/inventory-advanced/turnover'
   },
 
   // Advanced Analytics
   ANALYTICS_ADVANCED: {
-    DASHBOARD: '/api/v1/analytics-advanced/dashboard',
-    SALES_ANALYTICS: '/api/v1/analytics-advanced/sales',
-    PRODUCT_ANALYTICS: '/api/v1/analytics-advanced/products',
-    CUSTOMER_ANALYTICS: '/api/v1/analytics-advanced/customers',
-    FINANCIAL_ANALYTICS: '/api/v1/analytics-advanced/financial',
-    PERFORMANCE_METRICS: '/api/v1/analytics-advanced/performance',
-    TRENDS: '/api/v1/analytics-advanced/trends',
-    FORECASTING: '/api/v1/analytics-advanced/forecasting',
-    REPORTS: '/api/v1/analytics-advanced/reports'
+    DASHBOARD: '/analytics-advanced/dashboard',
+    SALES_ANALYTICS: '/analytics-advanced/sales',
+    PRODUCT_ANALYTICS: '/analytics-advanced/products',
+    CUSTOMER_ANALYTICS: '/analytics-advanced/customers',
+    FINANCIAL_ANALYTICS: '/analytics-advanced/financial',
+    PERFORMANCE_METRICS: '/analytics-advanced/performance',
+    TRENDS: '/analytics-advanced/trends',
+    FORECASTING: '/analytics-advanced/forecasting',
+    REPORTS: '/analytics-advanced/reports'
   },
 
   // User Management
   USER_MANAGEMENT: {
-    USERS: '/api/v1/user-management/users',
-    ROLES: '/api/v1/user-management/roles',
-    PERMISSIONS: '/api/v1/user-management/permissions',
-    ACTIVITIES: '/api/v1/user-management/activities',
-    SESSIONS: '/api/v1/user-management/sessions',
-    BULK_ACTIONS: '/api/v1/user-management/bulk-actions'
+    USERS: '/user-management/users',
+    ROLES: '/user-management/roles',
+    PERMISSIONS: '/user-management/permissions',
+    ACTIVITIES: '/user-management/activities',
+    SESSIONS: '/user-management/sessions',
+    BULK_ACTIONS: '/user-management/bulk-actions'
   },
 
   // Database Optimization
   DATABASE_OPTIMIZATION: {
-    HEALTH: '/api/v1/database-optimization/health',
-    PERFORMANCE: '/api/v1/database-optimization/performance',
-    CLEANUP: '/api/v1/database-optimization/cleanup',
-    INDEXES: '/api/v1/database-optimization/indexes',
-    ANALYZE: '/api/v1/database-optimization/analyze',
-    EXPLAIN: '/api/v1/database-optimization/explain'
+    HEALTH: '/database-optimization/health',
+    PERFORMANCE: '/database-optimization/performance',
+    CLEANUP: '/database-optimization/cleanup',
+    INDEXES: '/database-optimization/indexes',
+    ANALYZE: '/database-optimization/analyze',
+    EXPLAIN: '/database-optimization/explain'
   },
 
   // Real-time and WebSocket
   REALTIME: {
-    NOTIFICATIONS: '/api/v1/realtime-notifications',
-    STREAM: '/api/v1/realtime-notifications/stream',
+    NOTIFICATIONS: '/realtime-notifications',
+    STREAM: '/realtime-notifications/stream',
     WEBSOCKET: '/ws'
   },
 
   // Enhanced Features
-  ENHANCED_INVENTORY: '/api/v1/enhanced-inventory',
-  BUSINESS_INTELLIGENCE: '/api/v1/business-intelligence',
-  SYSTEM_MONITORING: '/api/v1/system-monitoring',
+  ENHANCED_INVENTORY: '/enhanced-inventory',
+  BUSINESS_INTELLIGENCE: '/business-intelligence',
+  SYSTEM_MONITORING: '/system-monitoring',
 
   // Warranty and Serial Numbers
-  SERIAL_NUMBERS: '/api/v1/serial-numbers',
-  WARRANTY: '/api/v1/warranty',
-  ADVANCED_WARRANTY: '/api/v1/advanced-warranty',
+  SERIAL_NUMBERS: '/serial-numbers',
+  WARRANTY: '/warranty',
+  ADVANCED_WARRANTY: '/advanced-warranty',
 
   // Financial
-  FINANCIAL: '/api/v1/financial',
-  PAYMENTS: '/api/v1/payments',
-  POS_PAYMENT: '/api/v1/pos-payment'
+  FINANCIAL: '/financial',
+  PAYMENTS: '/payments',
+  POS_PAYMENT: '/pos-payment'
 };
 
 // Pagination defaults
 export const DEFAULT_PAGE_SIZE = 20;
 export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
-// Vietnamese currency formatter
-export const formatCurrency = (amount: number | null | undefined): string => {
+// Vietnamese currency formatter - D1 optimized (expects cents)
+export const formatCurrency = (amountInCents: number | null | undefined): string => {
+  // Handle null, undefined, or NaN values
+  if (amountInCents == null || isNaN(amountInCents)) {
+    return '0 ₫';
+  }
+
+  // Convert cents to VND (divide by 100)
+  const amountInVND = Math.round(amountInCents / 100);
+
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amountInVND);
+};
+
+// Legacy currency formatter for backward compatibility (expects VND)
+export const formatCurrencyVND = (amount: number | null | undefined): string => {
   // Handle null, undefined, or NaN values
   if (amount == null || isNaN(amount)) {
     return '0 ₫';

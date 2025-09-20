@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 import {
   Box,
   Card,
@@ -41,14 +42,14 @@ interface Product {
   description?: string;
   sku: string;
   barcode?: string;
-  categoryId: number;
+  category_id: number;
   categoryName?: string;
   price: number;
-  costPrice: number;
+  cost_price: number;
   taxRate: number;
-  stockQuantity: number;
-  stockAlertThreshold: number;
-  isActive: boolean;
+  stock: number;
+  min_stock: number;
+  is_active: boolean;
   imageUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -81,13 +82,13 @@ const ProductDetail = () => {
         description: '',
         sku: '',
         barcode: '',
-        categoryId: undefined, // Sẽ được set sau khi load categories
+        category_id: undefined, // Sẽ được set sau khi load categories
         price: 0,
-        costPrice: 0,
+        cost_price: 0,
         taxRate: 0,
-        stockQuantity: 0,
-        stockAlertThreshold: 10,
-        isActive: true,
+        stock: 0,
+        min_stock: 10,
+        is_active: true,
         imageUrl: ''
       });
     } else {
@@ -105,8 +106,8 @@ const ProductDetail = () => {
 
       // DIRECT API CALL - Get product from products list API (working API)
       console.log('📡 Calling products API directly...');
-      const response = await fetch('https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/products?limit=100');
-      const data = await response.json();
+              const response = await api.get('/products?limit=100');
+      const data = response.data;
 
       console.log('📦 Products API response:', data);
 
@@ -142,14 +143,14 @@ const ProductDetail = () => {
 Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đầy đủ giấy tờ bảo hành.`,
             sku: foundProduct.sku,
             barcode: foundProduct.barcode || '',
-            categoryId: foundProduct.categoryId,
+            category_id: foundProduct.category_id ?? foundProduct.categoryId,
             categoryName: foundProduct.categoryName || 'Chưa phân loại',
             price: foundProduct.price,
-            costPrice: foundProduct.costPrice,
+            cost_price: foundProduct.cost_price ?? foundProduct.costPrice,
             taxRate: foundProduct.taxRate,
-            stockQuantity: foundProduct.stockQuantity,
-            stockAlertThreshold: foundProduct.stockAlertThreshold,
-            isActive: foundProduct.isActive,
+            stock: foundProduct.stock ?? foundProduct.stockQuantity,
+            min_stock: foundProduct.min_stock ?? foundProduct.minStockLevel ?? foundProduct.stockAlertThreshold,
+            is_active: foundProduct.is_active ?? foundProduct.isActive,
             imageUrl: foundProduct.imageUrl || '',
             unit: 'cái', // Default unit
             created_at: foundProduct.created_at,
@@ -226,7 +227,7 @@ Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đ�
         return;
       }
 
-      if (!formData.categoryId || formData.categoryId <= 0) {
+      if (!formData.category_id || formData.category_id <= 0) {
         setError('Vui lòng chọn danh mục sản phẩm');
         return;
       }
@@ -237,13 +238,13 @@ Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đ�
         description: formData.description,
         sku: formData.sku,
         barcode: formData.barcode,
-        category_id: formData.categoryId,
+        category_id: formData.category_id,
         price: formData.price,
-        cost_price: formData.costPrice,
+        cost_price: formData.cost_price,
         tax_rate: formData.taxRate,
-        stock_quantity: formData.stockQuantity,
-        stock_alert_threshold: formData.stockAlertThreshold,
-        is_active: formData.isActive,
+        stock: formData.stock,
+        min_stock: formData.min_stock,
+        is_active: formData.is_active,
         image_url: formData.imageUrl
       };
 
@@ -472,8 +473,8 @@ Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đ�
                   <FormControl fullWidth margin="normal" disabled={!editMode} required>
                     <InputLabel>Danh mục *</InputLabel>
                     <Select
-                      value={editMode ? formData.categoryId || '' : product?.categoryId || ''}
-                      onChange={(e) => handleInputChange('categoryId', e.target.value)}
+                      value={editMode ? formData.category_id || '' : product?.category_id || ''}
+                      onChange={(e) => handleInputChange('category_id', e.target.value)}
                       label="Danh mục *"
                     >
                       {Array.isArray(categories) && categories.map((category) => (
@@ -518,8 +519,8 @@ Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đ�
                     fullWidth
                     label="Giá nhập"
                     type="number"
-                    value={editMode ? formData.costPrice || '' : product?.costPrice || ''}
-                    onChange={(e) => handleInputChange('costPrice', parseFloat(e.target.value))}
+                    value={editMode ? formData.cost_price || '' : product?.cost_price || ''}
+                    onChange={(e) => handleInputChange('cost_price', parseFloat(e.target.value))}
                     disabled={!editMode}
                     margin="normal"
                     InputProps={{
@@ -543,8 +544,8 @@ Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đ�
                     fullWidth
                     label="Số lượng tồn kho"
                     type="number"
-                    value={editMode ? formData.stockQuantity || '' : product?.stockQuantity || ''}
-                    onChange={(e) => handleInputChange('stockQuantity', parseInt(e.target.value))}
+                    value={editMode ? (formData.stock ?? '') : (product?.stock ?? '')}
+                    onChange={(e) => handleInputChange('stock', parseInt(e.target.value))}
                     disabled={!editMode}
                     margin="normal"
                     InputProps={{
@@ -557,8 +558,8 @@ Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đ�
                     fullWidth
                     label="Ngưỡng cảnh báo tồn kho"
                     type="number"
-                    value={editMode ? formData.stockAlertThreshold || '' : product?.stockAlertThreshold || ''}
-                    onChange={(e) => handleInputChange('stockAlertThreshold', parseInt(e.target.value))}
+                    value={editMode ? (formData.min_stock ?? '') : (product?.min_stock ?? '')}
+                    onChange={(e) => handleInputChange('min_stock', parseInt(e.target.value))}
                     disabled={!editMode}
                     margin="normal"
                   />
@@ -581,16 +582,16 @@ Sản phẩm chất lượng cao, được nhập khẩu chính hãng với đ�
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography>Trạng thái:</Typography>
                       <Chip
-                        label={product?.isActive ? 'Hoạt động' : 'Không hoạt động'}
-                        color={product?.isActive ? 'success' : 'default'}
+                        label={product?.is_active ? 'Hoạt động' : 'Không hoạt động'}
+                        color={product?.is_active ? 'success' : 'default'}
                         size="small"
                       />
                     </Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography>Tồn kho:</Typography>
                       <Chip
-                        label={(product?.stockQuantity || 0) > 0 ? 'Còn hàng' : 'Hết hàng'}
-                        color={(product?.stockQuantity || 0) > 0 ? 'success' : 'error'}
+                        label={(product?.stock || 0) > 0 ? 'Còn hàng' : 'Hết hàng'}
+                        color={(product?.stock || 0) > 0 ? 'success' : 'error'}
                         size="small"
                       />
                     </Box>

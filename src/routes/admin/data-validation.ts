@@ -18,7 +18,7 @@ const app = new Hono<{ Bindings: Env }>();
 app.get('/serial-numbers', 
   authenticate, 
   authorize(['admin']), 
-  async (c) => {
+  async (c: any) => {
     try {
       const env = c.env as Env;
       console.log('🔍 Starting serial number data validation...');
@@ -161,7 +161,7 @@ app.post('/fix-all',
   authenticate, 
   authorize(['admin']), 
   auditLogger,
-  async (c) => {
+  async (c: any) => {
     try {
       const env = c.env as Env;
       const user = getUser(c);
@@ -190,7 +190,7 @@ app.post('/fix-all',
           AND (deleted_at IS NULL OR deleted_at = '')
       `;
       const supplierResult1 = await env.DB.prepare(supplierFixQuery1).run();
-      fixResults.supplier_data_fixed += supplierResult1.changes || 0;
+      fixResults.supplier_data_fixed += (supplierResult1 as any).changes || 0;
 
       // 2. Fix supplier data by product/date matching
       const supplierFixQuery2 = `
@@ -209,7 +209,7 @@ app.post('/fix-all',
           AND (deleted_at IS NULL OR deleted_at = '')
       `;
       const supplierResult2 = await env.DB.prepare(supplierFixQuery2).run();
-      fixResults.supplier_data_fixed += supplierResult2.changes || 0;
+      fixResults.supplier_data_fixed += (supplierResult2 as any).changes || 0;
 
       // 3. Remove serial numbers with invalid product references
       const invalidProductQuery = `
@@ -219,7 +219,7 @@ app.post('/fix-all',
           AND (deleted_at IS NULL OR deleted_at = '')
       `;
       const invalidProductResult = await env.DB.prepare(invalidProductQuery).run();
-      fixResults.invalid_products_removed = invalidProductResult.changes || 0;
+      fixResults.invalid_products_removed = (invalidProductResult as any).changes || 0;
 
       // 4. Fix invalid status values
       const invalidStatusQuery = `
@@ -229,7 +229,7 @@ app.post('/fix-all',
           AND (deleted_at IS NULL OR deleted_at = '')
       `;
       const invalidStatusResult = await env.DB.prepare(invalidStatusQuery).run();
-      fixResults.invalid_status_fixed = invalidStatusResult.changes || 0;
+      fixResults.invalid_status_fixed = (invalidStatusResult as any).changes || 0;
 
       // 5. Remove duplicate serial numbers (keep the oldest)
       const duplicateQuery = `
@@ -243,7 +243,7 @@ app.post('/fix-all',
         ) AND (deleted_at IS NULL OR deleted_at = '')
       `;
       const duplicateResult = await env.DB.prepare(duplicateQuery).run();
-      fixResults.duplicate_serials_removed = duplicateResult.changes || 0;
+      fixResults.duplicate_serials_removed = (duplicateResult as any).changes || 0;
 
       // 6. Fix inconsistent dates
       const dateFixQuery = `
@@ -265,7 +265,7 @@ app.post('/fix-all',
         ) AND (deleted_at IS NULL OR deleted_at = '')
       `;
       const dateFixResult = await env.DB.prepare(dateFixQuery).run();
-      fixResults.dates_fixed = dateFixResult.changes || 0;
+      fixResults.dates_fixed = (dateFixResult as any).changes || 0;
 
       // 7. Remove orphaned warranty registrations
       const orphanedWarrantyQuery = `
@@ -273,7 +273,7 @@ app.post('/fix-all',
         WHERE serial_number_id NOT IN (SELECT id FROM serial_numbers)
       `;
       const orphanedWarrantyResult = await env.DB.prepare(orphanedWarrantyQuery).run();
-      fixResults.orphaned_warranties_removed = orphanedWarrantyResult.changes || 0;
+      fixResults.orphaned_warranties_removed = (orphanedWarrantyResult as any).changes || 0;
 
       // Calculate total fixes
       fixResults.total_fixes = 
@@ -292,7 +292,7 @@ app.post('/fix-all',
       `).bind(
         'data_fix_all',
         `Comprehensive data fix completed. Total fixes: ${fixResults.total_fixes}`,
-        user.sub
+        (user as any).sub
       ).run();
 
       console.log('✅ Comprehensive data fix completed:', fixResults);

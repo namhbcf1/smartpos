@@ -124,7 +124,7 @@ export class QueryBuilder {
   orderBy(column: string, direction: 'ASC' | 'DESC' = 'ASC'): this {
     // SECURITY FIXED: Whitelist allowed columns to prevent SQL injection
     const allowedColumns = [
-      'id', 'name', 'created_at', 'updated_at', 'price', 'stock_quantity',
+      'id', 'name', 'created_at', 'updated_at', 'price', 'stock',
       'sku', 'barcode', 'category_id', 'supplier_id', 'user_id', 'store_id',
       'total_amount', 'payment_status', 'sale_date', 'quantity', 'status'
     ];
@@ -151,7 +151,7 @@ export class QueryBuilder {
     const allowedTables = [
       'products', 'categories', 'suppliers', 'customers', 'users', 'stores',
       'sales', 'sale_items', 'inventory_transactions', 'serial_numbers',
-      'warranty_registrations', 'stock_movements', 'employees'
+      'warranty_registrations', 'inventory_movements', 'employees'
     ];
 
     if (!allowedTables.includes(table)) {
@@ -173,7 +173,7 @@ export class QueryBuilder {
     const allowedTables = [
       'products', 'categories', 'suppliers', 'customers', 'users', 'stores',
       'sales', 'sale_items', 'inventory_transactions', 'serial_numbers',
-      'warranty_registrations', 'stock_movements', 'employees'
+      'warranty_registrations', 'inventory_movements', 'employees'
     ];
 
     if (!allowedTables.includes(table)) {
@@ -192,7 +192,7 @@ export class QueryBuilder {
   groupBy(columns: string[]): this {
     // SECURITY FIXED: Validate all columns in GROUP BY
     const allowedColumns = [
-      'id', 'name', 'created_at', 'updated_at', 'price', 'stock_quantity',
+      'id', 'name', 'created_at', 'updated_at', 'price', 'stock',
       'sku', 'barcode', 'category_id', 'supplier_id', 'user_id', 'store_id',
       'total_amount', 'payment_status', 'sale_date', 'quantity', 'status'
     ];
@@ -359,9 +359,8 @@ export class DatabaseExecutor {
           meta: {
             ...result.meta,
             duration,
-            attempt,
             optimized: optimizedQuery !== query
-          }
+          } as any
         };
       } catch (error) {
         console.error(`Database query attempt ${attempt} failed:`, error);
@@ -426,7 +425,7 @@ export class DatabaseExecutor {
         success: true,
         data: result as T,
         meta: {
-          changes: result.changes,
+          changes: (result as any).changes,
           lastRowId: result.meta?.last_row_id
         }
       };
@@ -444,7 +443,7 @@ export class DatabaseExecutor {
     // Build count query
     const countQuery = `SELECT COUNT(*) as total FROM (${baseQuery})`;
     const countResult = await this.execute<{ total: number }>(countQuery, bindings);
-    const total = countResult.data?.[0]?.total || 0;
+    const total = (countResult.data as any)?.[0]?.total || 0;
 
     // Build paginated query
     let paginatedQuery = baseQuery;

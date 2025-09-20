@@ -148,11 +148,11 @@ export const validateInput = (schema: z.ZodSchema) => {
       return next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.warn('🚨 Input validation failed:', error.errors);
+        console.warn('🚨 Input validation failed:', (error as any).errors);
         return c.json({
           success: false,
           message: 'Invalid input data',
-          errors: error.errors.map(err => ({
+          errors: (error as any).errors.map((err: any) => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -227,7 +227,7 @@ export const enhancedAuthenticate = async (c: Context<{ Bindings: Env }>, next: 
       const payload = await verify(token, jwtSecret);
 
       // Store actual user info from JWT payload
-      c.set('user', {
+      c.set('jwtPayload', {
         id: payload.sub,
         username: payload.username,
         role: payload.role,
@@ -320,7 +320,7 @@ export const enhancedRateLimit = (type: keyof typeof rateLimitConfigs = 'api') =
       
       const key = `rate_limit:${type}:${clientIp}`;
       const now = Date.now();
-      const windowStart = now - config.windowMs;
+      const windowStart = now - (config?.windowMs || 60000);
 
       // Get current request count from KV store
       const currentData = await c.env.CACHE.get(key);
@@ -330,13 +330,13 @@ export const enhancedRateLimit = (type: keyof typeof rateLimitConfigs = 'api') =
       requests = requests.filter(timestamp => timestamp > windowStart);
 
       // Check if limit exceeded
-      if (requests.length >= config.maxRequests) {
+      if (requests.length >= (config?.maxRequests || 100)) {
         console.warn(`🚨 Rate limit exceeded for ${clientIp} on ${type} endpoint`);
         return c.json({
           success: false,
-          message: config.message || 'Rate limit exceeded',
+          message: (config?.message || 'Rate limit exceeded'),
           error: 'RATE_LIMIT_EXCEEDED',
-          retryAfter: Math.ceil(config.windowMs / 1000)
+          retryAfter: Math.ceil((config?.windowMs || 60000) / 1000)
         }, 429);
       }
 
@@ -344,14 +344,12 @@ export const enhancedRateLimit = (type: keyof typeof rateLimitConfigs = 'api') =
       requests.push(now);
 
       // Store updated requests
-      await c.env.CACHE.put(key, JSON.stringify(requests), {
-        expirationTtl: Math.ceil(config.windowMs / 1000)
-      });
+      await c.env.CACHE.put(key, JSON.stringify(requests));
 
       // Add rate limit headers
-      c.header('X-RateLimit-Limit', config.maxRequests.toString());
-      c.header('X-RateLimit-Remaining', (config.maxRequests - requests.length).toString());
-      c.header('X-RateLimit-Reset', Math.ceil((now + config.windowMs) / 1000).toString());
+      c.header('X-RateLimit-Limit', (config?.maxRequests || 100).toString());
+      c.header('X-RateLimit-Remaining', ((config?.maxRequests || 100) - requests.length).toString());
+      c.header('X-RateLimit-Reset', Math.ceil((now + (config?.windowMs || 60000)) / 1000).toString());
 
       return next();
     } catch (error) {
@@ -410,7 +408,7 @@ export const commonSchemas = {
     price: z.number().min(0),
     cost_price: z.number().min(0),
     category_id: z.number().int().positive(),
-    stock_quantity: z.number().int().min(0),
+    stock: z.number().int().min(0),
   }),
   
   customer: z.object({

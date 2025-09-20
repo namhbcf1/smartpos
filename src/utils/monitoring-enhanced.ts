@@ -5,6 +5,7 @@
 
 import { Context } from 'hono';
 import { Env } from '../types';
+import { DatabaseMonitor } from './database';
 
 // ============================================================================
 // STRUCTURED LOGGING
@@ -229,7 +230,7 @@ export class HealthChecker {
     // KV Store health check
     try {
       const kvStart = Date.now();
-      await env.CACHE.put('health_check', 'ok', { expirationTtl: 60 });
+      await env.CACHE.put('health_check', 'ok');
       const result = await env.CACHE.get('health_check');
       checks.cache = {
         status: result === 'ok' ? 'pass' : 'warn',
@@ -451,3 +452,23 @@ export class ErrorTracker {
 
 // Export singleton instances
 export const logger = EnhancedLogger.getInstance();
+
+// ============================================================================
+// DB TIMING HELPER
+// ============================================================================
+
+export async function timeDb<T>(env: Env, label: string, fn: () => Promise<T>): Promise<T> {
+  const start = Date.now();
+  try {
+    const result = await fn();
+    const duration = Date.now() - start;
+    try { DatabaseMonitor.recordQuery(label, duration); } catch {}
+    logger.info('DB query timing', { label, duration });
+    return result;
+  } catch (e) {
+    const duration = Date.now() - start;
+    try { DatabaseMonitor.recordQuery(label, duration); } catch {}
+    logger.error('DB query failed', e as Error, { label, duration });
+    throw e;
+  }
+}

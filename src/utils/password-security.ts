@@ -2,73 +2,110 @@
  * SECURE PASSWORD UTILITIES
  * Implements secure password hashing and validation
  */
-
-/**
- * Simple hash function for password hashing
- * Note: This is a temporary solution until bcrypt is available in Cloudflare Workers
- * In production, replace with bcrypt or similar
- */
 export class PasswordSecurity {
-  
   /**
-   * Hash a password using a simple but secure method
-   * TODO: Replace with bcrypt when available
+   * Hash a password using PBKDF2-HMAC-SHA256 with a random salt.
+   * Storage format: v1$pbkdf2$sha256$ITERATIONS$SALT_B64$HASH_B64
    */
-  static async hashPassword(password: string, salt?: string): Promise<string> {
-    // Generate salt if not provided
-    if (!salt) {
-      salt = this.generateSalt();
-    }
-
-    // Create hash using Web Crypto API
+  static async hashPassword(password: string, saltBase64?: string, iterations: number = 210000): Promise<string> {
     const encoder = new TextEncoder();
-    const data = encoder.encode(password + salt);
-    
-    // Use SHA-256 for hashing (better than plain text)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    // Return salt + hash for storage
-    return salt + ':' + hashHex;
+    const salt = saltBase64 ? PasswordSecurity.base64ToBytes(saltBase64) : PasswordSecurity.generateSaltBytes(16);
+
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    );
+
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        hash: 'SHA-256',
+        salt: salt as BufferSource,
+        iterations
+      },
+      keyMaterial,
+      256
+    );
+
+    const hashBytes = new Uint8Array(derivedBits);
+    const saltB64 = PasswordSecurity.bytesToBase64(salt);
+    const hashB64 = PasswordSecurity.bytesToBase64(hashBytes);
+    return `v1$pbkdf2$sha256$${iterations}$${saltB64}$${hashB64}`;
   }
 
   /**
-   * Verify a password against a hash
+   * Verify password against a stored hash (supports legacy formats).
    */
-  static async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  static async verifyPassword(password: string, stored: string): Promise<boolean> {
     try {
-      // Handle legacy plain text passwords (temporary)
-      if (!hashedPassword.includes(':')) {
-        console.warn('⚠️ Legacy plain text password detected - should be migrated');
-        return password === hashedPassword;
+      // New format
+      if (stored.startsWith('v1$pbkdf2$sha256$')) {
+        const parts = stored.split('$');
+        if (parts.length !== 6) return false;
+        const iterations = parseInt(parts[3] || '100000', 10);
+        const saltB64 = parts[4];
+        const expectedHashB64 = parts[5];
+        const recomputed = await this.hashPassword(password, saltB64, iterations);
+        const actualHashB64 = recomputed.split('$')[5];
+        return PasswordSecurity.timingSafeEqualBase64(actualHashB64 || '', expectedHashB64 || '');
       }
 
-      // Extract salt and hash
-      const [salt, hash] = hashedPassword.split(':');
-      if (!salt || !hash) {
-        return false;
+      // Legacy salt:hash (SHA-256) format
+      if (stored.includes(':')) {
+        const [salt, hashHex] = stored.split(':');
+        if (!salt || !hashHex) return false;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password + salt);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const newHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return PasswordSecurity.timingSafeEqualHex(newHex, hashHex);
       }
 
-      // Hash the provided password with the same salt
-      const newHash = await this.hashPassword(password, salt);
-      const [, newHashPart] = newHash.split(':');
-
-      // Compare hashes
-      return hash === newHashPart;
+      // Very legacy plain text fallback (should be migrated)
+      console.warn('⚠️ Legacy plain text password detected - should be migrated');
+      return password === stored;
     } catch (error) {
       console.error('Password verification error:', error);
       return false;
     }
   }
 
-  /**
-   * Generate a random salt
-   */
-  static generateSalt(): string {
-    const array = new Uint8Array(16);
+  static generateSaltBytes(length: number = 16): Uint8Array {
+    const array = new Uint8Array(length);
     crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return array;
+  }
+
+  static bytesToBase64(bytes: Uint8Array): string {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i] || 0);
+    // btoa is available in Workers; fall back if needed
+    return btoa(binary);
+  }
+
+  static base64ToBytes(b64: string): Uint8Array {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  static timingSafeEqualBase64(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let result = 0;
+    for (let i = 0; i < a.length; i++) result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return result === 0;
+  }
+
+  static timingSafeEqualHex(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let result = 0;
+    for (let i = 0; i < a.length; i++) result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return result === 0;
   }
 
   /**
@@ -320,7 +357,7 @@ export class SessionSecurity {
       const parts = token.split('.');
       if (parts.length !== 3) return true;
 
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const payload = JSON.parse(atob((parts[1] || '').replace(/-/g, '+').replace(/_/g, '/')));
       const now = Math.floor(Date.now() / 1000);
       
       return payload.exp && payload.exp < now;

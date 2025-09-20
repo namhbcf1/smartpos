@@ -95,7 +95,7 @@
         const eventsContainer = document.getElementById('events');
         const statusElement = document.getElementById('status');
 
-        // Enhanced real-time service simulation
+        // Enhanced real-time service using SSE with polling fallback
         class EnhancedRealtimeService {
             constructor() {
                 this.pollingInterval = null;
@@ -106,6 +106,8 @@
                 this.maxRetries = 5;
                 this.retryDelay = 2000;
                 this.pollCount = 0;
+                this.eventSource = null;
+                this.connectSSE();
             }
 
             on(event, callback) {
@@ -121,6 +123,36 @@
                 }
             }
 
+            connectSSE() {
+                try {
+                    const sseUrl = '/api/v1/realtime-notifications/public-stream';
+                    this.eventSource = new EventSource(sseUrl);
+
+                    this.eventSource.onopen = () => {
+                        statusElement.className = 'status connected';
+                        statusElement.innerHTML = '✅ Connected via SSE: /api/v1/realtime-notifications/public-stream';
+                    };
+
+                    this.eventSource.onmessage = (e) => {
+                        try {
+                            const msg = JSON.parse(e.data);
+                            this.emit(msg.type || 'event', msg);
+                        } catch (err) {
+                            this.emit('event', { type: 'raw', data: e.data, timestamp: Date.now() });
+                        }
+                    };
+
+                    this.eventSource.onerror = () => {
+                        statusElement.className = 'status polling';
+                        statusElement.innerHTML = '🔄 SSE unavailable, switching to polling';
+                        if (this.eventSource && this.eventSource.close) this.eventSource.close();
+                        this.startPolling();
+                    };
+                } catch (e) {
+                    this.startPolling();
+                }
+            }
+
             startPolling() {
                 if (this.isPolling) return;
 
@@ -132,7 +164,7 @@
                 this.pollingInterval = setInterval(async () => {
                     try {
                         this.pollCount++;
-                        const response = await fetch('https://smartpos-api.bangachieu2.workers.dev/api/v1/dashboard/stats');
+                        const response = await fetch('/api/v1/dashboard/stats');
                         if (response.ok) {
                             const data = await response.json();
                             const dataHash = JSON.stringify(data);
@@ -184,7 +216,7 @@
 
             async pollForUpdates() {
                 try {
-                    const response = await fetch('https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1/dashboard/stats');
+                    const response = await fetch('/api/v1/dashboard/stats');
                     if (response.ok) {
                         const data = await response.json();
                         this.emit('dashboard_updated', data);

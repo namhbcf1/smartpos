@@ -73,7 +73,7 @@ export const productionCORS = async (c: Context, next: Next) => {
 
   // Handle preflight requests
   if (c.req.method === 'OPTIONS') {
-    return c.text('', 204);
+    return c.text('', 204 as any);
   }
 
   await next();
@@ -215,7 +215,7 @@ export const productionRateLimit = (type: keyof typeof productionRateLimitConfig
       
       const key = `rate_limit:${type}:${clientIp}`;
       const now = Date.now();
-      const windowStart = now - config.windowMs;
+      const windowStart = now - (config?.windowMs || 60000);
 
       // Get current request count from KV store
       const currentData = await c.env.CACHE.get(key);
@@ -225,14 +225,14 @@ export const productionRateLimit = (type: keyof typeof productionRateLimitConfig
       requests = requests.filter(timestamp => timestamp > windowStart);
 
       // Check if limit exceeded
-      if (requests.length >= config.maxRequests) {
-        console.warn(`🚨 RATE_LIMIT_EXCEEDED: ${clientIp} on ${type} endpoint (${requests.length}/${config.maxRequests})`);
+      if (requests.length >= (config?.maxRequests || 100)) {
+        console.warn(`🚨 RATE_LIMIT_EXCEEDED: ${clientIp} on ${type} endpoint (${requests.length}/${config?.maxRequests || 100})`);
         
         return c.json({
           success: false,
-          message: config.message || 'Rate limit exceeded',
+          message: (config?.message || 'Rate limit exceeded'),
           error: 'RATE_LIMIT_EXCEEDED',
-          retryAfter: Math.ceil(config.windowMs / 1000)
+          retryAfter: Math.ceil((config?.windowMs || 60000) / 1000)
         }, 429);
       }
 
@@ -240,23 +240,19 @@ export const productionRateLimit = (type: keyof typeof productionRateLimitConfig
       requests.push(now);
 
       // Store updated requests
-      await c.env.CACHE.put(key, JSON.stringify(requests), {
-        expirationTtl: Math.ceil(config.windowMs / 1000)
-      });
+      await c.env.CACHE.put(key, JSON.stringify(requests));
 
       // Add rate limit headers
-      c.header('X-RateLimit-Limit', config.maxRequests.toString());
-      c.header('X-RateLimit-Remaining', (config.maxRequests - requests.length).toString());
-      c.header('X-RateLimit-Reset', Math.ceil((now + config.windowMs) / 1000).toString());
+      c.header('X-RateLimit-Limit', (config?.maxRequests || 100).toString());
+      c.header('X-RateLimit-Remaining', ((config?.maxRequests || 100) - requests.length).toString());
+      c.header('X-RateLimit-Reset', Math.ceil((now + (config?.windowMs || 60000)) / 1000).toString());
 
       await next();
 
       // Remove successful requests if configured
-      if (config.skipSuccessfulRequests && c.res.status < 400) {
+      if ((config?.skipSuccessfulRequests || false) && c.res.status < 400) {
         requests.pop(); // Remove the request we just added
-        await c.env.CACHE.put(key, JSON.stringify(requests), {
-          expirationTtl: Math.ceil(config.windowMs / 1000)
-        });
+        await c.env.CACHE.put(key, JSON.stringify(requests));
       }
 
     } catch (error) {
@@ -315,7 +311,7 @@ export const productionHealthCheck = async (c: Context<{ Bindings: Env }>) => {
 
     // Test cache connection
     try {
-      await c.env.CACHE.put('health_check', 'ok', { expirationTtl: 60 });
+      await c.env.CACHE.put('health_check', 'ok');
       const result = await c.env.CACHE.get('health_check');
       checks.cache = result === 'ok';
     } catch (error) {

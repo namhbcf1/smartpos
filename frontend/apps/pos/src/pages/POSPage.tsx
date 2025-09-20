@@ -41,11 +41,11 @@ const POSPage: React.FC = () => {
       if (response.success && response.data) {
         const mappedProducts = response.data.map((product: any) => ({
           ...product,
-          category_id: product.categoryId,
-          stock_quantity: product.stockQuantity,
-          created_at: product.createdAt,
-          updated_at: product.updatedAt,
-          min_stock_level: product.minStockLevel || 0
+          category_id: product.category_id ?? product.categoryId,
+          stock: product.stock ?? product.stockQuantity,
+          created_at: product.created_at ?? product.createdAt,
+          updated_at: product.updated_at ?? product.updatedAt,
+          min_stock: product.min_stock ?? product.minStockLevel || 0
         }));
         setProducts(mappedProducts);
       }
@@ -176,7 +176,7 @@ const POSPage: React.FC = () => {
                             SKU: {product.sku}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Tồn: {product.stock_quantity}
+                            Tồn: {product.stock}
                           </Typography>
                           <Typography variant="h6" color="primary" sx={{ mt: 1 }}>
                             {product.price.toLocaleString('vi-VN')} ₫

@@ -7,8 +7,8 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate()
   const { login, isAuthenticated } = useAuth()
   const isOnline = useOnlineStatus()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('admin')
+  const [password, setPassword] = useState('admin123')
   const [remember, setRemember] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -17,7 +17,9 @@ const LoginPage: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard')
+      console.log('User is authenticated, redirecting to dashboard...')
+      // Use replace to prevent back button issues
+      navigate('/dashboard', { replace: true })
     }
   }, [isAuthenticated, navigate])
 
@@ -42,7 +44,8 @@ const LoginPage: React.FC = () => {
     try {
       // For username-only authentication, pass empty password if not provided
       await login(username, password || '')
-      navigate('/dashboard')
+      // Don't navigate immediately - let the useEffect handle it
+      console.log('Login successful, waiting for auth state update...')
     } catch (err: any) {
       setError(err.message || 'Đăng nhập thất bại')
       console.error('Login failed:', err)
@@ -104,6 +107,7 @@ const LoginPage: React.FC = () => {
               <input
                 id="username"
                 data-testid="login-username-input"
+                name="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -123,6 +127,7 @@ const LoginPage: React.FC = () => {
                 <input
                   id="password"
                   data-testid="login-password-input"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -147,8 +152,8 @@ const LoginPage: React.FC = () => {
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
                 <span className="text-sm text-gray-700">Ghi nhớ đăng nhập</span>
               </label>
               <button

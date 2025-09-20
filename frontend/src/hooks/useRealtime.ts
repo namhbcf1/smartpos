@@ -1,6 +1,24 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { realtimeService, RealtimeEvent } from '../services/realtime';
 
+// Safety wrapper to ensure realtimeService is always defined
+const getRealtimeService = () => {
+  if (!realtimeService) {
+    console.error('RealtimeService not available');
+    return {
+      on: () => {},
+      off: () => {},
+      subscribe: () => {},
+      unsubscribe: () => {},
+      connect: () => Promise.resolve(),
+      disconnect: () => {},
+      isConnected: () => false,
+      getConnectionInfo: () => ({ connected: false, id: null, attempts: 0 })
+    };
+  }
+  return realtimeService;
+};
+
 // Hook for general realtime connection
 export const useRealtimeConnection = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -11,14 +29,16 @@ export const useRealtimeConnection = () => {
   });
 
   useEffect(() => {
+    const service = getRealtimeService();
+
     const handleConnected = () => {
       setIsConnected(true);
-      setConnectionInfo(realtimeService.getConnectionInfo());
+      setConnectionInfo(service.getConnectionInfo());
     };
 
     const handleDisconnected = () => {
       setIsConnected(false);
-      setConnectionInfo(realtimeService.getConnectionInfo());
+      setConnectionInfo(service.getConnectionInfo());
     };
 
     const handleError = (error: any) => {
@@ -27,27 +47,27 @@ export const useRealtimeConnection = () => {
     };
 
     // Add event listeners
-    realtimeService.on('connected', handleConnected);
-    realtimeService.on('disconnected', handleDisconnected);
-    realtimeService.on('error', handleError);
+    service.on('connected', handleConnected);
+    service.on('disconnected', handleDisconnected);
+    service.on('error', handleError);
 
     // Connect on mount
-    realtimeService.connect();
+    service.connect();
 
     // Cleanup on unmount
     return () => {
-      realtimeService.off('connected', handleConnected);
-      realtimeService.off('disconnected', handleDisconnected);
-      realtimeService.off('error', handleError);
+      service.off('connected', handleConnected);
+      service.off('disconnected', handleDisconnected);
+      service.off('error', handleError);
     };
   }, []);
 
   const connect = useCallback(() => {
-    realtimeService.connect();
+    getRealtimeService().connect();
   }, []);
 
   const disconnect = useCallback(() => {
-    realtimeService.disconnect();
+    getRealtimeService().disconnect();
   }, []);
 
   return {
@@ -68,6 +88,7 @@ export const useRealtimeEvents = <T extends RealtimeEvent>(
   const [events, setEvents] = useState<T[]>([]);
   const [lastEvent, setLastEvent] = useState<T | null>(null);
   const eventTypesRef = useRef<string[]>([]);
+  const handlersRef = useRef<Map<string, (event: T) => void>>(new Map());
 
   // Update callback ref when callback changes
   useEffect(() => {
@@ -84,23 +105,43 @@ export const useRealtimeEvents = <T extends RealtimeEvent>(
       return; // Skip if event types haven't changed
     }
 
-    const handleEvent = (event: T) => {
-      // Call the provided callback
-      callbackRef.current(event);
-
-      // Update state
-      setLastEvent(event);
-      setEvents(prev => [...prev.slice(-99), event]); // Keep last 100 events
-    };
-
-    // Unsubscribe from old event types
+    // Unsubscribe from old event types using stored handlers
     eventTypesRef.current.forEach(eventType => {
-      realtimeService.unsubscribe(eventType, handleEvent);
+      const handler = handlersRef.current.get(eventType);
+      if (handler) {
+        try {
+          getRealtimeService().unsubscribe(eventType, handler);
+        } catch (error) {
+          console.warn('Error unsubscribing from event:', eventType, error);
+        }
+        handlersRef.current.delete(eventType);
+      }
     });
 
-    // Subscribe to new event types
+    // Create and store handlers for new event types
     eventTypes.forEach(eventType => {
-      realtimeService.subscribe(eventType, handleEvent);
+      const handleEvent = (event: T) => {
+        try {
+          // Call the provided callback
+          if (callbackRef.current) {
+            callbackRef.current(event);
+          }
+
+          // Update state
+          setLastEvent(event);
+          setEvents(prev => [...prev.slice(-99), event]); // Keep last 100 events
+        } catch (error) {
+          console.error('Error handling realtime event:', error);
+        }
+      };
+
+      handlersRef.current.set(eventType, handleEvent);
+
+      try {
+        getRealtimeService().subscribe(eventType, handleEvent);
+      } catch (error) {
+        console.warn('Error subscribing to event:', eventType, error);
+      }
     });
 
     // Update ref
@@ -109,7 +150,14 @@ export const useRealtimeEvents = <T extends RealtimeEvent>(
     // Cleanup subscriptions
     return () => {
       eventTypes.forEach(eventType => {
-        realtimeService.unsubscribe(eventType, handleEvent);
+        const handler = handlersRef.current.get(eventType);
+        if (handler) {
+          try {
+            getRealtimeService().unsubscribe(eventType, handler);
+          } catch (error) {
+            console.warn('Error cleaning up subscription:', eventType, error);
+          }
+        }
       });
     };
   }, [eventTypes.join(','), ...dependencies]); // Use join to create stable dependency
@@ -173,13 +221,13 @@ export const useInventoryEvents = (callback?: (event: any) => void) => {
     console.log('📦 Inventory event received:', event);
     
     if (event.type === 'stock_updated') {
-      if (event.data.current_stock <= event.data.min_stock_level) {
+      if (event.data.current_stock <= event.data.min_stock) {
         setInventoryAlerts(prev => [
           {
             id: Date.now(),
             product_name: event.data.product_name,
             current_stock: event.data.current_stock,
-            min_stock_level: event.data.min_stock_level,
+            min_stock: event.data.min_stock,
             timestamp: event.timestamp
           },
           ...prev.slice(0, 19) // Keep last 20 alerts
@@ -305,12 +353,12 @@ export const useSystemEvents = (callback?: (event: any) => void) => {
         }));
       };
 
-      realtimeService.on('heartbeat', heartbeatHandlerRef.current);
+      getRealtimeService().on('heartbeat', heartbeatHandlerRef.current);
     }
 
     return () => {
       if (heartbeatHandlerRef.current) {
-        realtimeService.off('heartbeat', heartbeatHandlerRef.current);
+        getRealtimeService().off('heartbeat', heartbeatHandlerRef.current);
         heartbeatHandlerRef.current = null;
       }
     };

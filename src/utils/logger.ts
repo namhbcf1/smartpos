@@ -56,8 +56,8 @@ export class Logger {
   static getInstance(config?: LoggerConfig): Logger {
     if (!Logger.instance) {
       const defaultConfig: LoggerConfig = {
-        level: process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG,
-        enableConsole: process.env.NODE_ENV !== 'production',
+        level: LogLevel.WARN,
+        enableConsole: false,
         enableKV: true,
         enableMetrics: true,
         maxEntries: 1000
@@ -220,7 +220,7 @@ export class Logger {
       
       // Store with TTL based on log level
       const ttl = this.getTTL(entry.level);
-      await this.env.CACHE.put(key, value, { expirationTtl: ttl });
+      await this.env.CACHE.put(key, value);
     } catch (error) {
       // Silent fail for logging to prevent infinite loops
     }
@@ -250,8 +250,18 @@ export class Logger {
    * Record metrics for monitoring
    */
   private recordMetrics(entry: LogEntry): void {
-    // This could be extended to send metrics to external services
-    // For now, we'll just track in memory for basic monitoring
+    // Push basic timing metrics for slow query tracking if present
+    try {
+      if (entry.message?.startsWith('Performance:')) {
+        const duration = (entry.context && (entry.context.duration as number)) || 0;
+        const operation = (entry.context && (entry.context.operation as string)) || '';
+        if (duration >= 0 && operation) {
+          // No-op placeholder for future aggregation
+        }
+      }
+    } catch (_e) {
+      // swallow
+    }
   }
 
   /**

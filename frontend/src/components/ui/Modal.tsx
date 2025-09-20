@@ -41,11 +41,11 @@ const modalVariants = cva(
         full: "max-w-[95vw] max-h-[95vh]",
       },
       variant: {
-        default: "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800",
-        destructive: "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950",
-        success: "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950",
-        warning: "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950",
-        info: "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950",
+        default: "border-gray-200  bg-white  text-gray-900 
+        destructive: "border-red-200  bg-red-50  text-gray-900 
+        success: "border-green-200  bg-green-50  text-gray-900 
+        warning: "border-yellow-200  bg-yellow-50  text-gray-900 
+        info: "border-blue-200  bg-blue-50  text-gray-900 
       },
     },
     defaultVariants: {
@@ -85,6 +85,8 @@ const DialogContent = React.forwardRef<
   ...props
 }, ref) => {
   const [isFullscreen, setIsFullscreen] = React.useState(false)
+  const titleId = React.useId()
+  const descriptionId = React.useId()
 
   const getVariantIcon = (variant: string) => {
     switch (variant) {
@@ -119,11 +121,15 @@ const DialogContent = React.forwardRef<
           "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
           className
         )}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        aria-describedby={description ? descriptionId : undefined}
         {...props}
       >
         {/* Header */}
         {(title || description || showCloseButton || fullscreenable) && (
-          <div className="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+          <div className="flex items-start justify-between border-b border-gray-200 pb-4">
             <div className="flex items-start space-x-3">
               {(icon || getVariantIcon(variant || 'default')) && (
                 <div className="flex-shrink-0 mt-1">
@@ -132,12 +138,18 @@ const DialogContent = React.forwardRef<
               )}
               <div>
                 {title && (
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h2 
+                    className="text-lg font-semibold text-gray-900">
+                    id={titleId}
+                  >
                     {title}
                   </h2>
                 )}
                 {description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <p 
+                    className="text-sm text-gray-600 mt-1">
+                    id={descriptionId}
+                  >
                     {description}
                   </p>
                 )}
@@ -148,7 +160,7 @@ const DialogContent = React.forwardRef<
               {fullscreenable && (
                 <button
                   onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="rounded-md p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="rounded-md p-1 hover:bg-gray-100 transition-colors">
                 >
                   {isFullscreen ? (
                     <Minimize2 className="h-4 w-4" />
@@ -159,9 +171,12 @@ const DialogContent = React.forwardRef<
               )}
 
               {showCloseButton && closable && (
-                <DialogPrimitive.Close className="rounded-md p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <DialogPrimitive.Close 
+                  className="rounded-md p-1 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                  aria-label="Đóng hộp thoại"
+                >
                   <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
+                  <span className="sr-only">Đóng</span>
                 </DialogPrimitive.Close>
               )}
             </div>
@@ -171,10 +186,10 @@ const DialogContent = React.forwardRef<
         {/* Content */}
         <div className="relative">
           {loading && (
-            <div className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
               <div className="flex items-center space-x-2">
                 <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">Đang tải...</span>
+                <span className="text-sm text-gray-600 tải...</span>">
               </div>
             </div>
           )}
@@ -183,9 +198,12 @@ const DialogContent = React.forwardRef<
 
         {/* Close button for variants without header */}
         {!title && !description && showCloseButton && closable && (
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <DialogPrimitive.Close 
+            className="absolute right-4 top-4 rounded-md p-1 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            aria-label="Đóng hộp thoại"
+          >
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Đóng</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
@@ -232,7 +250,7 @@ const DialogFooter = React.forwardRef<
     <motion.div
       ref={ref}
       className={cn(
-        "flex flex-col-reverse sm:flex-row sm:space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700",
+        "flex flex-col-reverse sm:flex-row sm:space-x-2 pt-4 border-t border-gray-200 
         justifyClasses[justify],
         className
       )}
@@ -259,7 +277,7 @@ const DialogTitle = React.forwardRef<
     <DialogPrimitive.Title
       ref={ref}
       className={cn(
-        "text-xl font-bold leading-none tracking-tight text-gray-900 dark:text-white",
+        "text-xl font-bold leading-none tracking-tight text-gray-900 
         className
       )}
       {...props}
@@ -281,7 +299,7 @@ const DialogDescription = React.forwardRef<
   >
     <DialogPrimitive.Description
       ref={ref}
-      className={cn("text-sm text-gray-600 dark:text-gray-400", className)}
+      className={cn("text-sm text-gray-600  className)}
       {...props}
     />
   </motion.div>
@@ -366,7 +384,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-900  bg-white  border border-gray-300  rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
           >
             {cancelText}
           </button>

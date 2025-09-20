@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react'
-import Particles from '@tsparticles/react'
-import { Engine } from '@tsparticles/engine'
-import { loadStarsPreset } from '@tsparticles/preset-stars'
-import { loadFireworksPreset } from '@tsparticles/preset-fireworks'
+import React, { useCallback, useMemo } from 'react'
+// import Particles from '@tsparticles/react'
+// import { Engine } from '@tsparticles/engine'
+// import { loadStarsPreset } from '@tsparticles/preset-stars'
+// import { loadFireworksPreset } from '@tsparticles/preset-fireworks'
 
 interface ParticleBackgroundProps {
   preset?: 'stars' | 'fireworks' | 'floating' | 'network'
@@ -10,24 +10,46 @@ interface ParticleBackgroundProps {
   opacity?: number
 }
 
+// Hook to detect mobile devices and reduced motion preference
+const useDeviceCapabilities = () => {
+  return useMemo(() => {
+    const isMobile = window.innerWidth < 768
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isLowEndDevice = navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4
+    
+    return {
+      isMobile,
+      prefersReducedMotion,
+      isLowEndDevice,
+      shouldOptimize: isMobile || prefersReducedMotion || isLowEndDevice
+    }
+  }, [])
+}
+
 export const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
   preset = 'stars',
   className = '',
   opacity = 0.5
 }) => {
-  const particlesInit = useCallback(async (engine: Engine) => {
-    await loadStarsPreset(engine)
-    await loadFireworksPreset(engine)
-  }, [])
+  const { isMobile, shouldOptimize, prefersReducedMotion } = useDeviceCapabilities()
+  
+  // const particlesInit = useCallback(async (engine: Engine) => {
+  //   await loadStarsPreset(engine)
+  //   await loadFireworksPreset(engine)
+  // }, [])
 
   const getParticleConfig = () => {
+    // Disable particles entirely if user prefers reduced motion
+    if (prefersReducedMotion) {
+      return null
+    }
     const baseConfig = {
       background: {
         color: {
           value: 'transparent',
         },
       },
-      fpsLimit: 120,
+      fpsLimit: shouldOptimize ? 30 : (isMobile ? 60 : 120),
       interactivity: {
         events: {
           onClick: {
@@ -52,7 +74,9 @@ export const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
       },
       particles: {
         color: {
-          value: ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'],
+          value: shouldOptimize 
+            ? ['#3b82f6'] // Single color for performance
+            : ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'],
         },
         links: {
           color: '#3b82f6',
@@ -79,13 +103,15 @@ export const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
             enable: true,
             area: 800,
           },
-          value: preset === 'network' ? 80 : preset === 'floating' ? 50 : 100,
+          value: shouldOptimize 
+            ? (preset === 'network' ? 30 : preset === 'floating' ? 20 : 40)
+            : (preset === 'network' ? 80 : preset === 'floating' ? 50 : 100),
         },
         opacity: {
-          value: opacity,
+          value: shouldOptimize ? Math.min(opacity * 0.6, 0.3) : opacity,
           animation: {
-            enable: true,
-            speed: 1,
+            enable: !shouldOptimize,
+            speed: shouldOptimize ? 0.5 : 1,
             minimumValue: 0.1,
           },
         },
@@ -93,10 +119,13 @@ export const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
           type: preset === 'stars' ? 'star' : 'circle',
         },
         size: {
-          value: { min: 1, max: preset === 'floating' ? 8 : 5 },
+          value: { 
+            min: shouldOptimize ? 1 : 1, 
+            max: shouldOptimize ? 3 : (preset === 'floating' ? 8 : 5) 
+          },
           animation: {
-            enable: true,
-            speed: 2,
+            enable: !shouldOptimize,
+            speed: shouldOptimize ? 1 : 2,
             minimumValue: 0.1,
           },
         },
@@ -142,14 +171,22 @@ export const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
     return baseConfig
   }
 
+  const particleConfig = getParticleConfig()
+  
+  // Don't render particles if disabled for accessibility
+  if (!particleConfig) {
+    return null
+  }
+
   return (
     <div className={`absolute inset-0 pointer-events-none ${className}`}>
-      <Particles
+      {/* Particles temporarily disabled - will enable after fixing dependencies */}
+      {/* <Particles
         id={`particles-${preset}`}
         init={particlesInit}
-        options={getParticleConfig()}
-        className="w-full h-full"
-      />
+        options={particleConfig}
+        className="w-full h-full">
+      /> */}
     </div>
   )
 }

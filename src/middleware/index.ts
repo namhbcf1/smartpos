@@ -5,16 +5,16 @@
  * used throughout the SmartPOS application.
  */
 
+import { Context, Next } from 'hono';
+
 // Re-export the main authentication middleware
 export { authenticate, requireRole } from './auth';
 
 // Re-export security middleware
 export {
-  securityHeaders,
+  corsMiddleware,
   accessLogger,
   sqlInjectionProtection,
-  corsSecurity,
-  rateLimit,
   validateEnvironment
 } from './security';
 

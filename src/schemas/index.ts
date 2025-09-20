@@ -52,8 +52,8 @@ export const productCreateSchema = z.object({
   price: z.number().nonnegative('Giá bán phải là số không âm'),
   cost_price: z.number().nonnegative('Giá nhập phải là số không âm'),
   tax_rate: z.number().min(0, 'Thuế suất phải lớn hơn hoặc bằng 0').max(1, 'Thuế suất phải nhỏ hơn hoặc bằng 1'),
-  stock_quantity: z.number().int().nonnegative('Số lượng tồn kho phải là số không âm'),
-  stock_alert_threshold: z.number().int().nonnegative('Ngưỡng cảnh báo tồn kho phải là số không âm'),
+  stock: z.number().int().nonnegative('Số lượng tồn kho phải là số không âm'),
+  min_stock: z.number().int().nonnegative('Ngưỡng cảnh báo tồn kho phải là số không âm'),
   is_active: z.boolean().optional(),
   image_url: z.string().nullable().optional(),
 });
@@ -67,8 +67,8 @@ export const productUpdateSchema = z.object({
   price: z.number().nonnegative('Giá bán phải là số không âm').optional(),
   cost_price: z.number().nonnegative('Giá nhập phải là số không âm').optional(),
   tax_rate: z.number().min(0, 'Thuế suất phải lớn hơn hoặc bằng 0').max(1, 'Thuế suất phải nhỏ hơn hoặc bằng 1').optional(),
-  stock_quantity: z.number().int().nonnegative('Số lượng tồn kho phải là số không âm').optional(),
-  stock_alert_threshold: z.number().int().nonnegative('Ngưỡng cảnh báo tồn kho phải là số không âm').optional(),
+  stock: z.number().int().nonnegative('Số lượng tồn kho phải là số không âm').optional(),
+  min_stock: z.number().int().nonnegative('Ngưỡng cảnh báo tồn kho phải là số không âm').optional(),
   is_active: z.boolean().optional(),
   image_url: z.string().nullable().optional(),
 });

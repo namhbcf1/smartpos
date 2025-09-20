@@ -6,14 +6,19 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [
+    ['html'],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['junit', { outputFile: 'test-results/results.xml' }]
+  ],
   use: {
-    baseURL: 'https://smartpos-web.pages.dev',
+    baseURL: 'https://namhbcf-uk.pages.dev',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
   },
-
   projects: [
     {
       name: 'chromium',
@@ -36,10 +41,9 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     },
   ],
-
   // webServer: {
   //   command: 'npm run dev',
-  //   url: 'http://127.0.0.1:3000',
+  //   url: 'http://localhost:5173',
   //   reuseExistingServer: !process.env.CI,
   // },
 });

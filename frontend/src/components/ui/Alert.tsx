@@ -19,11 +19,11 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: "bg-background text-foreground border-border",
-        destructive: "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
-        success: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200",
-        warning: "border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200",
-        info: "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
-        premium: "border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 text-purple-800 dark:border-purple-800 dark:from-purple-950 dark:to-pink-950 dark:text-purple-200",
+        destructive: "border-red-200 bg-red-50 text-red-800",
+        success: "border-green-200 bg-green-50 text-green-800",
+        warning: "border-yellow-200 bg-yellow-50 text-yellow-800",
+        info: "border-blue-200 bg-blue-50 text-blue-800",
+        premium: "border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 text-purple-800"
       },
       size: {
         sm: "px-3 py-2 text-xs",
@@ -125,8 +125,10 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
       >
         {/* Auto-close progress bar */}
         {autoClose && (
-          <div className="absolute top-0 left-0 h-1 bg-current opacity-20 rounded-t-xl transition-all duration-100 ease-linear"
-               style={{ width: `${progress}%` }} />
+          <div
+            className="absolute top-0 left-0 h-1 bg-current opacity-20 rounded-t-xl transition-all duration-100 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
         )}
 
         <div className="flex items-start space-x-3">
@@ -168,7 +170,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
           {closable && (
             <button
               onClick={handleClose}
-              className="flex-shrink-0 p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+              className="flex-shrink-0 p-1 rounded-md hover:bg-black/10 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -182,7 +184,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
 Alert.displayName = "Alert"
 
 const AlertTitle = React.forwardRef<
-  HTMLParagraphElement,
+  HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
   <h5
@@ -194,8 +196,8 @@ const AlertTitle = React.forwardRef<
 AlertTitle.displayName = "AlertTitle"
 
 const AlertDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}

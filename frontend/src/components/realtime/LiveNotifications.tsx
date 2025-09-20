@@ -68,7 +68,7 @@ export const LiveNotifications: React.FC<LiveNotificationsProps> = ({
         type: 'inventory',
         icon: <WarningIcon />,
         color: 'warning',
-        message: `Sản phẩm "${alert.product_name}" sắp hết hàng (${alert.current_stock}/${alert.min_stock_level})`
+        message: `Sản phẩm "${alert.product_name}" sắp hết hàng (${alert.current_stock}/${alert.min_stock})`
       })),
       ...salesEvents.slice(-5).map(event => ({
         id: `sale-${event.timestamp}`,

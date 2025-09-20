@@ -173,6 +173,7 @@ export class RealTimeNotificationService {
             alert_type: alertType
           },
           is_persistent: true,
+          is_read: false,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
         });
       }
@@ -230,6 +231,7 @@ export class RealTimeNotificationService {
             amount
           },
           is_persistent: false, // Sales notifications are not persistent
+          is_read: false
         });
       }
 
@@ -290,7 +292,7 @@ export class RealTimeNotificationService {
       `).bind(...params).first<{ count: number }>();
 
       return {
-        notifications: notifications.results as Notification[],
+        notifications: (notifications.results as unknown) as Notification[],
         unread_count: unreadCount?.count || 0,
         total: total?.count || 0
       };
@@ -402,7 +404,7 @@ export class RealTimeNotificationService {
   private async broadcast(message: BroadcastMessage): Promise<void> {
     try {
       if (this.env.NOTIFICATIONS) {
-        await this.env.NOTIFICATIONS.fetch('http://internal/broadcast', {
+        await (this.env.NOTIFICATIONS as any).fetch('http://internal/broadcast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(message)
@@ -419,7 +421,7 @@ export class RealTimeNotificationService {
   private async broadcastToUser(userId: number, message: BroadcastMessage): Promise<void> {
     try {
       if (this.env.NOTIFICATIONS) {
-        await this.env.NOTIFICATIONS.fetch(`http://internal/user/${userId}`, {
+        await (this.env.NOTIFICATIONS as any).fetch(`http://internal/user/${userId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(message)

@@ -52,6 +52,7 @@ interface HealthCheck {
   status: 'healthy' | 'unhealthy' | 'degraded';
   responseTime: number;
   timestamp: number;
+  message?: string;
   details?: any;
   error?: string;
 }
@@ -264,10 +265,7 @@ export class MonitoringService {
       // Store alert in database for history
       await this.storeAlert(alert);
     } catch (error) {
-      log.error('Failed to send alert', { 
-        alert,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to send alert', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -288,9 +286,7 @@ export class MonitoringService {
         alert.message
       ).run();
     } catch (error) {
-      log.error('Failed to store alert', { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to store alert', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -324,7 +320,7 @@ export class MonitoringService {
         status: 'unhealthy',
         responseTime,
         timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error'
       };
 
       this.healthChecks.set(name, healthCheck);
@@ -415,9 +411,7 @@ export class MonitoringService {
         }
       };
     } catch (error) {
-      log.error('Failed to get system metrics', { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Failed to get system metrics', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       throw error;
     }
   }
@@ -486,7 +480,7 @@ export class MonitoringService {
           COUNT(DISTINCT s.id) as sales_count,
           COALESCE(SUM(s.total_amount), 0) as revenue,
           COUNT(DISTINCT s.customer_id) as active_users,
-          COALESCE(SUM(p.stock_quantity * p.cost_price), 0) as inventory_value
+          COALESCE(SUM(p.stock * p.cost_price), 0) as inventory_value
         FROM sales s
         LEFT JOIN products p ON p.is_active = 1
         WHERE s.created_at >= datetime('now', '-24 hours')
@@ -559,9 +553,7 @@ export class MonitoringService {
       try {
         await this.collectSystemMetrics();
       } catch (error) {
-        log.error('Failed to collect system metrics', { 
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        log.error('Failed to collect system metrics', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       }
     }, 60000); // 1 minute
   }

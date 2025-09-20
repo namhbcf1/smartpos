@@ -54,10 +54,10 @@ const InventoryPage: React.FC = () => {
         const mappedProducts = response.data.map((product: any) => ({
           ...product,
           category_id: product.categoryId,
-          stock_quantity: product.stockQuantity,
+          stock: product.stockQuantity,
           created_at: product.createdAt,
           updated_at: product.updatedAt,
-          min_stock_level: product.minStockLevel || 0
+          min_stock: product.minStockLevel || 0
         }));
         setProducts(mappedProducts);
         setFilteredProducts(mappedProducts);
@@ -88,9 +88,9 @@ const InventoryPage: React.FC = () => {
 
   // Get stock status color
   const getStockStatus = (product: Product) => {
-    if (product.stock_quantity <= 0) {
+    if (product.stock <= 0) {
       return { color: 'error', icon: <Error />, text: 'Hết hàng' };
-    } else if (product.stock_quantity <= product.min_stock_level) {
+    } else if (product.stock <= product.min_stock) {
       return { color: 'warning', icon: <Warning />, text: 'Sắp hết' };
     } else {
       return { color: 'success', icon: <CheckCircle />, text: 'Còn hàng' };
@@ -233,11 +233,11 @@ const InventoryPage: React.FC = () => {
                             </TableCell>
                             <TableCell align="right">
                               <Typography variant="body2" fontWeight="bold">
-                                {product.stock_quantity}
+                                {product.stock}
                               </Typography>
-                              {product.min_stock_level > 0 && (
+                              {product.min_stock > 0 && (
                                 <Typography variant="caption" color="text.secondary">
-                                  Min: {product.min_stock_level}
+                                  Min: {product.min_stock}
                                 </Typography>
                               )}
                             </TableCell>
@@ -319,12 +319,12 @@ const InventoryPage: React.FC = () => {
                   </Grid>
                   <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="text.secondary">
-                      Hết hàng: <strong>{filteredProducts.filter(p => p.stock_quantity <= 0).length}</strong>
+                      Hết hàng: <strong>{filteredProducts.filter(p => p.stock <= 0).length}</strong>
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="text.secondary">
-                      Sắp hết: <strong>{filteredProducts.filter(p => p.stock_quantity > 0 && p.stock_quantity <= p.min_stock_level).length}</strong>
+                      Sắp hết: <strong>{filteredProducts.filter(p => p.stock > 0 && p.stock <= p.min_stock).length}</strong>
                     </Typography>
                   </Grid>
                 </Grid>

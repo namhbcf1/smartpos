@@ -25,14 +25,14 @@ export interface InventoryItem {
 export interface StockMovement {
   id: number;
   product_id: number;
-  movement_type: 'in' | 'out' | 'adjustment' | 'transfer' | 'reserved' | 'released';
+  transaction_type: 'in' | 'out' | 'adjustment' | 'transfer' | 'reserved' | 'released';
   quantity: number;
   previous_quantity: number;
   new_quantity: number;
   reference_type?: string;
   reference_id?: number;
   notes?: string;
-  created_by: number;
+  user_id: number;
   created_at: string;
 }
 
@@ -105,10 +105,10 @@ export class AdvancedInventoryService {
           p.id as product_id,
           p.name as product_name,
           p.sku,
-          p.stock_quantity as current_stock,
+          p.stock as current_stock,
           COALESCE(reserved.reserved_qty, 0) as reserved_stock,
-          (p.stock_quantity - COALESCE(reserved.reserved_qty, 0)) as available_stock,
-          p.stock_alert_threshold as reorder_point,
+          (p.stock - COALESCE(reserved.reserved_qty, 0)) as available_stock,
+          p.min_stock as reorder_point,
           p.reorder_quantity,
           p.updated_at as last_updated
         FROM products p
@@ -131,13 +131,13 @@ export class AdvancedInventoryService {
       }
 
       if (filters?.low_stock_only) {
-        query += ' AND p.stock_quantity <= p.stock_alert_threshold';
+        query += ' AND p.stock <= p.min_stock';
       }
 
       query += ' ORDER BY p.name';
 
       const result = await this.env.DB.prepare(query).bind(...params).all();
-      return result.results as InventoryItem[];
+      return (result.results as unknown) as InventoryItem[];
     } catch (error) {
       console.error('Error getting inventory items:', error);
       throw error;
@@ -149,35 +149,35 @@ export class AdvancedInventoryService {
    */
   async recordStockMovement(movement: {
     product_id: number;
-    movement_type: StockMovement['movement_type'];
+    transaction_type: StockMovement['transaction_type'];
     quantity: number;
     reference_type?: string;
     reference_id?: number;
     notes?: string;
-    created_by: number;
+    user_id: number;
   }): Promise<StockMovement> {
     try {
       // Get current stock
       const product = await this.env.DB.prepare(`
-        SELECT id, stock_quantity, name, stock_alert_threshold
+        SELECT id, stock, name, min_stock
         FROM products 
         WHERE id = ? AND is_active = 1
       `).bind(movement.product_id).first<{
         id: number;
-        stock_quantity: number;
+        stock: number;
         name: string;
-        stock_alert_threshold: number;
+        min_stock: number;
       }>();
 
       if (!product) {
         throw new Error('Product not found');
       }
 
-      const previousQuantity = product.stock_quantity;
+      const previousQuantity = product.stock;
       let newQuantity = previousQuantity;
 
       // Calculate new quantity based on movement type
-      switch (movement.movement_type) {
+      switch (movement.transaction_type) {
         case 'in':
           newQuantity = previousQuantity + movement.quantity;
           break;
@@ -194,7 +194,7 @@ export class AdvancedInventoryService {
       // Update product stock
       await this.env.DB.prepare(`
         UPDATE products 
-        SET stock_quantity = ?, updated_at = datetime('now')
+        SET stock = ?, updated_at = datetime('now')
         WHERE id = ?
       `).bind(newQuantity, movement.product_id).run();
 
@@ -207,16 +207,16 @@ export class AdvancedInventoryService {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `).bind(
         movement.product_id,
-        movement.movement_type,
+        movement.transaction_type,
         movement.quantity,
         movement.reference_type,
         movement.reference_id,
         movement.notes,
-        movement.created_by
+        movement.user_id
       ).run();
 
       // Check for alerts
-      await this.checkAndCreateAlerts(movement.product_id, newQuantity, product.stock_alert_threshold);
+      await this.checkAndCreateAlerts(movement.product_id, newQuantity, product.min_stock);
 
       // Return the created movement
       const createdMovement = await this.env.DB.prepare(`
@@ -239,9 +239,9 @@ export class AdvancedInventoryService {
       const totals = await this.env.DB.prepare(`
         SELECT 
           COUNT(*) as total_products,
-          SUM(stock_quantity * cost_price) as total_value,
-          SUM(CASE WHEN stock_quantity <= stock_alert_threshold THEN 1 ELSE 0 END) as low_stock_items,
-          SUM(CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END) as out_of_stock_items
+          SUM(stock * cost_price) as total_value,
+          SUM(CASE WHEN stock <= min_stock THEN 1 ELSE 0 END) as low_stock_items,
+          SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) as out_of_stock_items
         FROM products 
         WHERE is_active = 1
       `).first<{
@@ -278,8 +278,8 @@ export class AdvancedInventoryService {
         total_value: totals?.total_value || 0,
         low_stock_items: totals?.low_stock_items || 0,
         out_of_stock_items: totals?.out_of_stock_items || 0,
-        overstock_items: 0, // TODO: Implement overstock logic
-        expiring_items: 0, // TODO: Implement expiry tracking
+        overstock_items: await this.getOverstockCount(),
+        expiring_items: await this.getExpiringCount(),
         movement_count_today: movementCount?.count || 0,
         top_moving_products: topMoving.results as any[]
       };
@@ -304,7 +304,7 @@ export class AdvancedInventoryService {
         ORDER BY ia.severity DESC, ia.created_at DESC
       `).all();
 
-      return alerts.results as InventoryAlert[];
+      return (alerts.results as unknown) as InventoryAlert[];
     } catch (error) {
       console.error('Error getting active alerts:', error);
       return [];
@@ -351,6 +351,71 @@ export class AdvancedInventoryService {
       }
     } catch (error) {
       console.error('Error checking alerts:', error);
+    }
+  }
+
+  /**
+   * Determine overstock count using configurable threshold
+   * Default: stock >= max(10, min_stock * multiplier)
+   */
+  private async getOverstockCount(): Promise<number> {
+    try {
+      const multiplierEnv = (this.env as any).INVENTORY_OVERSTOCK_MULTIPLIER;
+      const overstockMultiplier = Number(multiplierEnv) > 0 ? Number(multiplierEnv) : 3;
+
+      const result = await this.env.DB.prepare(`
+        SELECT COUNT(*) as count
+        FROM products
+        WHERE is_active = 1
+          AND stock >= CASE 
+            WHEN min_stock IS NOT NULL AND min_stock > 0 
+              THEN min_stock * ?
+            ELSE 10
+          END
+      `).bind(overstockMultiplier).first<{ count: number }>();
+
+      return result?.count || 0;
+    } catch (error) {
+      console.error('Error calculating overstock count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Determine expiring count from product_batches using configurable window
+   * Default window: 30 days; uses column expiration_date if available
+   */
+  private async getExpiringCount(): Promise<number> {
+    try {
+      const windowEnv = (this.env as any).INVENTORY_EXPIRY_WINDOW_DAYS;
+      const windowDays = Number(windowEnv) > 0 ? Number(windowEnv) : 30;
+
+      // Prefer expiration_date (per schema-inventory-extensions.sql). Fallback to expiry_date if present.
+      // We detect presence of expiration_date by attempting a query; if it fails, try expiry_date.
+      try {
+        const res = await this.env.DB.prepare(`
+          SELECT COUNT(*) as count
+          FROM product_batches
+          WHERE status = 'active'
+            AND expiration_date IS NOT NULL
+            AND date(expiration_date) <= date('now', '+' || ? || ' days')
+            AND date(expiration_date) >= date('now')
+        `).bind(windowDays).first<{ count: number }>();
+        return res?.count || 0;
+      } catch (_e) {
+        const res2 = await this.env.DB.prepare(`
+          SELECT COUNT(*) as count
+          FROM product_batches
+          WHERE status = 'active'
+            AND expiry_date IS NOT NULL
+            AND date(expiry_date) <= date('now', '+' || ? || ' days')
+            AND date(expiry_date) >= date('now')
+        `).bind(windowDays).first<{ count: number }>();
+        return res2?.count || 0;
+      }
+    } catch (error) {
+      console.error('Error calculating expiring count:', error);
+      return 0;
     }
   }
 }

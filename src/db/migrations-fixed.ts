@@ -213,7 +213,7 @@ const fixedMigrations: Migration[] = [
       // Add constraints validation
       `UPDATE products SET price = 0.00 WHERE price < 0`,
       `UPDATE products SET cost_price = 0.00 WHERE cost_price < 0`,
-      `UPDATE products SET stock_quantity = 0 WHERE stock_quantity < 0`
+      `UPDATE products SET stock = 0 WHERE stock < 0`
     ],
     down: [
       `DROP INDEX IF EXISTS idx_products_category_active`,
@@ -234,12 +234,11 @@ const fixedMigrations: Migration[] = [
       
       // Performance indexes for reports
       `CREATE INDEX IF NOT EXISTS idx_sales_summary ON sales(store_id, created_at, final_amount, sale_status)`,
-      `CREATE INDEX IF NOT EXISTS idx_products_summary ON products(category_id, is_active, name, price, stock_quantity)`,
+      `CREATE INDEX IF NOT EXISTS idx_products_summary ON products(category_id, is_active, name, price, stock)`,
       `CREATE INDEX IF NOT EXISTS idx_sale_items_summary ON sale_items(sale_id, product_id, quantity, subtotal)`,
       
       // Inventory management indexes
-      `CREATE INDEX IF NOT EXISTS idx_products_stock_alert ON products(stock_quantity, min_stock_level)`,
-      `CREATE INDEX IF NOT EXISTS idx_products_reorder ON products(reorder_point, stock_quantity)`
+      `CREATE INDEX IF NOT EXISTS idx_products_stock_alert ON products(stock, min_stock)`
     ],
     down: [
       `DROP INDEX IF EXISTS idx_products_name_search`,

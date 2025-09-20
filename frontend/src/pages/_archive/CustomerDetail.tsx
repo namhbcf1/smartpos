@@ -36,7 +36,7 @@ import {
   Business as BusinessIcon
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-import api from '../services/api';
+import api from '../../services/api';
 import { formatCurrency, formatDate } from '../config/constants';
 
 interface Customer {

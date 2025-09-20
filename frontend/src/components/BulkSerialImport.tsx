@@ -7,512 +7,457 @@ import {
   Button,
   Box,
   Typography,
+  TextField,
   Alert,
   LinearProgress,
   Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
   Paper,
+  Grid,
+  Card,
+  CardContent,
   IconButton,
-  Tooltip,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
+  Tooltip
 } from '@mui/material';
 import {
   CloudUpload as UploadIcon,
   Download as DownloadIcon,
-  Check as CheckIcon,
+  CheckCircle as CheckIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  QrCode as QrCodeIcon
+  ContentCopy as CopyIcon,
+  Clear as ClearIcon,
+  GetApp as TemplateIcon
 } from '@mui/icons-material';
-import { useSnackbar } from 'notistack';
-import * as XLSX from 'xlsx';
+import { comprehensiveAPI } from '../services/business/comprehensiveApi';
 
-interface SerialNumberData {
-  serial_number: string;
-  product_name?: string;
-  product_sku?: string;
-  location?: string;
-  notes?: string;
-  status: 'valid' | 'invalid' | 'duplicate' | 'warning';
+interface SerialImportResult {
+  success: boolean;
+  processed: number;
   errors: string[];
+  warnings: string[];
+  imported_serials: string[];
 }
 
 interface BulkSerialImportProps {
   open: boolean;
   onClose: () => void;
-  onImportComplete: (serialNumbers: string[]) => void;
   productId?: number;
   productName?: string;
+  onImportComplete?: (result: SerialImportResult) => void;
 }
-
-const TEMPLATE_HEADERS = [
-  'serial_number',
-  'product_name',
-  'product_sku', 
-  'location',
-  'notes'
-];
 
 const BulkSerialImport: React.FC<BulkSerialImportProps> = ({
   open,
   onClose,
-  onImportComplete,
   productId,
-  productName
+  productName,
+  onImportComplete
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [activeStep, setActiveStep] = useState(0);
-  const [serialData, setSerialData] = useState<SerialNumberData[]>([]);
+  const [serialNumbers, setSerialNumbers] = useState('');
   const [loading, setLoading] = useState(false);
-  const [validationComplete, setValidationComplete] = useState(false);
-  const [importFormat, setImportFormat] = useState<'csv' | 'excel' | 'text'>('excel');
+  const [result, setResult] = useState<SerialImportResult | null>(null);
+  const [importMode, setImportMode] = useState<'text' | 'file'>('text');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const steps = [
-    'Chọn định dạng và tải file',
-    'Xác thực dữ liệu',
-    'Xem trước và xác nhận',
-    'Hoàn tất nhập khẩu'
-  ];
+  const handleClose = () => {
+    setSerialNumbers('');
+    setResult(null);
+    setImportMode('text');
+    onClose();
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    setLoading(true);
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      try {
-        let data: SerialNumberData[] = [];
-
-        if (file.name.endsWith('.csv')) {
-          // Handle CSV
-          const text = e.target?.result as string;
-          const lines = text.split('\n').filter(line => line.trim());
-          const headers = lines[0].split(',').map(h => h.trim());
-          
-          for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim());
-            if (values[0]) { // Must have serial number
-              data.push({
-                serial_number: values[0],
-                product_name: values[1] || productName || '',
-                product_sku: values[2] || '',
-                location: values[3] || '',
-                notes: values[4] || '',
-                status: 'valid',
-                errors: []
-              });
-            }
-          }
-        } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-          // Handle Excel
-          const workbook = XLSX.read(e.target?.result, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
-          
-          if (jsonData.length > 1) {
-            for (let i = 1; i < jsonData.length; i++) {
-              const row = jsonData[i];
-              if (row[0]) { // Must have serial number
-                data.push({
-                  serial_number: row[0]?.toString() || '',
-                  product_name: row[1]?.toString() || productName || '',
-                  product_sku: row[2]?.toString() || '',
-                  location: row[3]?.toString() || '',
-                  notes: row[4]?.toString() || '',
-                  status: 'valid',
-                  errors: []
-                });
-              }
-            }
-          }
-        } else {
-          // Handle plain text (one serial per line)
-          const text = e.target?.result as string;
-          const lines = text.split('\n').filter(line => line.trim());
-          
-          data = lines.map(line => ({
-            serial_number: line.trim(),
-            product_name: productName || '',
-            product_sku: '',
-            location: '',
-            notes: '',
-            status: 'valid' as const,
-            errors: []
-          }));
-        }
-
-        setSerialData(data);
-        setActiveStep(1);
-        validateSerialNumbers(data);
-        
-      } catch (error) {
-        console.error('Error parsing file:', error);
-        enqueueSnackbar('Lỗi khi đọc file. Vui lòng kiểm tra định dạng.', { variant: 'error' });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-      reader.readAsBinaryString(file);
-    } else {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setSerialNumbers(content);
+      };
       reader.readAsText(file);
     }
   };
 
-  const validateSerialNumbers = async (data: SerialNumberData[]) => {
-    setLoading(true);
+  const downloadTemplate = () => {
+    const template = `# Bulk Serial Number Import Template
+# Instructions:
+# - One serial number per line
+# - Lines starting with # are comments and will be ignored
+# - Remove this comment section before importing
+
+SERIAL001
+SERIAL002
+SERIAL003
+SERIAL004
+SERIAL005`;
     
-    try {
-      // Client-side validation
-      const validatedData = data.map(item => {
-        const errors: string[] = [];
-        let status: 'valid' | 'invalid' | 'duplicate' | 'warning' = 'valid';
+    const blob = new Blob([template], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'serial_import_template.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
-        // Check serial number format
-        if (!item.serial_number || item.serial_number.length < 3) {
-          errors.push('Serial number quá ngắn (tối thiểu 3 ký tự)');
-          status = 'invalid';
-        }
-
-        // Check for special characters
-        if (!/^[A-Za-z0-9\-_]+$/.test(item.serial_number)) {
-          errors.push('Serial number chỉ được chứa chữ, số, dấu gạch ngang và gạch dưới');
-          status = 'invalid';
-        }
-
-        // Check for duplicates within the import
-        const duplicateCount = data.filter(d => d.serial_number === item.serial_number).length;
-        if (duplicateCount > 1) {
-          errors.push('Trùng lặp trong file import');
-          status = 'duplicate';
-        }
-
-        return {
-          ...item,
-          status,
-          errors
-        };
-      });
-
-      // Server-side duplicate check (mock for now)
-      // In real implementation, this would call the API to check existing serial numbers
-      const serverValidatedData = validatedData.map(item => {
-        // Mock server validation - randomly mark some as duplicates
-        if (Math.random() < 0.1 && item.status === 'valid') {
-          return {
-            ...item,
-            status: 'duplicate' as const,
-            errors: [...item.errors, 'Serial number đã tồn tại trong hệ thống']
-          };
-        }
-        return item;
-      });
-
-      setSerialData(serverValidatedData);
-      setValidationComplete(true);
-      setActiveStep(2);
-      
-    } catch (error) {
-      console.error('Error validating serial numbers:', error);
-      enqueueSnackbar('Lỗi khi xác thực serial numbers', { variant: 'error' });
-    } finally {
-      setLoading(false);
-    }
+  const processSerialNumbers = (input: string): string[] => {
+    return input
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'))
+      .filter((serial, index, array) => array.indexOf(serial) === index); // Remove duplicates
   };
 
   const handleImport = async () => {
-    const validSerials = serialData
-      .filter(item => item.status === 'valid')
-      .map(item => item.serial_number);
-
-    if (validSerials.length === 0) {
-      enqueueSnackbar('Không có serial number hợp lệ để import', { variant: 'warning' });
+    if (!serialNumbers.trim()) {
       return;
     }
 
-    setLoading(true);
     try {
-      // Call real API to save serial numbers - rules.md compliant
-      // await api.post('/serial-numbers/bulk', { serials: validSerials });
+      setLoading(true);
+      const processedSerials = processSerialNumbers(serialNumbers);
       
-      onImportComplete(validSerials);
-      setActiveStep(3);
-      enqueueSnackbar(`Đã import thành công ${validSerials.length} serial numbers`, { variant: 'success' });
-      
-    } catch (error) {
+      if (processedSerials.length === 0) {
+        setResult({
+          success: false,
+          processed: 0,
+          errors: ['No valid serial numbers found'],
+          warnings: [],
+          imported_serials: []
+        });
+        return;
+      }
+
+      const response = await comprehensiveAPI.post('/inventory/bulk-serial-import', {
+        product_id: productId,
+        serial_numbers: processedSerials
+      });
+
+      const importResult: SerialImportResult = response.data;
+      setResult(importResult);
+
+      if (onImportComplete && importResult.success) {
+        onImportComplete(importResult);
+      }
+    } catch (error: any) {
       console.error('Error importing serial numbers:', error);
-      enqueueSnackbar('Lỗi khi import serial numbers', { variant: 'error' });
+      setResult({
+        success: false,
+        processed: 0,
+        errors: [error.response?.data?.message || 'Failed to import serial numbers'],
+        warnings: [],
+        imported_serials: []
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const downloadTemplate = () => {
-    const templateData = [
-      TEMPLATE_HEADERS,
-      ['SN001234567', 'CPU Intel Core i5', 'CPU-I5-13400F', 'Kho A', 'Ghi chú mẫu'],
-      ['SN001234568', 'CPU Intel Core i5', 'CPU-I5-13400F', 'Kho A', ''],
-      ['SN001234569', 'CPU Intel Core i5', 'CPU-I5-13400F', 'Kho B', '']
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Serial Numbers');
-    XLSX.writeFile(wb, 'serial_numbers_template.xlsx');
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'valid':
-        return <CheckIcon color="success" fontSize="small" />;
-      case 'invalid':
-        return <ErrorIcon color="error" fontSize="small" />;
-      case 'duplicate':
-        return <WarningIcon color="warning" fontSize="small" />;
-      default:
-        return <WarningIcon color="action" fontSize="small" />;
+  const generateSampleSerials = () => {
+    const prefix = productName ? productName.substring(0, 3).toUpperCase() : 'SER';
+    const samples = [];
+    for (let i = 1; i <= 10; i++) {
+      samples.push(`${prefix}${Date.now()}${i.toString().padStart(3, '0')}`);
     }
+    setSerialNumbers(samples.join('\n'));
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'valid':
-        return 'success';
-      case 'invalid':
-        return 'error';
-      case 'duplicate':
-        return 'warning';
-      default:
-        return 'default';
-    }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
   };
 
-  const validCount = serialData.filter(item => item.status === 'valid').length;
-  const invalidCount = serialData.filter(item => item.status === 'invalid').length;
-  const duplicateCount = serialData.filter(item => item.status === 'duplicate').length;
+  const previewSerials = processSerialNumbers(serialNumbers);
+  const duplicateCount = serialNumbers.split('\n').length - previewSerials.length;
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      PaperProps={{
-        sx: { height: '80vh' }
-      }}
-    >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <UploadIcon color="primary" />
-        Nhập khẩu Serial Numbers hàng loạt
-        <Chip label="Nâng cao" color="primary" size="small" sx={{ ml: 1 }} />
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">
+            Bulk Serial Number Import
+            {productName && ` - ${productName}`}
+          </Typography>
+          <Box>
+            <Tooltip title="Download Template">
+              <IconButton onClick={downloadTemplate}>
+                <TemplateIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Stepper activeStep={activeStep} orientation="vertical">
-          {/* Step 1: File Upload */}
-          <Step>
-            <StepLabel>Chọn định dạng và tải file</StepLabel>
-            <StepContent>
-              <Box sx={{ mb: 2 }}>
-                <FormControl sx={{ minWidth: 200, mb: 2 }}>
-                  <InputLabel>Định dạng file</InputLabel>
-                  <Select
-                    value={importFormat}
-                    label="Định dạng file"
-                    onChange={(e) => setImportFormat(e.target.value as any)}
-                  >
-                    <MenuItem value="excel">Excel (.xlsx, .xls)</MenuItem>
-                    <MenuItem value="csv">CSV (.csv)</MenuItem>
-                    <MenuItem value="text">Text (.txt)</MenuItem>
-                  </Select>
-                </FormControl>
+      <DialogContent>
+        <Box sx={{ mb: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Button
+                variant={importMode === 'text' ? 'contained' : 'outlined'}
+                onClick={() => setImportMode('text')}
+                fullWidth
+              >
+                Text Input
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Button
+                variant={importMode === 'file' ? 'contained' : 'outlined'}
+                onClick={() => setImportMode('file')}
+                fullWidth
+              >
+                File Upload
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
 
-                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<DownloadIcon />}
-                    onClick={downloadTemplate}
-                  >
-                    Tải template mẫu
-                  </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<UploadIcon />}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Chọn file
-                  </Button>
-                </Box>
+        {importMode === 'text' ? (
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Enter Serial Numbers</Typography>
+              <Button
+                size="small"
+                onClick={generateSampleSerials}
+                startIcon={<CopyIcon />}
+              >
+                Generate Samples
+              </Button>
+            </Box>
+            <TextField
+              multiline
+              rows={12}
+              fullWidth
+              value={serialNumbers}
+              onChange={(e) => setSerialNumbers(e.target.value)}
+              placeholder="Enter serial numbers, one per line..."
+              variant="outlined"
+              sx={{ mb: 2 }}
+            />
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                • One serial number per line
+                • Lines starting with # are comments and will be ignored
+                • Duplicates will be automatically removed
+              </Typography>
+            </Alert>
+          </Box>
+        ) : (
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Upload File
+            </Typography>
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 3,
+                textAlign: 'center',
+                border: '2px dashed',
+                borderColor: 'divider',
+                cursor: 'pointer',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  bgcolor: 'action.hover'
+                }
+              }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="body1" gutterBottom>
+                Click to upload a text file containing serial numbers
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Supported formats: .txt, .csv
+              </Typography>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt,.csv"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+              />
+            </Paper>
+            {serialNumbers && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                File loaded successfully! {previewSerials.length} serial numbers detected.
+              </Alert>
+            )}
+          </Box>
+        )}
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls,.csv,.txt"
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                />
-
-                <Alert severity="info">
-                  <Typography variant="body2">
-                    Hỗ trợ các định dạng: Excel (.xlsx, .xls), CSV (.csv), Text (.txt).
-                    Tải template mẫu để đảm bảo định dạng đúng.
-                  </Typography>
-                </Alert>
-              </Box>
-            </StepContent>
-          </Step>
-
-          {/* Step 2: Validation */}
-          <Step>
-            <StepLabel>Xác thực dữ liệu</StepLabel>
-            <StepContent>
-              {loading ? (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" gutterBottom>
-                    Đang xác thực serial numbers...
-                  </Typography>
-                  <LinearProgress />
-                </Box>
-              ) : (
-                <Box sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                    <Chip 
-                      icon={<CheckIcon />}
-                      label={`${validCount} hợp lệ`} 
-                      color="success" 
-                      size="small" 
-                    />
-                    <Chip 
-                      icon={<ErrorIcon />}
-                      label={`${invalidCount} lỗi`} 
-                      color="error" 
-                      size="small" 
-                    />
-                    <Chip 
+        {/* Preview Section */}
+        {serialNumbers && (
+          <Box sx={{ mt: 3 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Preview
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                  <Chip
+                    icon={<CheckIcon />}
+                    label={`${previewSerials.length} Valid Serial Numbers`}
+                    color="success"
+                    size="small"
+                  />
+                  {duplicateCount > 0 && (
+                    <Chip
                       icon={<WarningIcon />}
-                      label={`${duplicateCount} trùng lặp`} 
-                      color="warning" 
-                      size="small" 
+                      label={`${duplicateCount} Duplicates Removed`}
+                      color="warning"
+                      size="small"
                     />
-                  </Box>
-                  
-                  {validationComplete && (
-                    <Button
-                      variant="contained"
-                      onClick={() => setActiveStep(2)}
-                      disabled={validCount === 0}
-                    >
-                      Tiếp tục
-                    </Button>
                   )}
                 </Box>
-              )}
-            </StepContent>
-          </Step>
+                <Box sx={{ maxHeight: 150, overflow: 'auto' }}>
+                  {previewSerials.slice(0, 10).map((serial, index) => (
+                    <Chip
+                      key={index}
+                      label={serial}
+                      size="small"
+                      variant="outlined"
+                      sx={{ m: 0.5 }}
+                      deleteIcon={<CopyIcon />}
+                      onDelete={() => copyToClipboard(serial)}
+                    />
+                  ))}
+                  {previewSerials.length > 10 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      ... and {previewSerials.length - 10} more
+                    </Typography>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
 
-          {/* Step 3: Preview */}
-          <Step>
-            <StepLabel>Xem trước và xác nhận</StepLabel>
-            <StepContent>
-              <Box sx={{ mb: 2, maxHeight: 300, overflow: 'auto' }}>
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Trạng thái</TableCell>
-                        <TableCell>Serial Number</TableCell>
-                        <TableCell>Sản phẩm</TableCell>
-                        <TableCell>Vị trí</TableCell>
-                        <TableCell>Lỗi</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {serialData.slice(0, 50).map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <Chip
-                              icon={getStatusIcon(item.status)}
-                              label={item.status}
-                              color={getStatusColor(item.status) as any}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>{item.serial_number}</TableCell>
-                          <TableCell>{item.product_name}</TableCell>
-                          <TableCell>{item.location}</TableCell>
-                          <TableCell>
-                            {item.errors.length > 0 && (
-                              <Typography variant="caption" color="error">
-                                {item.errors.join(', ')}
-                              </Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                
-                {serialData.length > 50 && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    Hiển thị 50/{serialData.length} dòng đầu tiên
-                  </Typography>
-                )}
-              </Box>
+        {/* Loading State */}
+        {loading && (
+          <Box sx={{ mt: 2 }}>
+            <LinearProgress />
+            <Typography variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
+              Importing serial numbers...
+            </Typography>
+          </Box>
+        )}
 
-              <Button
-                variant="contained"
-                onClick={handleImport}
-                disabled={loading || validCount === 0}
-                startIcon={loading ? undefined : <CheckIcon />}
-              >
-                {loading ? 'Đang import...' : `Import ${validCount} serial numbers`}
-              </Button>
-            </StepContent>
-          </Step>
-
-          {/* Step 4: Complete */}
-          <Step>
-            <StepLabel>Hoàn tất nhập khẩu</StepLabel>
-            <StepContent>
-              <Alert severity="success" sx={{ mb: 2 }}>
-                <Typography variant="body2">
-                  Đã import thành công {validCount} serial numbers!
+        {/* Results */}
+        {result && (
+          <Box sx={{ mt: 3 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Import Results
                 </Typography>
-              </Alert>
-              <Button variant="contained" onClick={onClose}>
-                Hoàn tất
-              </Button>
-            </StepContent>
-          </Step>
-        </Stepper>
+                
+                <Box sx={{ mb: 2 }}>
+                  <Alert 
+                    severity={result.success ? 'success' : 'error'}
+                    action={
+                      result.success && (
+                        <Chip
+                          icon={<CheckIcon />}
+                          label={`${result.processed} Imported`}
+                          color="success"
+                          size="small"
+                        />
+                      )
+                    }
+                  >
+                    {result.success 
+                      ? `Successfully imported ${result.processed} serial numbers`
+                      : 'Import failed. Please check the errors below.'
+                    }
+                  </Alert>
+                </Box>
+
+                {/* Errors */}
+                {result.errors.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="error" gutterBottom>
+                      Errors:
+                    </Typography>
+                    <List dense>
+                      {result.errors.map((error, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <ErrorIcon color="error" />
+                          </ListItemIcon>
+                          <ListItemText primary={error} />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                )}
+
+                {/* Warnings */}
+                {result.warnings.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="warning.main" gutterBottom>
+                      Warnings:
+                    </Typography>
+                    <List dense>
+                      {result.warnings.map((warning, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <WarningIcon color="warning" />
+                          </ListItemIcon>
+                          <ListItemText primary={warning} />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                )}
+
+                {/* Successfully imported serials */}
+                {result.imported_serials.length > 0 && (
+                  <Box>
+                    <Typography variant="subtitle2" color="success.main" gutterBottom>
+                      Successfully Imported Serial Numbers:
+                    </Typography>
+                    <Box sx={{ maxHeight: 150, overflow: 'auto' }}>
+                      {result.imported_serials.map((serial, index) => (
+                        <Chip
+                          key={index}
+                          label={serial}
+                          size="small"
+                          color="success"
+                          variant="outlined"
+                          sx={{ m: 0.5 }}
+                          deleteIcon={<CopyIcon />}
+                          onDelete={() => copyToClipboard(serial)}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>
-          Đóng
+        <Button onClick={handleClose}>
+          {result ? 'Close' : 'Cancel'}
         </Button>
+        {!result && (
+          <Button
+            variant="contained"
+            onClick={handleImport}
+            disabled={!serialNumbers.trim() || loading}
+            startIcon={<UploadIcon />}
+          >
+            Import Serial Numbers
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

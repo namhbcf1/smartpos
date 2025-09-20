@@ -104,9 +104,7 @@ export class CachingService {
       return null;
 
     } catch (error) {
-      log.error(`Cache get error for key ${key}`, { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error(`Cache get error for key ${key}`, error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       return null;
     }
   }
@@ -128,9 +126,7 @@ export class CachingService {
       log.debug(`Cache SET: ${key}`, { ttl: cacheConfig.ttl });
 
     } catch (error) {
-      log.error(`Cache set error for key ${key}`, { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error(`Cache set error for key ${key}`, error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -151,9 +147,7 @@ export class CachingService {
       log.debug(`Cache DELETE: ${key}`);
 
     } catch (error) {
-      log.error(`Cache delete error for key ${key}`, { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error(`Cache delete error for key ${key}`, error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -196,9 +190,7 @@ export class CachingService {
       log.info(`Invalidated ${keysToDelete.length} cache entries matching pattern: ${pattern}`);
 
     } catch (error) {
-      log.error(`Cache invalidation error for pattern ${pattern}`, { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error(`Cache invalidation error for pattern ${pattern}`, error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -221,9 +213,7 @@ export class CachingService {
       log.info(`Invalidated ${keysToDelete.length} cache entries for tags: ${tags.join(', ')}`);
 
     } catch (error) {
-      log.error(`Cache invalidation error for tags ${tags.join(', ')}`, { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error(`Cache invalidation error for tags ${tags.join(', ')}`, error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -287,9 +277,7 @@ export class CachingService {
       return value as T;
 
     } catch (error) {
-      log.error(`KV get error for key ${key}`, { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error(`KV get error for key ${key}`, error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
       return null;
     }
   }
@@ -311,9 +299,7 @@ export class CachingService {
       await this.env.CACHE_KV.put(key, JSON.stringify(data), options);
 
     } catch (error) {
-      log.error(`KV set error for key ${key}`, { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error(`KV set error for key ${key}`, error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -349,7 +335,7 @@ export class CachingService {
         break;
 
       default:
-        keyToEvict = entries[0][0]; // Fallback to first entry
+        keyToEvict = entries[0]?.[0] || ''; // Fallback to first entry
     }
 
     const evictedEntry = this.memoryCache.get(keyToEvict);
@@ -455,9 +441,7 @@ export class CachingService {
       log.info('Cache cleared');
 
     } catch (error) {
-      log.error('Cache clear error', { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Cache clear error', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -472,7 +456,7 @@ export class CachingService {
           await this.set(key, data);
         } catch (error) {
           log.warn(`Cache warm-up failed for key: ${key}`, { 
-            error: error instanceof Error ? error.message : 'Unknown error'
+            message: error instanceof Error ? error.message : 'Unknown error'
           });
         }
       });
@@ -481,9 +465,7 @@ export class CachingService {
       log.info(`Cache warmed up with ${keys.length} entries`);
 
     } catch (error) {
-      log.error('Cache warm-up error', { 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      log.error('Cache warm-up error', error instanceof Error ? error : new Error(error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 }

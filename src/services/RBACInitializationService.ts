@@ -236,8 +236,8 @@ export class RBACInitializationService {
     ];
 
     for (const mapping of permissionMappings) {
-      const filteredResources = resources.filter(r => mapping.resourceTypes.includes(r.resource_type));
-      const filteredActions = actions.filter(a => mapping.actions.includes(a.name));
+      const filteredResources = resources.results?.filter((r: any) => mapping.resourceTypes.includes(r.resource_type)) || [];
+      const filteredActions = actions.results?.filter((a: any) => mapping.actions.includes(a.name)) || [];
 
       for (const resource of filteredResources) {
         for (const action of filteredActions) {
@@ -352,13 +352,13 @@ export class RBACInitializationService {
         roleTemplate.is_system
       ).run();
 
-      const roleId = result.lastRowId;
+      const roleId = result.meta?.last_row_id;
 
       // Assign permissions to role
       if (roleTemplate.permissions.includes('*')) {
         // Grant all permissions
         const allPermissions = await this.env.DB.prepare('SELECT id FROM permissions WHERE is_active = 1').all();
-        for (const permission of allPermissions) {
+        for (const permission of allPermissions.results || []) {
           await this.env.DB.prepare(`
             INSERT OR IGNORE INTO role_permissions (role_id, permission_id, granted)
             VALUES (?, ?, 1)
@@ -374,7 +374,7 @@ export class RBACInitializationService {
               SELECT id FROM permissions WHERE permission_key LIKE ? AND is_active = 1
             `).bind(`${prefix}%`).all();
 
-            for (const permission of permissions) {
+            for (const permission of permissions.results || []) {
               await this.env.DB.prepare(`
                 INSERT OR IGNORE INTO role_permissions (role_id, permission_id, granted)
                 VALUES (?, ?, 1)

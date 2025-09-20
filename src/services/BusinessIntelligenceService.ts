@@ -163,11 +163,11 @@ export class BusinessIntelligenceService {
       throw new Error('Failed to analyze profit margins');
     }
 
-    return result.data.map(row => ({
+    return result.data.map((row: any) => ({
       productId: row.product_id,
       productName: row.product_name,
       totalRevenue: row.total_revenue || 0,
-      totalCost: row.total_cost || 0,
+      totalCostPrice: row.total_cost || 0,
       grossProfit: row.gross_profit || 0,
       profitMargin: row.profit_margin || 0,
       unitsSold: row.units_sold || 0,
@@ -246,7 +246,7 @@ export class BusinessIntelligenceService {
    * Simple sales forecasting using linear regression
    */
   private forecastSalesTrends(historicalData: any[]): SalesTrend[] {
-    const trends: SalesTrend[] = historicalData.map(row => ({
+    const trends: SalesTrend[] = historicalData.map((row: any) => ({
       period: row.period,
       totalSales: row.total_sales || 0,
       totalRevenue: row.total_revenue || 0,
@@ -260,11 +260,11 @@ export class BusinessIntelligenceService {
     if (trends.length >= 3) {
       const recentTrends = trends.slice(-6); // Use last 6 periods
       const avgGrowthRate = recentTrends.reduce((sum, t) => sum + t.growthRate, 0) / recentTrends.length;
-      const lastRevenue = trends[trends.length - 1].totalRevenue;
+      const lastRevenue = trends[trends.length - 1]?.totalRevenue || 0;
       const forecastedRevenue = lastRevenue * (1 + avgGrowthRate / 100);
 
       // Add forecast for next period
-      const nextPeriod = this.getNextPeriod(trends[trends.length - 1].period);
+      const nextPeriod = this.getNextPeriod(trends[trends.length - 1]?.period || '');
       trends.push({
         period: nextPeriod,
         totalSales: 0,
@@ -287,8 +287,8 @@ export class BusinessIntelligenceService {
     // Simple implementation - in production, use proper date library
     if (currentPeriod.includes('-')) {
       const [year, month] = currentPeriod.split('-').map(Number);
-      const nextMonth = month === 12 ? 1 : month + 1;
-      const nextYear = month === 12 ? year + 1 : year;
+      const nextMonth = (month || 1) === 12 ? 1 : (month || 1) + 1;
+      const nextYear = (month || 1) === 12 ? (year || 2024) + 1 : (year || 2024);
       return `${nextYear}-${nextMonth.toString().padStart(2, '0')}`;
     }
     return currentPeriod + '_forecast';
@@ -362,7 +362,7 @@ export class BusinessIntelligenceService {
       throw new Error('Failed to analyze customer behavior');
     }
 
-    return result.data.map(row => ({
+    return result.data.map((row: any) => ({
       customerId: row.customer_id,
       customerName: row.customer_name || 'Unknown',
       totalSpent: row.total_spent || 0,
@@ -429,7 +429,7 @@ export class BusinessIntelligenceService {
       throw new Error('Failed to analyze product performance');
     }
 
-    return result.data.map(row => ({
+    return result.data.map((row: any) => ({
       productId: row.product_id,
       productName: row.product_name || 'Unknown',
       categoryName: row.category_name || 'Uncategorized',
@@ -481,8 +481,8 @@ export class BusinessIntelligenceService {
       `,
       inventory: `
         SELECT 
-          SUM(stock_quantity * cost_price) as inventory_value,
-          AVG(stock_quantity) as avg_stock_level
+          SUM(stock * cost_price) as inventory_value,
+          AVG(stock) as avg_stock_level
         FROM products 
         WHERE is_active = 1
       `
@@ -570,15 +570,15 @@ export class BusinessIntelligenceService {
           SELECT 
             p.name as product_name,
             c.name as category_name,
-            p.stock_quantity,
-            p.stock_quantity * p.cost_price as inventory_value,
+            p.stock as stock,
+            p.stock * p.cost_price as inventory_value,
             SUM(si.quantity) as units_sold
           FROM products p
           LEFT JOIN categories c ON p.category_id = c.id
           LEFT JOIN sale_items si ON p.id = si.product_id
           LEFT JOIN sales s ON si.sale_id = s.id
         `;
-        groupByClause = 'GROUP BY p.id, p.name, c.name, p.stock_quantity, p.cost_price';
+        groupByClause = 'GROUP BY p.id, p.name, c.name, p.stock, p.cost_price';
         break;
 
       case 'customer':

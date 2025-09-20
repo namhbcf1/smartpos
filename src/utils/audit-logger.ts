@@ -167,8 +167,8 @@ export class AuditLogger {
       action,
       resource_type: resourceType,
       resource_id: resourceId,
-      old_values: oldValues ? JSON.stringify(oldValues) : null,
-      new_values: newValues ? JSON.stringify(newValues) : null,
+      old_values: oldValues ? JSON.stringify(oldValues) : undefined,
+      new_values: newValues ? JSON.stringify(newValues) : undefined,
       success,
       error_message: errorMessage
     });
@@ -289,7 +289,7 @@ export class AuditLogger {
       }
 
       const result = await env.DB.prepare(query).bind(...params).all();
-      return result.results as AuditLogEntry[] || [];
+      return (result.results as unknown) as AuditLogEntry[] || [];
     } catch (error) {
       console.error('Failed to get audit logs:', error);
       return [];
@@ -356,12 +356,12 @@ export class AuditLogger {
       ).bind(...params).first();
 
       return {
-        total_events: totalResult?.count || 0,
-        successful_events: successResult?.count || 0,
-        failed_events: failedResult?.count || 0,
-        unique_users: usersResult?.count || 0,
+        total_events: (totalResult?.count as number) || 0,
+        successful_events: (successResult?.count as number) || 0,
+        failed_events: (failedResult?.count as number) || 0,
+        unique_users: (usersResult?.count as number) || 0,
         top_actions: actionsResult.results as Array<{ action: string; count: number }> || [],
-        security_events: securityResult?.count || 0
+        security_events: (securityResult?.count as number) || 0
       };
     } catch (error) {
       console.error('Failed to get audit stats:', error);
@@ -391,8 +391,8 @@ export class AuditLogger {
         'DELETE FROM audit_log WHERE created_at < ?'
       ).bind(cutoffDate.toISOString()).run();
 
-      console.log(`Cleaned ${result.changes} old audit log entries`);
-      return result.changes || 0;
+      console.log(`Cleaned ${(result as any).changes} old audit log entries`);
+      return (result as any).changes || 0;
     } catch (error) {
       console.error('Failed to clean old audit logs:', error);
       return 0;

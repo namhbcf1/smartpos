@@ -16,7 +16,7 @@ export class ReturnsService {
 
   constructor(private env: Env) {
     this.db = new ReturnsDatabase(env);
-    this.cache = new CacheManager(env);
+    this.cache = new CacheManager();
   }
 
   // Initialize service
@@ -189,7 +189,7 @@ export class ReturnsService {
   async getReturnById(id: number): Promise<Return | null> {
     try {
       const cacheKey = CacheKeys.return(id);
-      const cached = await this.cache.get<Return>(cacheKey);
+      const cached = await this.cache.get<Return>(this.env, cacheKey);
       if (cached) return cached;
 
       // Get return with joined data
@@ -218,7 +218,7 @@ export class ReturnsService {
           ri.*,
           p.image_url as product_image_url,
           p.category_name as product_category,
-          p.stock_quantity as current_stock
+          p.stock as current_stock
         FROM return_items ri
         LEFT JOIN products p ON ri.product_id = p.id
         WHERE ri.return_id = ?
@@ -240,7 +240,7 @@ export class ReturnsService {
 
       returnItem.refund_transactions = transactions.results || [];
 
-      await this.cache.set(cacheKey, returnItem, 300); // Cache for 5 minutes
+      await this.cache.set(this.env, cacheKey, returnItem, { ttl: 300 }); // Cache for 5 minutes
       return returnItem;
     } catch (error) {
       console.error('Error getting return by ID:', error);
@@ -339,7 +339,7 @@ export class ReturnsService {
       }
 
       // Clear cache
-      await this.cache.delete(CacheKeys.returnsList());
+      await this.cache.delete(this.env, CacheKeys.returnsList());
 
       const newReturn = await this.getReturnById(returnId);
       if (!newReturn) {
@@ -382,8 +382,8 @@ export class ReturnsService {
       `).bind(...bindings).run();
 
       // Clear cache
-      await this.cache.delete(CacheKeys.return(id));
-      await this.cache.delete(CacheKeys.returnsList());
+      await this.cache.delete(this.env, CacheKeys.return(id));
+      await this.cache.delete(this.env, CacheKeys.returnsList());
 
       const updatedReturn = await this.getReturnById(id);
       if (!updatedReturn) {
@@ -432,8 +432,8 @@ export class ReturnsService {
       ).run();
 
       // Clear cache
-      await this.cache.delete(CacheKeys.return(id));
-      await this.cache.delete(CacheKeys.returnsList());
+      await this.cache.delete(this.env, CacheKeys.return(id));
+      await this.cache.delete(this.env, CacheKeys.returnsList());
 
       const approvedReturn = await this.getReturnById(id);
       if (!approvedReturn) {
@@ -470,8 +470,8 @@ export class ReturnsService {
       `).bind(rejectionReason, rejectedBy, id).run();
 
       // Clear cache
-      await this.cache.delete(CacheKeys.return(id));
-      await this.cache.delete(CacheKeys.returnsList());
+      await this.cache.delete(this.env, CacheKeys.return(id));
+      await this.cache.delete(this.env, CacheKeys.returnsList());
 
       const rejectedReturn = await this.getReturnById(id);
       if (!rejectedReturn) {
@@ -513,7 +513,7 @@ export class ReturnsService {
           if (item.restockable && item.condition === 'new') {
             await this.env.DB.prepare(`
               UPDATE products 
-              SET stock_quantity = stock_quantity + ?
+              SET stock = stock + ?
               WHERE id = ?
             `).bind(item.quantity_returned, item.product_id).run();
           }
@@ -521,8 +521,8 @@ export class ReturnsService {
       }
 
       // Clear cache
-      await this.cache.delete(CacheKeys.return(id));
-      await this.cache.delete(CacheKeys.returnsList());
+      await this.cache.delete(this.env, CacheKeys.return(id));
+      await this.cache.delete(this.env, CacheKeys.returnsList());
 
       const completedReturn = await this.getReturnById(id);
       if (!completedReturn) {

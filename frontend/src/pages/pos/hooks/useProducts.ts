@@ -1,23 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../../services/api';
-
-export interface Product {
-  id: number;
-  name: string;
-  sku: string;
-  barcode?: string;
-  price: number;
-  cost_price: number;
-  stock_quantity: number;
-  min_stock_level: number;
-  category_id: number;
-  category_name?: string;
-  image_url?: string;
-  is_active: boolean;
-  brand?: string;
-  description?: string;
-  discount_eligible?: boolean;
-}
+import { Product } from '../../../types/unified';
 
 interface UseProductsParams {
   search?: string;
@@ -95,8 +78,8 @@ export const useProducts = (params: UseProductsParams = {}): UseProductsResult =
           barcode: item.barcode,
           price: item.price,
           cost_price: item.costPrice || item.cost_price || 0,
-          stock_quantity: item.stockQuantity || item.stock_quantity || 0,
-          min_stock_level: item.stockAlertThreshold || item.min_stock_level || 0,
+          stock: item.stockQuantity || item.stock_quantity || 0,
+          min_stock: item.stockAlertThreshold || item.min_stock || 0,
           category_id: item.categoryId || item.category_id || 0,
           category_name: item.categoryName || item.category_name,
           image_url: item.imageUrl || item.image_url,

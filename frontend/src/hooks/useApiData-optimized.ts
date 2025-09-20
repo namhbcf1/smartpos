@@ -4,12 +4,13 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { API_V1_BASE_URL } from '../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 
 // Optimized API configuration
 const API_CONFIG = {
-  baseURL: 'https://pos-backend-bangachieu2.bangachieu2.workers.dev/api/v1',
+  baseURL: API_V1_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

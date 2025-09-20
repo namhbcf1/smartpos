@@ -5,16 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number | null | undefined): string {
+export function formatCurrency(amountInCents: number | null | undefined): string {
   // Handle null, undefined, or NaN values
-  if (amount == null || isNaN(amount)) {
+  if (amountInCents == null || isNaN(amountInCents)) {
     return '0 ₫';
   }
 
+  // Convert cents to VND (divide by 100)
+  const amountInVND = Math.round(amountInCents / 100);
+
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
-    currency: 'VND'
-  }).format(amount)
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amountInVND);
 }
 
 export function formatDate(date: Date | string): string {

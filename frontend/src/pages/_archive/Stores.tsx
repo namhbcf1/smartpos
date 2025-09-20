@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 import {
   Box,
   Typography,
@@ -25,20 +26,26 @@ import {
   Switch,
   Tooltip,
   Badge,
-  LinearProgress,
+  
   Divider,
   Alert,
-  Snackbar
+  Snackbar,
+  Drawer,
+  
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
   Store as StoresIcon,
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Analytics as AnalyticsIcon,
+  
   TrendingUp as TrendingUpIcon,
   People as PeopleIcon,
-  Inventory as InventoryIcon,
+  
   AttachMoney as MoneyIcon,
   LocationOn as LocationIcon,
   Phone as PhoneIcon,
@@ -46,11 +53,15 @@ import {
   Business as BusinessIcon,
   Dashboard as DashboardIcon,
   Visibility as ViewIcon,
-  Settings as SettingsIcon,
-  Star as StarIcon,
-  Warning as WarningIcon
+  
+  Warning as WarningIcon,
+  Security as WarrantyIcon,
+  Assignment as ClaimIcon,
+  Download as DownloadIcon,
+  Print as PrintIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
-import { useQuery } from '../hooks/useApiData';
+import { useQuery } from '../../hooks/useApiData';
 
 // Real D1 Data - No Mock Data
 
@@ -88,8 +99,14 @@ const Stores = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Warranty management state
+  const [warrantyDrawer, setWarrantyDrawer] = useState<{ open: boolean; store: Store | null }>({ open: false, store: null });
+  const [newClaimOpen, setNewClaimOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [warrantyFilters, setWarrantyFilters] = useState<{ status: string; serial: string; from: string; to: string }>({ status: '', serial: '', from: '', to: '' });
+
   // Real D1 API integration
-  const { data: storesData, loading: apiLoading, error: apiError } = useQuery('/stores/simple');
+  const { data: storesData, error: apiError } = useQuery('/stores/simple');
 
   // Load real data from Cloudflare D1
   useEffect(() => {
@@ -98,16 +115,13 @@ const Stores = () => {
         setLoading(true);
 
         // Fetch stores from real D1 database
-        const response = await fetch('/api/v1/stores/simple');
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.data) {
-            setStores(result.data.data || []);
-          }
+        const response = await api.get('/stores/simple');
+        if (response.data.success && response.data.data) {
+          setStores(response.data.data.data || []);
         } else {
           // Fallback to useApiData hook
-          if (storesData && storesData.data) {
-            setStores(storesData.data);
+          if (storesData && (storesData as any).data) {
+            setStores((storesData as any).data);
           }
         }
 
@@ -124,8 +138,8 @@ const Stores = () => {
 
   // Update stores when API data changes
   useEffect(() => {
-    if (storesData && storesData.data) {
-      setStores(storesData.data);
+    if (storesData && (storesData as any).data) {
+      setStores((storesData as any).data);
       setLoading(false);
     }
     if (apiError) {
@@ -141,51 +155,28 @@ const Stores = () => {
 
       if (dialogMode === 'create') {
         // Create new store via real API
-        const response = await fetch('/api/v1/stores', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify(formData)
-        });
+        const response = await api.post('/stores', formData);
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            // Refresh stores list
-            const storesResponse = await fetch('/api/v1/stores/simple');
-            if (storesResponse.ok) {
-              const storesResult = await storesResponse.json();
-              if (storesResult.success) {
-                setStores(storesResult.data.data || []);
-              }
-            }
-            setSnackbar({ open: true, message: 'Tạo cửa hàng thành công!', severity: 'success' });
+        if (response.data.success) {
+          // Refresh stores list
+          const storesResponse = await api.get('/stores/simple');
+          if (storesResponse.data.success) {
+            setStores(storesResponse.data.data.data || []);
           }
+          setSnackbar({ open: true, message: 'Tạo cửa hàng thành công!', severity: 'success' });
         } else {
           setSnackbar({ open: true, message: 'Lỗi khi tạo cửa hàng', severity: 'error' });
         }
       } else if (dialogMode === 'edit' && selectedStore) {
         // Update store via real API
-        const response = await fetch(`/api/v1/stores/${selectedStore.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify(formData)
-        });
+        const response = await api.put(`/stores/${selectedStore.id}`, formData);
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            // Update local state
-            setStores(stores.map(store =>
-              store.id === selectedStore.id ? { ...store, ...formData } : store
-            ));
-            setSnackbar({ open: true, message: 'Cập nhật cửa hàng thành công!', severity: 'success' });
-          }
+        if (response.data.success) {
+          // Update local state
+          setStores(stores.map(store =>
+            store.id === selectedStore.id ? { ...store, ...formData } : store
+          ));
+          setSnackbar({ open: true, message: 'Cập nhật cửa hàng thành công!', severity: 'success' });
         } else {
           setSnackbar({ open: true, message: 'Lỗi khi cập nhật cửa hàng', severity: 'error' });
         }
@@ -228,20 +219,12 @@ const Stores = () => {
     try {
       setLoading(true);
 
-      const response = await fetch(`/api/v1/stores/${storeId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+              const response = await api.delete(`/stores/${storeId}`);
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          // Update local state
-          setStores(stores.filter(store => store.id !== storeId));
-          setSnackbar({ open: true, message: 'Xóa cửa hàng thành công!', severity: 'success' });
-        }
+      if (response.data.success) {
+        // Update local state
+        setStores(stores.filter(store => store.id !== storeId));
+        setSnackbar({ open: true, message: 'Xóa cửa hàng thành công!', severity: 'success' });
       } else {
         setSnackbar({ open: true, message: 'Lỗi khi xóa cửa hàng', severity: 'error' });
       }
@@ -315,102 +298,93 @@ const Stores = () => {
               Hệ thống quản lý cửa hàng thông minh với analytics và báo cáo chi tiết
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog('create')}
-            sx={{
-              bgcolor: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
-              '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.3)',
-              }
-            }}
-          >
-            Thêm cửa hàng
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={() => setExportOpen(true)}
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)' }}
+            >
+              Xuất
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              onClick={() => window.print()}
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)' }}
+            >
+              In
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog('create')}
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.2)',
+                backdropFilter: 'blur(10px)',
+                '&:hover': {
+                  bgcolor: 'rgba(255,255,255,0.3)',
+                }
+              }}
+            >
+              Thêm cửa hàng
+            </Button>
+          </Stack>
         </Stack>
       </Paper>
 
       {/* Statistics Overview */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography variant="h4" fontWeight="bold">
-                    {stores.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Tổng cửa hàng
-                  </Typography>
-                </Box>
-                <BusinessIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography variant="h4" fontWeight="bold">
-                    {stores.filter(s => s.is_active).length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Đang hoạt động
-                  </Typography>
-                </Box>
-                <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography variant="h4" fontWeight="bold">
-                    {formatCurrency(stores.reduce((sum, store) => sum + (store.analytics?.sales.total_revenue || 0), 0))}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Tổng doanh thu
-                  </Typography>
-                </Box>
-                <MoneyIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white' }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography variant="h4" fontWeight="bold">
-                    {stores.reduce((sum, store) => sum + (store.analytics?.customers.total_customers || 0), 0)}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Tổng khách hàng
-                  </Typography>
-                </Box>
-                <PeopleIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3, mb: 3 }}>
+        <Card sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h4" fontWeight="bold">{stores.length}</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>Tổng cửa hàng</Typography>
+              </Box>
+              <BusinessIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h4" fontWeight="bold">{stores.filter(s => s.is_active).length}</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>Đang hoạt động</Typography>
+              </Box>
+              <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h4" fontWeight="bold">{formatCurrency(stores.reduce((sum, store) => sum + (store.analytics?.sales.total_revenue || 0), 0))}</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>Tổng doanh thu</Typography>
+              </Box>
+              <MoneyIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card sx={{ borderRadius: 2, background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white' }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="h4" fontWeight="bold">{stores.reduce((sum, store) => sum + (store.analytics?.customers.total_customers || 0), 0)}</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>Tổng khách hàng</Typography>
+              </Box>
+              <PeopleIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+            </Stack>
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Stores Grid */}
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: 3 }}>
         {stores.map((store) => (
-          <Grid item xs={12} md={6} lg={4} key={store.id}>
+          <Box key={store.id}>
             <Card
               sx={{
                 borderRadius: 3,
@@ -501,48 +475,40 @@ const Stores = () => {
                     <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1.5, color: 'primary.main' }}>
                       📊 Thống kê (30 ngày)
                     </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-                          <Typography variant="h6" fontWeight="bold" color="primary.main">
-                            {store.analytics.sales.total_sales}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Đơn hàng
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-                          <Typography variant="h6" fontWeight="bold" color="success.main">
-                            {formatCurrency(store.analytics.sales.total_revenue)}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Doanh thu
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-                          <Typography variant="h6" fontWeight="bold" color="info.main">
-                            {store.analytics.inventory.total_products}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Sản phẩm
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-                          <Typography variant="h6" fontWeight="bold" color="warning.main">
-                            {store.analytics.customers.total_customers}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Khách hàng
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    </Grid>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                      <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="h6" fontWeight="bold" color="primary.main">
+                          {store.analytics.sales.total_sales}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Đơn hàng
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="h6" fontWeight="bold" color="success.main">
+                          {formatCurrency(store.analytics.sales.total_revenue)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Doanh thu
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="h6" fontWeight="bold" color="info.main">
+                          {store.analytics.inventory.total_products}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Sản phẩm
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="h6" fontWeight="bold" color="warning.main">
+                          {store.analytics.customers.total_customers}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Khách hàng
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Box>
                 )}
               </CardContent>
@@ -550,6 +516,15 @@ const Stores = () => {
               {/* Store Actions */}
               <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
                 <Stack direction="row" spacing={1}>
+                  <Tooltip title="Bảo hành & yêu cầu">
+                    <IconButton
+                      size="small"
+                      onClick={() => setWarrantyDrawer({ open: true, store })}
+                      sx={{ color: 'secondary.main' }}
+                    >
+                      <WarrantyIcon />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Xem chi tiết">
                     <IconButton
                       size="small"
@@ -588,9 +563,9 @@ const Stores = () => {
                 </Button>
               </CardActions>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
       {/* Floating Action Button for Mobile */}
       {isMobile && (
@@ -661,35 +636,31 @@ const Stores = () => {
               }}
             />
 
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Số điện thoại"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  disabled={dialogMode === 'view'}
-                  variant="outlined"
-                  InputProps={{
-                    startAdornment: <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  disabled={dialogMode === 'view'}
-                  variant="outlined"
-                  InputProps={{
-                    startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  }}
-                />
-              </Grid>
-            </Grid>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Số điện thoại"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                disabled={dialogMode === 'view'}
+                variant="outlined"
+                InputProps={{
+                  startAdornment: <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled={dialogMode === 'view'}
+                variant="outlined"
+                InputProps={{
+                  startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                }}
+              />
+            </Box>
 
             <FormControlLabel
               control={
@@ -707,38 +678,32 @@ const Stores = () => {
                 <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
                   📊 Thống kê chi tiết
                 </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
-                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.50' }}>
-                      <Typography variant="h4" color="primary.main" fontWeight="bold">
-                        {selectedStore.analytics.sales.total_sales}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Tổng đơn hàng
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.50' }}>
-                      <Typography variant="h4" color="success.main" fontWeight="bold">
-                        {formatCurrency(selectedStore.analytics.sales.total_revenue)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Tổng doanh thu
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.50' }}>
-                      <Typography variant="h4" color="info.main" fontWeight="bold">
-                        {formatCurrency(selectedStore.analytics.sales.avg_order_value)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Giá trị TB/đơn
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                </Grid>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.50' }}>
+                    <Typography variant="h4" color="primary.main" fontWeight="bold">
+                      {selectedStore.analytics.sales.total_sales}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Tổng đơn hàng
+                    </Typography>
+                  </Paper>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.50' }}>
+                    <Typography variant="h4" color="success.main" fontWeight="bold">
+                      {formatCurrency(selectedStore.analytics.sales.total_revenue)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Tổng doanh thu
+                    </Typography>
+                  </Paper>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.50' }}>
+                    <Typography variant="h4" color="info.main" fontWeight="bold">
+                      {formatCurrency(selectedStore.analytics.sales.avg_order_value)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Giá trị TB/đơn
+                    </Typography>
+                  </Paper>
+                </Box>
               </Box>
             )}
           </Stack>
@@ -776,6 +741,95 @@ const Stores = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Warranty Drawer */}
+      <Drawer anchor="right" open={warrantyDrawer.open} onClose={() => setWarrantyDrawer({ open: false, store: null })} PaperProps={{ sx: { width: { xs: '100%', sm: 480 } } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
+          <Typography variant="h6">Bảo hành - {warrantyDrawer.store?.name}</Typography>
+          <IconButton onClick={() => setWarrantyDrawer({ open: false, store: null })}><CloseIcon /></IconButton>
+        </Box>
+        <Divider />
+        <Box sx={{ p: 2 }}>
+          <Stack spacing={2}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+              <Paper sx={{ p: 2, textAlign: 'center' }}>
+                <Typography variant="h6" color="success.main">24</Typography>
+                <Typography variant="caption" color="text.secondary">Đang BH</Typography>
+              </Paper>
+              <Paper sx={{ p: 2, textAlign: 'center' }}>
+                <Typography variant="h6" color="warning.main">7</Typography>
+                <Typography variant="caption" color="text.secondary">Sắp hết hạn</Typography>
+              </Paper>
+              <Paper sx={{ p: 2, textAlign: 'center' }}>
+                <Typography variant="h6" color="error.main">5</Typography>
+                <Typography variant="caption" color="text.secondary">Hết hạn</Typography>
+              </Paper>
+            </Box>
+
+            <Divider />
+            <Typography variant="subtitle2">Bộ lọc</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+              <FormControl fullWidth>
+                <InputLabel>Trạng thái</InputLabel>
+                <Select value={warrantyFilters.status} label="Trạng thái" onChange={(e) => setWarrantyFilters({ ...warrantyFilters, status: e.target.value })}>
+                  <MenuItem value="">Tất cả</MenuItem>
+                  <MenuItem value="in_warranty">Trong BH</MenuItem>
+                  <MenuItem value="expiring">Sắp hết hạn</MenuItem>
+                  <MenuItem value="expired">Hết hạn</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField fullWidth label="Serial" value={warrantyFilters.serial} onChange={(e) => setWarrantyFilters({ ...warrantyFilters, serial: e.target.value })} />
+              <TextField fullWidth type="date" label="Từ ngày" InputLabelProps={{ shrink: true }} value={warrantyFilters.from} onChange={(e) => setWarrantyFilters({ ...warrantyFilters, from: e.target.value })} />
+              <TextField fullWidth type="date" label="Đến ngày" InputLabelProps={{ shrink: true }} value={warrantyFilters.to} onChange={(e) => setWarrantyFilters({ ...warrantyFilters, to: e.target.value })} />
+            </Box>
+
+            <Divider />
+            <Typography variant="subtitle2">Yêu cầu gần đây</Typography>
+            <Stack spacing={1}>
+              {[1,2,3,4].map(i => (
+                <Stack key={i} direction="row" spacing={1} alignItems="center">
+                  <Chip size="small" label={`CL-${1000 + i}`} />
+                  <Typography variant="body2" sx={{ flex: 1 }}>Thiết bị #{i} lỗi khởi động</Typography>
+                  <Chip size="small" color={i % 2 === 0 ? 'success' : 'info'} label={i % 2 === 0 ? 'resolved' : 'in_progress'} />
+                </Stack>
+              ))}
+            </Stack>
+
+            <Button variant="contained" startIcon={<ClaimIcon />} onClick={() => setNewClaimOpen(true)}>Tạo yêu cầu</Button>
+          </Stack>
+        </Box>
+      </Drawer>
+
+      {/* New Warranty Claim */}
+      <Dialog open={newClaimOpen} onClose={() => setNewClaimOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Tạo yêu cầu bảo hành</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <TextField fullWidth label="Sản phẩm/Thiết bị" placeholder="Nhập tên hoặc serial" />
+            <TextField fullWidth label="Tiêu đề" />
+            <TextField fullWidth label="Mô tả" multiline minRows={3} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNewClaimOpen(false)}>Đóng</Button>
+          <Button variant="contained" onClick={() => setNewClaimOpen(false)}>Gửi</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={exportOpen} onClose={() => setExportOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Xuất dữ liệu</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1.5}>
+            <Button startIcon={<DownloadIcon />} variant="outlined">Xuất CSV bảo hành</Button>
+            <Button startIcon={<DownloadIcon />} variant="outlined">Xuất CSV yêu cầu</Button>
+            <Button startIcon={<PrintIcon />} variant="outlined" onClick={() => window.print()}>In tổng quan</Button>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setExportOpen(false)}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { useOnlineStatus } from '../../../hooks/useOnlineStatus';
 import apiClient from '../../services/api/client';
 
 interface Serial {
@@ -301,13 +301,13 @@ const SerialPage: React.FC = () => {
             </div>
             <button
               onClick={() => setShowImportModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
             >
               Import Serial
             </button>
             <button
               onClick={exportSerials}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
             >
               Export CSV
             </button>
@@ -323,7 +323,7 @@ const SerialPage: React.FC = () => {
             <p className="text-red-800 flex-1">{error}</p>
             <button
               onClick={() => setError(null)}
-              className="text-red-400 hover:text-red-600 ml-4"
+              className="text-red-400 hover:text-red-600 ml-4">
             >
               ✕
             </button>
@@ -340,12 +340,12 @@ const SerialPage: React.FC = () => {
               placeholder="Tìm theo serial number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             />
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
             >
               <option value="">Tất cả trạng thái</option>
               {statusOptions.map((status) => (
@@ -357,7 +357,7 @@ const SerialPage: React.FC = () => {
             <select
               value={selectedProduct}
               onChange={(e) => setSelectedProduct(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
             >
               <option value="">Tất cả sản phẩm</option>
               {products.map((product) => (
@@ -368,7 +368,7 @@ const SerialPage: React.FC = () => {
             </select>
             <button
               onClick={loadSerials}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
             >
               Làm mới
             </button>
@@ -453,14 +453,14 @@ const SerialPage: React.FC = () => {
                             <div className="flex justify-end space-x-2">
                               <button
                                 onClick={() => openSerialDetail(serial)}
-                                className="text-blue-600 hover:text-blue-900"
+                                className="text-blue-600 hover:text-blue-900">
                               >
                                 Chi tiết
                               </button>
                               {serial.status === 'available' && (
                                 <button
                                   onClick={() => handleDeleteSerial(serial)}
-                                  className="text-red-600 hover:text-red-900"
+                                  className="text-red-600 hover:text-red-900">
                                 >
                                   Xóa
                                 </button>
@@ -485,14 +485,14 @@ const SerialPage: React.FC = () => {
                       <button
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="px-3 py-2 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-2 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                       >
                         Trước
                       </button>
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-2 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-2 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                       >
                         Sau
                       </button>
@@ -513,7 +513,7 @@ const SerialPage: React.FC = () => {
               <h3 className="text-lg font-semibold">Import Serial Numbers</h3>
               <button
                 onClick={() => setShowImportModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700">
               >
                 ✕
               </button>
@@ -525,7 +525,7 @@ const SerialPage: React.FC = () => {
                 <select
                   value={selectedProductForImport}
                   onChange={(e) => setSelectedProductForImport(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                   required
                 >
                   <option value="">Chọn sản phẩm có serial</option>
@@ -545,7 +545,7 @@ const SerialPage: React.FC = () => {
                 <textarea
                   value={bulkSerials}
                   onChange={(e) => setBulkSerials(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                   rows={10}
                   placeholder="SN001&#10;SN002&#10;SN003&#10;..."
                 />
@@ -567,14 +567,14 @@ const SerialPage: React.FC = () => {
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowImportModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleImportSerials}
                   disabled={!selectedProductForImport || !bulkSerials.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed">
                 >
                   Import Serial
                 </button>
@@ -594,7 +594,7 @@ const SerialPage: React.FC = () => {
               </h3>
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700">
               >
                 ✕
               </button>
@@ -721,7 +721,7 @@ const SerialPage: React.FC = () => {
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
               >
                 Đóng
               </button>

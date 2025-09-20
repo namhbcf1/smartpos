@@ -212,12 +212,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   Doanh số {getDateRangeLabel().toLowerCase()}
                 </Typography>
                 <Typography variant="h6" fontWeight="bold" color="primary">
-                  {stats.sales.today.toLocaleString('vi-VN')} đơn
+                  {(stats?.sales?.today || 0).toLocaleString('vi-VN')} đơn
                 </Typography>
                 <Chip
                   icon={<TrendingUpIcon />}
-                  label={`${stats.sales.growth_rate > 0 ? '+' : ''}${stats.sales.growth_rate.toFixed(1)}%`}
-                  color={getGrowthColor(stats.sales.growth_rate) as any}
+                  label={`${(stats?.sales?.growth_rate || 0) > 0 ? '+' : ''}${(stats?.sales?.growth_rate || 0).toFixed(1)}%`}
+                  color={getGrowthColor(stats?.sales?.growth_rate || 0) as any}
                   size="small"
                 />
               </Box>
@@ -228,12 +228,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   Doanh thu {getDateRangeLabel().toLowerCase()}
                 </Typography>
                 <Typography variant="h6" fontWeight="bold" color="success.main">
-                  {stats.revenue.today.toLocaleString('vi-VN')} ₫
+                  {(stats?.revenue?.today || 0).toLocaleString('vi-VN')} ₫
                 </Typography>
                 <Chip
                   icon={<TrendingUpIcon />}
-                  label={`${stats.revenue.growth_rate > 0 ? '+' : ''}${stats.revenue.growth_rate.toFixed(1)}%`}
-                  color={getGrowthColor(stats.revenue.growth_rate) as any}
+                  label={`${(stats?.revenue?.growth_rate || 0) > 0 ? '+' : ''}${(stats?.revenue?.growth_rate || 0).toFixed(1)}%`}
+                  color={getGrowthColor(stats?.revenue?.growth_rate || 0) as any}
                   size="small"
                 />
               </Box>
@@ -244,10 +244,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   Đơn hàng
                 </Typography>
                 <Typography variant="h6" fontWeight="bold" color="info.main">
-                  {stats.orders.total.toLocaleString('vi-VN')}
+                  {(stats?.orders?.total || 0).toLocaleString('vi-VN')}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Hoàn thành: {stats.orders.completion_rate.toFixed(1)}%
+                  Hoàn thành: {(stats?.orders?.completion_rate || 0).toFixed(1)}%
                 </Typography>
               </Box>
 
@@ -257,10 +257,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   Khách hàng
                 </Typography>
                 <Typography variant="h6" fontWeight="bold" color="warning.main">
-                  {stats.customers.total.toLocaleString('vi-VN')}
+                  {(stats?.customers?.total || 0).toLocaleString('vi-VN')}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Mới: +{stats.customers.new_today}
+                  Mới: +{stats?.customers?.new_today || 0}
                 </Typography>
               </Box>
 
@@ -270,10 +270,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   Cảnh báo tồn kho
                 </Typography>
                 <Typography variant="h6" fontWeight="bold" color="error.main">
-                  {stats.products.low_stock + stats.products.out_of_stock}
+                  {(stats?.products?.low_stock || 0) + (stats?.products?.out_of_stock || 0)}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Hết hàng: {stats.products.out_of_stock}
+                  Hết hàng: {stats?.products?.out_of_stock || 0}
                 </Typography>
               </Box>
             </Stack>

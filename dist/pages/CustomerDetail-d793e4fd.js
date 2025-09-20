@@ -1,1 +1,0 @@
-import{j as s,B as t,i as h,x as r}from"../chunks/mui-core-c8a509c2.js";import"../chunks/react-vendor-546521e5.js";const i=()=>s.jsxs(t,{sx:{p:3},children:[s.jsx(h,{variant:"h4",gutterBottom:!0,children:"Chi tiết khách hàng"}),s.jsx(r,{sx:{p:2},children:s.jsx(h,{children:"Trang chi tiết khách hàng đang được phát triển..."})})]});export{i as default};

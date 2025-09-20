@@ -1,3 +1,49 @@
+// Cloudflare types
+declare global {
+  interface D1Database {
+    prepare(query: string): D1PreparedStatement;
+    exec(query: string): Promise<D1Result>;
+    batch(statements: D1PreparedStatement[]): Promise<D1Result[]>;
+  }
+  
+  interface D1PreparedStatement {
+    bind(...values: any[]): D1PreparedStatement;
+    first<T = any>(): Promise<T | null>;
+    run(): Promise<D1Result>;
+    all<T = any>(): Promise<D1Result<T>>;
+  }
+  
+  interface D1Result<T = any> {
+    results: T[];
+    success: boolean;
+    meta: {
+      changes: number;
+      duration: number;
+      last_row_id: number;
+    };
+  }
+  
+  interface KVNamespace {
+    get(key: string): Promise<string | null>;
+    put(key: string, value: string): Promise<void>;
+    delete(key: string): Promise<void>;
+    list(options?: { prefix?: string; limit?: number }): Promise<{ keys: { name: string }[] }>;
+  }
+  
+  interface DurableObjectNamespace {
+    get(id: DurableObjectId): DurableObjectStub;
+    newUniqueId(): DurableObjectId;
+  }
+  
+  interface DurableObjectId {
+    toString(): string;
+  }
+  
+  interface DurableObjectStub {
+    fetch(request: Request): Promise<Response>;
+  }
+}
+
 // Environment variables interface with index signature for Hono compatibility
 export interface Env {
   DB: D1Database;
@@ -22,6 +68,26 @@ export interface Env {
   CURRENCY_SYMBOL: string;
   BUSINESS_HOURS_START: string;
   BUSINESS_HOURS_END: string;
+
+  // Payment Gateway Configuration
+  VNPAY_TMN_CODE?: string;
+  VNPAY_HASH_SECRET?: string;
+  VNPAY_URL?: string;
+  MOMO_PARTNER_CODE?: string;
+  MOMO_ACCESS_KEY?: string;
+  MOMO_SECRET_KEY?: string;
+  MOMO_ENDPOINT?: string;
+  ZALOPAY_APP_ID?: string;
+  ZALOPAY_KEY1?: string;
+  ZALOPAY_KEY2?: string;
+  ZALOPAY_ENDPOINT?: string;
+
+  // Cloudflare R2 Storage
+  CLOUDFLARE_R2_ACCESS_KEY_ID?: string;
+  CLOUDFLARE_R2_SECRET_ACCESS_KEY?: string;
+  CLOUDFLARE_R2_BUCKET_UPLOADS?: string;
+  CLOUDFLARE_R2_ENDPOINT?: string;
+
   [key: string]: any; // Index signature for Hono compatibility
 }
 
@@ -31,7 +97,7 @@ export interface HonoEnv {
   Variables: {
     // Authentication context
     user?: {
-      id: number;
+      id: string; // TEXT PK per detailed schema
       username: string;
       email: string;
       role: string;
@@ -124,96 +190,119 @@ export interface HonoEnv {
 
 // User related interfaces
 export interface User {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   username: string;
   password_hash: string;
   full_name: string;
-  email: string | null;
-  phone: string | null;
+  email: string;
   role: UserRole;
-  store_id: number;
-  avatar_url: string | null;
   is_active: boolean;
-  last_login: string | null;
+  last_login: string | null; // ISO 8601 format
   created_at: string;
   updated_at: string;
 }
 
-export type UserRole = 'admin' | 'manager' | 'cashier' | 'inventory';
+export type UserRole = 'admin' | 'manager' | 'cashier' | 'employee'; // Default 'employee' per detailed schema
 
 export interface UserResponse {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   username: string;
   fullName: string;
-  email: string | null;
-  phone: string | null;
+  email: string;
   role: UserRole;
-  storeId: number;
-  avatarUrl: string | null;
-  isActive: boolean;
-  lastLogin: string | null;
+  is_active: boolean;
+  lastLogin: string | null; // ISO 8601 format
   createdAt: string;
   updatedAt: string;
 }
 
-// Product related interfaces
+// Product related interfaces - Following detailed schema
 export interface Product {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   name: string;
-  description: string | null;
   sku: string;
   barcode: string | null;
-  category_id: number;
-  price: number;
-  cost_price: number;
-  tax_rate: number;
-  stock_quantity: number;
-  stock_alert_threshold: number;
-  is_active: boolean;
+  description: string | null;
+
+  // D1 OPTIMIZED: INTEGER cents pricing (VND x 100)
+  price_cents: number; // INTEGER NOT NULL CHECK (price_cents >= 0)
+  cost_price_cents: number; // INTEGER NOT NULL CHECK (cost_price_cents >= 0)
+
+  // Inventory
+  stock: number;
+  min_stock: number;
+  max_stock: number;
+  unit: string;
+
+  // Physical attributes
+  weight_grams: number | null; // INTEGER per detailed schema
+  dimensions: string | null; // JSON: {"length": 10, "width": 5, "height": 2}
+
+  // Foreign keys
+  category_id: string | null; // TEXT FK → categories.id
+  brand_id: string | null; // TEXT FK → brands.id
+  supplier_id: string | null; // TEXT FK → suppliers.id
+  store_id: string; // TEXT DEFAULT 'store-1' FK → stores.id
+
+  // Media
   image_url: string | null;
+  images: string | null; // JSON array of URLs
+
+  // Denormalized fields for performance
+  category_name: string | null;
+  brand_name: string | null;
+
+  // Status
+  is_active: boolean;
+  is_serialized: boolean;
+
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
 }
 
 export interface ProductResponse {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   name: string;
-  description: string | null;
   sku: string;
   barcode: string | null;
-  categoryId: number;
-  categoryName: string;
-  price: number;
-  costPrice: number;
-  taxRate: number;
-  stockQuantity: number;
-  stockAlertThreshold: number;
-  isActive: boolean;
+  description: string | null;
+
+  // D1 OPTIMIZED: INTEGER cents pricing (VND x 100)
+  price_cents: number;
+  cost_price_cents: number;
+
+  category_id: string | null;
+  categoryName: string | null;
+  brand_id: string | null;
+  brandName: string | null;
+  stock: number;
+  min_stock: number;
+  is_active: boolean;
   imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-// Category related interfaces
+// Category related interfaces - Following detailed schema
 export interface Category {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   name: string;
   description: string | null;
-  parent_id: number | null;
+  parent_id: string | null; // TEXT FK → categories.id
+  image_url: string | null; // R2 storage URL
+  sort_order: number; // INTEGER DEFAULT 0
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
 }
 
 export interface CategoryResponse {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   name: string;
   description: string | null;
-  parentId: number | null;
+  parent_id: string | null;
   parentName: string | null;
-  isActive: boolean;
+  is_active: boolean;
   productCount: number;
   createdAt: string;
   updatedAt: string;
@@ -221,11 +310,11 @@ export interface CategoryResponse {
 
 // Sale related interfaces
 export interface Sale {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   receipt_number: string;
-  store_id: number;
-  customer_id: number | null;
-  user_id: number;
+  store_id: string; // TEXT FK → stores.id per detailed schema
+  customer_id: string | null; // TEXT FK → customers.id per detailed schema
+  user_id: string; // TEXT FK → users.id per detailed schema
   subtotal: number;
   tax_amount: number;
   discount_amount: number;
@@ -244,7 +333,7 @@ export type PaymentStatus = 'paid' | 'unpaid' | 'partial';
 export type SaleStatus = 'completed' | 'returned' | 'cancelled';
 
 export interface SaleItem {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   sale_id: number;
   product_id: number;
   quantity: number;
@@ -256,7 +345,7 @@ export interface SaleItem {
 }
 
 export interface SaleResponse {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   receiptNumber: string;
   storeId: number;
   storeName: string;
@@ -278,7 +367,7 @@ export interface SaleResponse {
 }
 
 export interface SaleItemResponse {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   productId: number;
   productName: string;
   quantity: number;
@@ -290,7 +379,7 @@ export interface SaleItemResponse {
 
 // Customer related interfaces - Updated to match customers module
 export interface Customer {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   customer_code: string;
   full_name: string;
   email?: string;
@@ -330,7 +419,7 @@ export interface Customer {
 export type CustomerGroup = 'regular' | 'vip' | 'wholesale' | 'business';
 
 export interface CustomerResponse {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   fullName: string;
   phone: string | null;
   email: string | null;
@@ -346,41 +435,48 @@ export interface CustomerResponse {
   updatedAt: string;
 }
 
-// Store related interfaces
+// Store related interfaces - Following detailed schema
 export interface Store {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   name: string;
   address: string;
-  phone: string | null;
-  email: string | null;
+  phone: string;
+  email: string;
   tax_number: string | null;
-  is_main: boolean;
+  business_license: string | null;
+  logo_url: string | null;
+  timezone: string; // DEFAULT 'Asia/Ho_Chi_Minh'
+  currency: string; // DEFAULT 'VND'
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface StoreResponse {
-  id: number;
+  id: string; // TEXT PK according to detailed schema
   name: string;
   address: string;
-  phone: string | null;
-  email: string | null;
+  phone: string;
+  email: string;
   taxNumber: string | null;
-  isMain: boolean;
-  userCount: number;
+  businessLicense: string | null;
+  logoUrl: string | null;
+  timezone: string;
+  currency: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 // Inventory related interfaces
 export interface InventoryTransaction {
-  id: number;
-  product_id: number;
-  store_id: number;
-  user_id: number;
+  id: string; // TEXT PK per detailed schema
+  product_id: string; // TEXT FK → products.id per detailed schema
+  store_id: string; // TEXT FK → stores.id per detailed schema
+  user_id: string; // TEXT FK → users.id per detailed schema
   transaction_type: InventoryTransactionType;
   quantity: number;
-  reference_id: number | null;
+  reference_id: string | null; // TEXT reference per detailed schema
   reference_type: ReferenceType | null;
   notes: string | null;
   created_at: string;
@@ -390,11 +486,11 @@ export type InventoryTransactionType = 'stock_in' | 'stock_out' | 'adjustment' |
 export type ReferenceType = 'sale' | 'purchase' | 'adjustment' | 'transfer' | 'return';
 
 export interface StockIn {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   reference_number: string;
-  supplier_id: number;
-  store_id: number;
-  user_id: number;
+  supplier_id: string; // TEXT FK → suppliers.id per detailed schema
+  store_id: string; // TEXT FK → stores.id per detailed schema
+  user_id: string; // TEXT FK → users.id per detailed schema
   total_amount: number;
   payment_status: PaymentStatus;
   payment_amount: number;
@@ -405,7 +501,7 @@ export interface StockIn {
 }
 
 export interface StockInItem {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   stock_in_id: number;
   product_id: number;
   quantity: number;
@@ -416,7 +512,7 @@ export interface StockInItem {
 }
 
 export interface StockInResponse {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   referenceNumber: string;
   supplierId: number;
   supplierName: string;
@@ -435,7 +531,7 @@ export interface StockInResponse {
 }
 
 export interface StockInItemResponse {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   productId: number;
   productName: string;
   quantity: number;
@@ -444,24 +540,24 @@ export interface StockInItemResponse {
   totalAmount: number;
 }
 
-// Supplier related interfaces
+// Supplier related interfaces - Following detailed schema
 export interface Supplier {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   name: string;
   contact_person: string | null;
-  phone: string | null;
   email: string | null;
+  phone: string | null;
   address: string | null;
   tax_number: string | null;
+  payment_terms: string | null;
+  credit_limit_cents: number; // INTEGER DEFAULT 0 (VND cents)
   is_active: boolean;
-  notes: string | null;
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
 }
 
 export interface SupplierResponse {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   name: string;
   contactPerson: string | null;
   phone: string | null;
@@ -476,7 +572,7 @@ export interface SupplierResponse {
 
 // Financial related interfaces
 export interface FinancialTransaction {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   date: string;
   transaction_type: 'income' | 'expense';
   category: string;
@@ -493,7 +589,7 @@ export interface FinancialTransaction {
 export type FinanceReferenceType = 'sale' | 'purchase' | 'expense' | 'other';
 
 export interface FinancialTransactionResponse {
-  id: number;
+  id: string; // TEXT PK per detailed schema
   date: string;
   transactionType: 'income' | 'expense';
   category: string;
@@ -511,7 +607,7 @@ export interface FinancialTransactionResponse {
 export interface Setting {
   key: string;
   value: string;
-  store_id: number | null;
+  store_id: string | null; // TEXT FK → stores.id per detailed schema
   created_at: string;
   updated_at: string;
 }
@@ -537,7 +633,7 @@ export interface DashboardStats {
   pendingOrders: number;
   customerCount: number;
   topProducts: {
-    id: number;
+    id: string; // TEXT PK per detailed schema
     name: string;
     quantity: number;
     total: number;
@@ -554,7 +650,10 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+  error?: string;
   errors?: Record<string, string[]>;
+  timestamp?: string;
+  details?: any;
 }
 
 export interface PaginatedResult<T> {
@@ -598,9 +697,9 @@ export interface QueryParams {
   payment_method?: PaymentMethod;
   payment_status?: PaymentStatus;
   sale_status?: SaleStatus;
-  customer_id?: number;
-  store_id?: number;
-  user_id?: number;
+  customer_id?: string; // TEXT FK → customers.id per detailed schema
+  store_id?: string; // TEXT FK → stores.id per detailed schema
+  user_id?: string; // TEXT FK → users.id per detailed schema
 }
 
 // Re-export warranty types

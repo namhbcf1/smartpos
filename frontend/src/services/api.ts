@@ -1,19 +1,19 @@
 // Enhanced API Service - Following rules.md standards
 // NO MOCK DATA - Real API calls only
 
-import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig } from 'axios';
-import { API_ENDPOINTS } from '../config/constants';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+// import { API_ENDPOINTS } from '../config/constants';
 import {
   ApiResponse,
-  ApiError,
+  // ApiError,
   User,
   Product,
   Sale,
   Customer,
   Supplier,
-  Category,
+  // Category,
   StockTransaction,
-  WarrantyRegistration,
+  // WarrantyRegistration,
   DashboardStats,
   ProductFilters,
   SaleFilters,
@@ -27,28 +27,31 @@ import {
 // API Configuration - Use environment variables with fallback
 const RAW_API_URL = import.meta.env.VITE_API_BASE_URL ||
                     import.meta.env.VITE_API_URL ||
-                    'https://pos-backend-bangachieu2.bangachieu2.workers.dev';
+                    'https://namhbcf-api.bangachieu2.workers.dev';
 
-const sanitizedBase = (RAW_API_URL || '').replace(/\/$/, '');
-// Check if URL already has /api/v1 suffix to avoid double prefix
-const hasApiPrefix = /\/api\/v1$/.test(sanitizedBase);
-const FULL_BASE_URL = hasApiPrefix ? sanitizedBase : `${sanitizedBase}/api/v1`;
+// Strip any accidental /api/v{n} suffix from env to avoid double-prefix issues
+const stripped = (RAW_API_URL || '').replace(/\/api\/v\d+\/?$/, '');
+const sanitizedBase = stripped.replace(/\/$/, '');
 
-// Export base URL for use in other components
-export const API_BASE_URL = FULL_BASE_URL;
+// Do NOT append /api/v1 here. Keep pure base. Some clients add the versioned path.
+export const API_BASE_URL = sanitizedBase;
+export const API_VERSION = import.meta.env.VITE_API_VERSION || 'v1';
+// Back to correct API versioning 
+export const API_V1_BASE_URL = `${sanitizedBase}/api/${API_VERSION}`;
 
 // Always use production mode (online only)
 const isProduction = true;
 
 console.log('🌐 API Configuration:', {
   RAW_API_URL,
-  resolvedBaseURL: FULL_BASE_URL,
+  resolvedBaseURL: API_BASE_URL,
+  finalBaseUrl: API_V1_BASE_URL,
   environment: isProduction ? 'production' : 'development'
 });
 
 // Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
-  baseURL: FULL_BASE_URL,
+  baseURL: API_V1_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -66,22 +69,33 @@ const getUserFromStorage = (): User | null => {
   return null;
 };
 
-const setUserInStorage = (user: User): void => {
-  // No storage - security compliance
-  console.log('User data managed by secure cookies');
-};
+// Removed unused setUserInStorage for linter cleanliness
 
 const clearUserFromStorage = (): void => {
-  // Clear auth cookie
-  document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  // Clear auth token
   authToken = null;
+  sessionStorage.removeItem('auth_token');
 };
 
-// SECURITY COMPLIANCE: No localStorage/sessionStorage usage
+// Initialize token from sessionStorage
 const initializeToken = (): void => {
-  // Token will be read from secure cookies automatically by browser
-  // No need to manually extract - cookies are sent automatically
-  console.log('🔐 API Service: Using secure HTTP-only cookies');
+  // Try to get JWT token from sessionStorage or cookie
+  let storedToken = sessionStorage.getItem('auth_token');
+  if (!storedToken) {
+    try {
+      storedToken = document.cookie
+        .split('; ')
+        .find(r => r.startsWith('auth_token='))
+        ?.split('=')[1] || null;
+    } catch {}
+  }
+  if (storedToken && storedToken.split('.').length === 3) {
+    authToken = storedToken;
+    console.log('🔐 API Service: Token loaded from storage');
+  } else {
+    authToken = null;
+    console.log('🔐 API Service: No token found');
+  }
 };
 
 // Initialize token immediately
@@ -90,14 +104,18 @@ initializeToken();
 // Enhanced request interceptor with proper error handling
 api.interceptors.request.use(
   (config) => {
-    // SECURITY COMPLIANCE: Using HTTP-only cookies instead of Authorization header
-    // Cookies are automatically sent by browser
+    // Always try to get fresh JWT from sessionStorage; enforce JWT shape
+    const freshToken = sessionStorage.getItem('auth_token');
+    const tokenToUse = freshToken && freshToken.split('.').length === 3
+      ? freshToken
+      : (authToken && authToken.split('.').length === 3 ? authToken : null);
+    if (tokenToUse) {
+      authToken = tokenToUse;
+      config.headers.Authorization = `Bearer ${tokenToUse}`;
+    }
 
-    // Add request ID for tracking
-    config.headers['X-Request-ID'] = crypto.randomUUID();
-
-    // Add timestamp for debugging
-    config.headers['X-Timestamp'] = new Date().toISOString();
+    // Request ID headers completely removed to prevent CORS issues
+    // No tracking headers needed for production deployment
 
     // Only log important requests in development mode (exclude polling and frequent requests)
     if (process.env.NODE_ENV === 'development' &&
@@ -134,9 +152,12 @@ api.interceptors.response.use(
       return response;
     } else {
       // Handle API-level errors - check both message and error fields
-      const error = new Error(response.data.message || response.data.error || 'API request failed');
-      (error as any).response = response;
-      (error as any).apiError = response.data;
+      const error = new Error(response.data.message || response.data.error || 'API request failed') as Error & {
+        response: AxiosResponse<ApiResponse>;
+        apiError: ApiResponse;
+      };
+      error.response = response;
+      error.apiError = response.data;
       return Promise.reject(error);
     }
   },
@@ -156,10 +177,21 @@ api.interceptors.response.use(
 
       switch (status) {
         case 401:
-          // Unauthorized - clear auth but don't auto-redirect on login page
-          clearUserFromStorage();
+          // Unauthorized - don't clear auth immediately, just log
+          console.warn('401 Unauthorized - token may be invalid');
           // Only redirect if not already on login page
           if (!window.location.pathname.includes('/login')) {
+            // Try to refresh token first
+            const freshToken = sessionStorage.getItem('auth_token');
+            if (freshToken) {
+              authToken = freshToken;
+              // Retry the request with fresh token
+              if (error.config) {
+                return api.request(error.config as any);
+              }
+              throw error;
+            }
+            // If no fresh token, redirect to login
             window.location.href = '/login';
           }
           break;
@@ -188,18 +220,26 @@ api.interceptors.response.use(
       }
 
       // Create enhanced error object - check both message and error fields
-      const enhancedError = new Error(data?.message || data?.error || `HTTP ${status}: ${error.response.statusText}`);
-      (enhancedError as any).status = status;
-      (enhancedError as any).response = error.response;
-      (enhancedError as any).apiError = data;
+      const enhancedError = new Error(data?.message || data?.error || `HTTP ${status}: ${error.response.statusText}`) as Error & {
+        status: number;
+        response: AxiosResponse<ApiResponse>;
+        apiError: ApiResponse;
+      };
+      enhancedError.status = status;
+      enhancedError.response = error.response;
+      enhancedError.apiError = data;
       return Promise.reject(enhancedError);
     } else if (error.request) {
-      // Network error
-      const networkError = new Error('Network error - please check your connection');
-      (networkError as any).request = error.request;
+      // Network error - properly handle connection issues
+      const networkError = new Error('Network error - please check your internet connection') as Error & {
+        request: any;
+        code: string;
+      };
+      networkError.request = error.request;
+      networkError.code = 'NETWORK_ERROR';
       return Promise.reject(networkError);
     } else {
-      // Other error
+      // Other error - configuration or unknown issues
       return Promise.reject(error);
     }
   }
@@ -231,7 +271,7 @@ export const authAPI = {
   },
 
   me: async (): Promise<ApiResponse<User>> => {
-    const response = await api.get<ApiResponse<User>>(API_ENDPOINTS.USER);
+    const response = await api.get<ApiResponse<User>>('/auth/me');
     return response.data;
   }
 };
@@ -250,12 +290,12 @@ export const userAPI = {
     return response.data;
   },
 
-  update: async (id: number, userData: Partial<User>): Promise<ApiResponse<User>> => {
+  update: async (id: number | string, userData: Partial<User>): Promise<ApiResponse<User>> => {
     const response = await api.put<ApiResponse<User>>(`/users/${id}`, userData);
     return response.data;
   },
 
-  delete: async (id: number): Promise<ApiResponse<void>> => {
+  delete: async (id: number | string): Promise<ApiResponse<void>> => {
     const response = await api.delete<ApiResponse<void>>(`/users/${id}`);
     return response.data;
   },
@@ -280,17 +320,17 @@ export const productAPI = {
     return response.data;
   },
 
-  update: async (id: number, productData: Partial<ProductForm>): Promise<ApiResponse<Product>> => {
+  update: async (id: number | string, productData: Partial<ProductForm>): Promise<ApiResponse<Product>> => {
     const response = await api.put<ApiResponse<Product>>(`/products/${id}`, productData);
     return response.data;
   },
 
-  delete: async (id: number): Promise<ApiResponse<void>> => {
+  delete: async (id: number | string): Promise<ApiResponse<void>> => {
     const response = await api.delete<ApiResponse<void>>(`/products/${id}`);
     return response.data;
   },
 
-  detail: async (id: number): Promise<ApiResponse<Product>> => {
+  detail: async (id: number | string): Promise<ApiResponse<Product>> => {
     const response = await api.get<ApiResponse<Product>>(`/products/${id}`);
     return response.data;
   },
@@ -317,17 +357,17 @@ export const saleAPI = {
     return response.data;
   },
 
-  update: async (id: number, saleData: Partial<SaleForm>): Promise<ApiResponse<Sale>> => {
+  update: async (id: number | string, saleData: Partial<SaleForm>): Promise<ApiResponse<Sale>> => {
     const response = await api.put<ApiResponse<Sale>>(`/sales/${id}`, saleData);
     return response.data;
   },
 
-  delete: async (id: number): Promise<ApiResponse<void>> => {
+  delete: async (id: number | string): Promise<ApiResponse<void>> => {
     const response = await api.delete<ApiResponse<void>>(`/sales/${id}`);
     return response.data;
   },
 
-  detail: async (id: number): Promise<ApiResponse<Sale>> => {
+  detail: async (id: number | string): Promise<ApiResponse<Sale>> => {
     const response = await api.get<ApiResponse<Sale>>(`/sales/${id}`);
     return response.data;
   }
@@ -347,17 +387,17 @@ export const customerAPI = {
     return response.data;
   },
 
-  update: async (id: number, customerData: Partial<Customer>): Promise<ApiResponse<Customer>> => {
+  update: async (id: number | string, customerData: Partial<Customer>): Promise<ApiResponse<Customer>> => {
     const response = await api.put<ApiResponse<Customer>>(`/customers/${id}`, customerData);
     return response.data;
   },
 
-  delete: async (id: number): Promise<ApiResponse<void>> => {
+  delete: async (id: number | string): Promise<ApiResponse<void>> => {
     const response = await api.delete<ApiResponse<void>>(`/customers/${id}`);
     return response.data;
   },
 
-  detail: async (id: number): Promise<ApiResponse<Customer>> => {
+  detail: async (id: number | string): Promise<ApiResponse<Customer>> => {
     const response = await api.get<ApiResponse<Customer>>(`/customers/${id}`);
     return response.data;
   }
@@ -377,17 +417,17 @@ export const supplierAPI = {
     return response.data;
   },
 
-  update: async (id: number, supplierData: Partial<Supplier>): Promise<ApiResponse<Supplier>> => {
+  update: async (id: number | string, supplierData: Partial<Supplier>): Promise<ApiResponse<Supplier>> => {
     const response = await api.put<ApiResponse<Supplier>>(`/suppliers/${id}`, supplierData);
     return response.data;
   },
 
-  delete: async (id: number): Promise<ApiResponse<void>> => {
+  delete: async (id: number | string): Promise<ApiResponse<void>> => {
     const response = await api.delete<ApiResponse<void>>(`/suppliers/${id}`);
     return response.data;
   },
 
-  detail: async (id: number): Promise<ApiResponse<Supplier>> => {
+  detail: async (id: number | string): Promise<ApiResponse<Supplier>> => {
     const response = await api.get<ApiResponse<Supplier>>(`/suppliers/${id}`);
     return response.data;
   }
@@ -421,7 +461,7 @@ export const inventoryAPI = {
 // Analytics API
 export const analyticsAPI = {
   dashboard: async (): Promise<ApiResponse<DashboardStats>> => {
-    const response = await api.get<ApiResponse<DashboardStats>>('/analytics/dashboard');
+    const response = await api.get<ApiResponse<DashboardStats>>('/dashboard/stats');
     return response.data;
   },
 
@@ -467,5 +507,48 @@ export const getCurrentUser = (): User | null => {
   return getUserFromStorage();
 };
 
-// Export the main API instance and all API modules
-export default api;
+// API wrapper with response data extraction
+const apiWrapper = {
+  get: async <T = any>(url: string, config?: any): Promise<T> => {
+    try {
+      const response = await api.get<ApiResponse<T>>(url, config);
+      return response.data.success ? response.data.data : response.data;
+    } catch (error: any) {
+      console.error('API GET Error:', error);
+      throw error;
+    }
+  },
+
+  post: async <T = any>(url: string, data?: any, config?: any): Promise<T> => {
+    try {
+      const response = await api.post<ApiResponse<T>>(url, data, config);
+      return response.data.success ? response.data.data : response.data;
+    } catch (error: any) {
+      console.error('API POST Error:', error);
+      throw error;
+    }
+  },
+
+  put: async <T = any>(url: string, data?: any, config?: any): Promise<T> => {
+    try {
+      const response = await api.put<ApiResponse<T>>(url, data, config);
+      return response.data.success ? response.data.data : response.data;
+    } catch (error: any) {
+      console.error('API PUT Error:', error);
+      throw error;
+    }
+  },
+
+  delete: async <T = any>(url: string, config?: any): Promise<T> => {
+    try {
+      const response = await api.delete<ApiResponse<T>>(url, config);
+      return response.data.success ? response.data.data : response.data;
+    } catch (error: any) {
+      console.error('API DELETE Error:', error);
+      throw error;
+    }
+  }
+};
+
+// Export the wrapper API and all API modules
+export default apiWrapper;
