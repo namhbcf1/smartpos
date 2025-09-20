@@ -93,6 +93,94 @@ app.get('/', async (c: any) => {
   }
 });
 
+// GET /api/sales/summary - Sales summary for dashboard (must come before /:id)
+app.get('/summary', async (c: any) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const thisMonth = new Date().toISOString().slice(0, 7);
+
+    // Today's sales
+    const todaySales = await c.env.DB.prepare(`
+      SELECT
+        COUNT(*) as order_count,
+        COALESCE(SUM(total), 0) as revenue,
+        COALESCE(AVG(total), 0) as avg_order_value
+      FROM pos_orders
+      WHERE DATE(created_at) = ? AND status = 'completed'
+    `).bind(today).first();
+
+    // This month's sales
+    const monthSales = await c.env.DB.prepare(`
+      SELECT
+        COUNT(*) as order_count,
+        COALESCE(SUM(total), 0) as revenue,
+        COALESCE(AVG(total), 0) as avg_order_value
+      FROM pos_orders
+      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'
+    `).bind(thisMonth).first();
+
+    // Yesterday's sales for comparison
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const yesterdaySales = await c.env.DB.prepare(`
+      SELECT
+        COUNT(*) as order_count,
+        COALESCE(SUM(total), 0) as revenue
+      FROM pos_orders
+      WHERE DATE(created_at) = ? AND status = 'completed'
+    `).bind(yesterdayStr).first();
+
+    // Last month for comparison
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const lastMonthStr = lastMonth.toISOString().slice(0, 7);
+
+    const lastMonthSales = await c.env.DB.prepare(`
+      SELECT
+        COUNT(*) as order_count,
+        COALESCE(SUM(total), 0) as revenue
+      FROM pos_orders
+      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'
+    `).bind(lastMonthStr).first();
+
+    // Calculate growth rates
+    const todayGrowth = yesterdaySales?.revenue > 0
+      ? ((todaySales?.revenue - yesterdaySales?.revenue) / yesterdaySales?.revenue * 100)
+      : 0;
+
+    const monthGrowth = lastMonthSales?.revenue > 0
+      ? ((monthSales?.revenue - lastMonthSales?.revenue) / lastMonthSales?.revenue * 100)
+      : 0;
+
+    return c.json({
+      success: true,
+      data: {
+        today: {
+          orders: todaySales?.order_count || 0,
+          revenue: todaySales?.revenue || 0,
+          avg_order_value: todaySales?.avg_order_value || 0,
+          growth: Math.round(todayGrowth * 100) / 100
+        },
+        month: {
+          orders: monthSales?.order_count || 0,
+          revenue: monthSales?.revenue || 0,
+          avg_order_value: monthSales?.avg_order_value || 0,
+          growth: Math.round(monthGrowth * 100) / 100
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Sales summary error:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to fetch sales summary',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
 // GET /api/sales/:id - Get single sale
 app.get('/:id', async (c: any) => {
   try {
@@ -246,93 +334,6 @@ app.post('/', async (c: any) => {
   }
 });
 
-// GET /api/sales/summary - Sales summary for dashboard
-app.get('/summary', async (c: any) => {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const thisMonth = new Date().toISOString().slice(0, 7);
-
-    // Today's sales
-    const todaySales = await c.env.DB.prepare(`
-      SELECT
-        COUNT(*) as order_count,
-        COALESCE(SUM(total), 0) as revenue,
-        COALESCE(AVG(total), 0) as avg_order_value
-      FROM pos_orders
-      WHERE DATE(created_at) = ? AND status = 'completed'
-    `).bind(today).first();
-
-    // This month's sales
-    const monthSales = await c.env.DB.prepare(`
-      SELECT
-        COUNT(*) as order_count,
-        COALESCE(SUM(total), 0) as revenue,
-        COALESCE(AVG(total), 0) as avg_order_value
-      FROM pos_orders
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'
-    `).bind(thisMonth).first();
-
-    // Yesterday's sales for comparison
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    const yesterdaySales = await c.env.DB.prepare(`
-      SELECT
-        COUNT(*) as order_count,
-        COALESCE(SUM(total), 0) as revenue
-      FROM pos_orders
-      WHERE DATE(created_at) = ? AND status = 'completed'
-    `).bind(yesterdayStr).first();
-
-    // Last month for comparison
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    const lastMonthStr = lastMonth.toISOString().slice(0, 7);
-
-    const lastMonthSales = await c.env.DB.prepare(`
-      SELECT
-        COUNT(*) as order_count,
-        COALESCE(SUM(total), 0) as revenue
-      FROM pos_orders
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'
-    `).bind(lastMonthStr).first();
-
-    // Calculate growth rates
-    const todayGrowth = yesterdaySales?.revenue > 0
-      ? ((todaySales?.revenue - yesterdaySales?.revenue) / yesterdaySales?.revenue * 100)
-      : 0;
-
-    const monthGrowth = lastMonthSales?.revenue > 0
-      ? ((monthSales?.revenue - lastMonthSales?.revenue) / lastMonthSales?.revenue * 100)
-      : 0;
-
-    return c.json({
-      success: true,
-      data: {
-        today: {
-          orders: todaySales?.order_count || 0,
-          revenue: todaySales?.revenue || 0,
-          avg_order_value: todaySales?.avg_order_value || 0,
-          growth: Math.round(todayGrowth * 100) / 100
-        },
-        month: {
-          orders: monthSales?.order_count || 0,
-          revenue: monthSales?.revenue || 0,
-          avg_order_value: monthSales?.avg_order_value || 0,
-          growth: Math.round(monthGrowth * 100) / 100
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Sales summary error:', error);
-    return c.json({
-      success: false,
-      message: 'Failed to fetch sales summary',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
-  }
-});
 
 // GET /api/sales/stats - Sales statistics
 app.get('/stats', async (c: any) => {
