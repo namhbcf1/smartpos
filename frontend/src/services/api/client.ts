@@ -1,13 +1,13 @@
 // Production API client for ComputerPOS Pro - 100% Real-time D1 Cloudflare
 import axios from 'axios';
 
-// Production API URL - use VITE_API_BASE_URL from env (do NOT append /api/v1 here).
+// Production API URL - use VITE_API_BASE_URL from env.
 // We will normalize the path in the request interceptor to avoid double-prefix issues.
 const RAW_API_URL = import.meta.env.VITE_API_BASE_URL || 'https://namhbcf-api.bangachieu2.workers.dev';
 const API_BASE_URL = RAW_API_URL.replace(/\/$/, '');
 
 const apiClient = axios.create({
-  baseURL: `${API_BASE_URL}/api/v1`,
+  baseURL: `${API_BASE_URL}/api`,
   timeout: 30000, // 30 seconds timeout for Cloudflare Workers
   headers: {
     'Content-Type': 'application/json',
@@ -34,19 +34,45 @@ apiClient.interceptors.request.use((config) => {
       .find(row => row.startsWith('auth_token='))
       ?.split('=')[1] || null;
   }
-  // Enforce JWT format
-  if (token && token.split('.').length !== 3) {
-    token = null as any;
-  }
-  
+
+  // Clean and validate token
   if (token) {
-    config.headers = config.headers ?? {};
-    config.headers['Authorization'] = `Bearer ${token}`;
+    // Remove any whitespace
+    token = token.trim();
+    const tokenParts = token.split('.');
+    console.log(`🔍 CLIENT DEBUG: Token parts: ${tokenParts.length}, First 10 chars: ${token.substring(0, 10)}`);
+
+    // More lenient JWT validation - only check if it looks like JWT
+    if (tokenParts.length !== 3 || token.length < 20) {
+      console.log(`❌ CLIENT DEBUG: Invalid JWT format - expected 3 parts, got ${tokenParts.length}, length: ${token.length}`);
+      token = null;
+    }
   }
 
-  // Always send browser timezone
+  console.log(`🔧 CLIENT INTERCEPTOR: Token found: ${!!token}, URL: ${config.url}`);
+
+  if (token) {
+    // Ensure headers object exists and set Authorization
+    if (!config.headers) {
+      config.headers = {};
+    }
+
+    // Force set Authorization header
+    config.headers['Authorization'] = `Bearer ${token}`;
+
+    // Verify the header was set
+    const authHeader = config.headers['Authorization'];
+    console.log(`✅ CLIENT INTERCEPTOR: Authorization header set for ${config.url}`);
+    console.log(`🔍 HEADER VERIFY: ${authHeader?.substring(0, 20)}...`);
+  } else {
+    console.log(`❌ CLIENT INTERCEPTOR: No token available for ${config.url}`);
+  }
+
+  // Always send browser timezone (but don't override existing headers)
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  config.headers = config.headers ?? {};
+  if (!config.headers) {
+    config.headers = {};
+  }
   config.headers['X-Timezone'] = tz;
 
   // Remove X-Session-ID header to avoid CORS issues  
@@ -59,7 +85,7 @@ apiClient.interceptors.request.use((config) => {
     config.headers['X-Tenant-ID'] = tenantId;
   }
 
-  // baseURL already includes /api/v1, no need to modify the URL
+  // baseURL already includes /api, no need to modify the URL
 
   return config;
 });
@@ -75,20 +101,20 @@ apiClient.interceptors.response.use(
 
     // Handle authentication errors
     if (error.response?.status === 401) {
-      // Try to get fresh token first before clearing
-      const freshToken = sessionStorage.getItem('auth_token');
-      if (freshToken && error.config && !error.config.__isRetry) {
-        // Mark this request as retry to prevent infinite loops
-        error.config.__isRetry = true;
-        // Update headers with fresh token
-        error.config.headers['Authorization'] = `Bearer ${freshToken}`;
-        // Retry the request
-        return apiClient.request(error.config);
+      console.log(`🔴 RESPONSE INTERCEPTOR: 401 error for ${error.config?.url}`);
+      console.log(`🔍 REQUEST HEADERS:`, error.config?.headers);
+
+      // Only clear tokens if we actually sent an Authorization header
+      const sentAuthHeader = error.config?.headers?.['Authorization'];
+      console.log(`🔍 SENT AUTH HEADER: ${sentAuthHeader ? 'YES' : 'NO'}`);
+
+      if (sentAuthHeader) {
+        console.log(`🗑️ RESPONSE DEBUG: Clearing tokens - server rejected valid auth header`);
+        sessionStorage.removeItem('auth_token');
+        document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      } else {
+        console.log(`⚠️ RESPONSE DEBUG: 401 but no auth header sent - keeping token`);
       }
-      // Only clear token if retry fails or no fresh token
-      sessionStorage.removeItem('auth_token');
-      document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      // Let components handle redirect manually
     }
 
     // Handle rate limiting
