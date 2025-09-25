@@ -281,28 +281,37 @@ const ModernSalesHistory: React.FC = () => {
   };
 
   const exportCSV = () => {
-    if (!sales) return;
+    if (!Array.isArray(sales) || sales.length === 0) {
+      toast.error('Không có dữ liệu để xuất');
+      return;
+    }
 
-    const header = 'order_number,customer_name,total_amount,status,payment_method,created_at\n';
-    const rows = sales.map(sale => [
-      sale.order_number,
-      sale.customer_name || 'Khách lẻ',
-      sale.total_cents / 100,
-      sale.status,
-      sale.payments?.[0]?.payment_method_id || '',
-      new Date(sale.created_at).toLocaleDateString('vi-VN')
-    ].join(','));
+    try {
+      const header = 'order_number,customer_name,total_amount,status,payment_method,created_at\n';
+      const rows = sales.map(sale => [
+        sale?.order_number || '',
+        sale?.customer_name || 'Khách lẻ',
+        (sale?.total_cents || 0) / 100,
+        sale?.status || '',
+        sale?.payments?.[0]?.payment_method_id || '',
+        sale?.created_at ? new Date(sale.created_at).toLocaleDateString('vi-VN') : ''
+      ].join(','));
 
-    const csv = header + rows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sales_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const csv = header + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sales_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Đã xuất file CSV thành công');
+    } catch (error) {
+      toast.error('Lỗi khi xuất file CSV');
+      console.error('Export error:', error);
+    }
   };
 
   const handleRefresh = () => {
@@ -488,14 +497,22 @@ const ModernSalesHistory: React.FC = () => {
         </Card>
 
         {/* Sales Grid */}
-        <Section title={`Đơn hàng (${(sales || []).length})`}>
+        <Section title={`Đơn hàng (${Array.isArray(sales) ? sales.length : 0})`}>
           {salesLoading ? (
             <Card>
               <LoadingSpinner className="py-12" />
             </Card>
-          ) : (sales || []).length > 0 ? (
+          ) : Array.isArray(sales) && sales.length > 0 ? (
             <Grid cols={3} gap="md">
-              {(sales || []).map((sale) => {
+              {sales.map((sale, index) => {
+                // Add safety checks for sale object
+                if (!sale || !sale.id) {
+                  console.warn(`Invalid sale at index ${index}:`, sale);
+                  return null;
+                }
+
+                try {
+
                 const statusInfo = getStatusInfo(sale.status);
                 const paymentInfo = getPaymentMethodInfo(sale.payments?.[0]?.payment_method_id || 'cash');
 
@@ -507,12 +524,12 @@ const ModernSalesHistory: React.FC = () => {
                         <div className="flex items-center space-x-3">
                           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                             <span className="text-white font-semibold text-lg">
-                              {sale.order_number.slice(-3)}
+                              {sale.order_number && sale.order_number.length >= 3 ? sale.order_number.slice(-3) : sale.order_number || 'N/A'}
                             </span>
                           </div>
                           <div>
                             <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                              #{sale.order_number}
+                              #{sale.order_number || 'N/A'}
                             </h3>
                             <p className="text-sm text-gray-600">
                               {sale.customer_name || 'Khách lẻ'}
@@ -564,11 +581,11 @@ const ModernSalesHistory: React.FC = () => {
                       {/* Amount */}
                       <div className="text-center py-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
                         <p className="text-2xl font-bold text-gray-900">
-                          {formatCurrency(sale.total_cents / 100)}
+                          {formatCurrency((sale.total_cents || 0) / 100)}
                         </p>
-                        {sale.discount_cents > 0 && (
+                        {(sale.discount_cents || 0) > 0 && (
                           <p className="text-sm text-green-600">
-                            Giảm giá: {formatCurrency(sale.discount_cents / 100)}
+                            Giảm giá: {formatCurrency((sale.discount_cents || 0) / 100)}
                           </p>
                         )}
                       </div>
@@ -580,7 +597,7 @@ const ModernSalesHistory: React.FC = () => {
                           <span>{paymentInfo.label}</span>
                         </div>
                         <span className="text-gray-500">
-                          {new Date(sale.created_at).toLocaleDateString('vi-VN')}
+                          {sale.created_at ? new Date(sale.created_at).toLocaleDateString('vi-VN') : 'N/A'}
                         </span>
                       </div>
 
@@ -594,6 +611,16 @@ const ModernSalesHistory: React.FC = () => {
                     </div>
                   </Card>
                 );
+                } catch (error) {
+                  console.error(`Error rendering sale at index ${index}:`, error, sale);
+                  return (
+                    <Card key={sale.id || index} className="p-4">
+                      <div className="text-center text-red-600">
+                        <p className="text-sm">Lỗi hiển thị đơn hàng #{sale.order_number || 'N/A'}</p>
+                      </div>
+                    </Card>
+                  );
+                }
               })}
             </Grid>
           ) : (
