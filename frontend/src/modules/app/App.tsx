@@ -37,6 +37,7 @@ const InventoryReorder = lazy(() => import('../../pages/inventory/InventoryReord
 import NewSaleFixed from '../../pages/sales/NewSaleFixed'
 import CategoriesNew from '../../pages/products/CategoriesNew'
 import BusinessIntelligencePage from '../../pages/reports/BusinessIntelligencePage'
+import ModernAnalytics from '../../pages/reports/ModernAnalytics'
 import InventoryLocations from '../../pages/inventory/InventoryLocations'
 // import TaskManagement from '../../pages/TaskManagement'
 // import HeldSales from '../../pages/pos/HeldSales'
@@ -153,7 +154,7 @@ export function App() {
           <Route path="settings" element={<SettingsNew />} />
           <Route path="settings-old" element={<Settings />} />
           <Route path="business-intelligence" element={<BusinessIntelligencePage />} />
-          <Route path="analytics" element={<BusinessIntelligencePage />} />
+          <Route path="analytics" element={<ModernAnalytics />} />
           <Route path="sales-history" element={<Sales />} />
           {/* <Route path="inventory" element={<Inventory />} /> */}
           <Route path="inventory" element={<InventoryOperations />} />
