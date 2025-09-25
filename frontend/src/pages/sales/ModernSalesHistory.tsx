@@ -6,7 +6,7 @@ import {
   Search,
   Eye,
   Printer,
-  RefundIcon as Refund,
+  Undo as Refund,
   Calendar,
   CreditCard,
   Banknote,
