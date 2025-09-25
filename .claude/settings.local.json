@@ -13,7 +13,14 @@
       "Bash(node:*)",
       "Bash(wrangler tail:*)",
       "Bash(wrangler secret:*)",
-      "Bash(wrangler pages project:*)"
+      "Bash(wrangler pages project:*)",
+      "Bash(npx wrangler pages deploy:*)",
+      "Bash(npx wrangler d1 execute:*)",
+      "WebFetch(domain:namhbcf-uk.pages.dev)",
+      "Bash(npx wrangler:*)",
+      "Bash(npm run deploy:*)",
+      "Bash(npm run:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

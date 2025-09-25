@@ -38,7 +38,7 @@ import {
   Add as AddIcon,
   Save as SaveIcon
 } from '@mui/icons-material';
-import apiClient from '../services/api/client';
+    import apiClient from '../../services/api/client';
 
 interface WorkflowStep {
   id: string;
@@ -245,7 +245,7 @@ const WarrantyWorkflow: React.FC = () => {
           
           <Grid container spacing={3}>
             {workflows.map((workflow) => (
-              <Grid item xs={12} key={workflow.id}>
+              <Grid item xs={12} key={workflow.id} component="div">
                 <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Box>
@@ -297,7 +297,7 @@ const WarrantyWorkflow: React.FC = () => {
                     </Typography>
                     <Grid container spacing={1}>
                       {workflow.steps.map((step) => (
-                        <Grid item xs={12} sm={6} md={4} key={step.id}>
+                        <Grid item xs={12} sm={6} md={4} key={step.id} component="div">
                           <Paper
                             sx={{
                               p: 1.5,
@@ -370,7 +370,7 @@ const WarrantyWorkflow: React.FC = () => {
           {selectedWorkflow && (
             <Box sx={{ pt: 2 }}>
               <Grid container spacing={3}>
-                <Grid item xs={12} md={8}>
+                <Grid item xs={12} md={8} component="div">
                   {/* Workflow Steps */}
                   <Typography variant="h6" gutterBottom>
                     Quy trình thực hiện
@@ -456,7 +456,7 @@ const WarrantyWorkflow: React.FC = () => {
                   </Stepper>
                 </Grid>
                 
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={4} component="div">
                   {/* Workflow Info */}
                   <Card variant="outlined">
                     <CardContent>
@@ -547,7 +547,7 @@ const WarrantyWorkflow: React.FC = () => {
           {selectedStep && (
             <Box sx={{ pt: 2 }}>
               <Grid container spacing={3}>
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <Typography variant="h6" gutterBottom>
                     {selectedStep.name}
                   </Typography>
@@ -556,7 +556,7 @@ const WarrantyWorkflow: React.FC = () => {
                   </Typography>
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <FormControl fullWidth>
                     <InputLabel>Trạng thái</InputLabel>
                     <Select
@@ -577,7 +577,7 @@ const WarrantyWorkflow: React.FC = () => {
                   </FormControl>
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <TextField
                     fullWidth
                     label="Người phụ trách"
@@ -590,7 +590,7 @@ const WarrantyWorkflow: React.FC = () => {
                   />
                 </Grid>
                 
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <TextField
                     fullWidth
                     label="Ghi chú"

@@ -1,48 +1,4 @@
-// Cloudflare types
-declare global {
-  interface D1Database {
-    prepare(query: string): D1PreparedStatement;
-    exec(query: string): Promise<D1Result>;
-    batch(statements: D1PreparedStatement[]): Promise<D1Result[]>;
-  }
-  
-  interface D1PreparedStatement {
-    bind(...values: any[]): D1PreparedStatement;
-    first<T = any>(): Promise<T | null>;
-    run(): Promise<D1Result>;
-    all<T = any>(): Promise<D1Result<T>>;
-  }
-  
-  interface D1Result<T = any> {
-    results: T[];
-    success: boolean;
-    meta: {
-      changes: number;
-      duration: number;
-      last_row_id: number;
-    };
-  }
-  
-  interface KVNamespace {
-    get(key: string): Promise<string | null>;
-    put(key: string, value: string): Promise<void>;
-    delete(key: string): Promise<void>;
-    list(options?: { prefix?: string; limit?: number }): Promise<{ keys: { name: string }[] }>;
-  }
-  
-  interface DurableObjectNamespace {
-    get(id: DurableObjectId): DurableObjectStub;
-    newUniqueId(): DurableObjectId;
-  }
-  
-  interface DurableObjectId {
-    toString(): string;
-  }
-  
-  interface DurableObjectStub {
-    fetch(request: Request): Promise<Response>;
-  }
-}
+// Import Cloudflare types
 
 // Environment variables interface with index signature for Hono compatibility
 export interface Env {
@@ -55,7 +11,6 @@ export interface Env {
   POS_SYNC: DurableObjectNamespace;
   WARRANTY_SYNC: DurableObjectNamespace;
   ENVIRONMENT: string;
-  API_VERSION: string;
   JWT_SECRET: string;
   ENCRYPTION_KEY: string;
   CORS_ORIGINS: string;

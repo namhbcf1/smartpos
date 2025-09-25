@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
 import { authenticate, getUser } from '../../middleware/auth';
+import { withValidation } from '../../middleware/validation';
+import { IdempotencyMiddleware } from '../../middleware/idempotency';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -8,99 +10,9 @@ const app = new Hono<{ Bindings: Env }>();
 app.use('*', authenticate);
 
 // GET /api/orders - List orders with filtering
-app.get('/', async (c: any) => {
+app.get('/', withValidation.list, async (c: any) => {
   try {
-    // Ensure orders table exists - COMPLETE SCHEMA
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS orders (
-        id TEXT PRIMARY KEY,
-        order_number TEXT UNIQUE NOT NULL,
-        customer_id TEXT,
-        user_id TEXT NOT NULL,
-        store_id TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('draft', 'pending', 'completed', 'cancelled', 'refunded')),
-        subtotal_cents INTEGER NOT NULL DEFAULT 0 CHECK (subtotal_cents >= 0),
-        discount_cents INTEGER DEFAULT 0 CHECK (discount_cents >= 0),
-        tax_cents INTEGER DEFAULT 0 CHECK (tax_cents >= 0),
-        total_cents INTEGER NOT NULL DEFAULT 0 CHECK (total_cents >= 0),
-        notes TEXT,
-        receipt_printed INTEGER DEFAULT 0,
-        customer_name TEXT,
-        customer_phone TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
-
-    // Ensure order_items table exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS order_items (
-        id TEXT PRIMARY KEY,
-        order_id TEXT NOT NULL,
-        product_id TEXT NOT NULL,
-        variant_id TEXT,
-        quantity INTEGER NOT NULL CHECK (quantity > 0),
-        unit_price_cents INTEGER NOT NULL CHECK (unit_price_cents >= 0),
-        total_price_cents INTEGER NOT NULL CHECK (total_price_cents >= 0),
-        discount_cents INTEGER DEFAULT 0 CHECK (discount_cents >= 0),
-        product_name TEXT,
-        product_sku TEXT,
-        created_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
-
-    // Add missing columns to existing orders table if they don't exist
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN order_number TEXT`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN subtotal_cents INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN discount_cents INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN tax_cents INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN total_cents INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN customer_id TEXT`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN user_id TEXT`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN store_id TEXT`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN customer_name TEXT`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN customer_phone TEXT`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN receipt_printed INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN created_at TEXT DEFAULT (datetime('now'))`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE orders ADD COLUMN updated_at TEXT DEFAULT (datetime('now'))`).run();
-    } catch (e) { /* column already exists */ }
+    // Tables are created via migrations - no runtime DDL needed
 
     const { from, to, status, q, page = '1', limit = '50' } = c.req.query();
 
@@ -112,7 +24,7 @@ app.get('/', async (c: any) => {
       FROM orders o
       WHERE 1=1
     `;
-    const params = [];
+    const params: any[] = [];
 
     // Simplified filtering to avoid column not found errors
     query += ` LIMIT ? OFFSET ?`;
@@ -122,7 +34,7 @@ app.get('/', async (c: any) => {
     let countQuery = `
       SELECT COUNT(*) as total FROM orders
     `;
-    const countParams = [];
+    const countParams: any[] = [];
 
     const [result, countResult] = await Promise.all([
       c.env.DB.prepare(query).bind(...params).all(),
@@ -163,14 +75,14 @@ app.get('/:id', async (c: any) => {
         o.customer_id,
         o.customer_name,
         o.customer_phone,
-        o.customer_email,
+        '' as customer_email,
         o.status,
-        o.subtotal,
-        o.discount,
-        o.tax,
-        o.total,
-        o.payment_method,
-        o.payment_status,
+        o.subtotal_cents / 100.0 as subtotal,
+        o.discount_cents / 100.0 as discount,
+        o.tax_cents / 100.0 as tax,
+        o.total_cents / 100.0 as total,
+        '' as payment_method,
+        'pending' as payment_status,
         o.notes,
         o.created_at,
         o.updated_at
@@ -190,10 +102,10 @@ app.get('/:id', async (c: any) => {
         poi.product_name,
         poi.product_sku,
         poi.quantity,
-        poi.unit_price,
-        poi.total_price,
-        poi.discount_amount,
-        poi.tax_amount
+        poi.unit_price_cents / 100.0 as unit_price,
+        poi.total_price_cents / 100.0 as total_price,
+        poi.discount_cents / 100.0 as discount_amount,
+        0 as tax_amount
       FROM order_items poi
       WHERE poi.order_id = ?
     `).bind(id).all();
@@ -215,7 +127,7 @@ app.get('/:id', async (c: any) => {
 });
 
 // POST /api/orders - Create order
-app.post('/', async (c: any) => {
+app.post('/', IdempotencyMiddleware.orders, withValidation.createOrder, async (c: any) => {
   try {
     const body = await c.req.json();
     const user = getUser(c);

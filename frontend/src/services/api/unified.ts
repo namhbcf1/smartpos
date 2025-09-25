@@ -31,6 +31,7 @@ apiClient.interceptors.response.use(
   (response) => {
     // Standardize response format
     return {
+      ...response,
       data: response.data,
       success: true,
       status: response.status,

@@ -69,7 +69,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
   if (loading) {
     return (
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={8} component="div">
           <Paper sx={{ p: 3, height: 400 }}>
             <Typography variant="h6" gutterBottom>
               Biểu đồ doanh thu (Đang tải...)
@@ -79,7 +79,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
             </Box>
           </Paper>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={4} component="div">
           <Paper sx={{ p: 3, height: 400 }}>
             <Typography variant="h6" gutterBottom>
               Doanh thu theo danh mục (Đang tải...)
@@ -96,7 +96,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
   return (
     <Grid container spacing={3}>
       {/* Sales Chart */}
-      <Grid item xs={12} md={8}>
+      <Grid item xs={12} md={8} component="div">
         <Card elevation={2}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
@@ -138,7 +138,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
       </Grid>
 
       {/* Category Pie Chart */}
-      <Grid item xs={12} md={4}>
+      <Grid item xs={12} md={4} component="div">
         <Card elevation={2}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
@@ -176,7 +176,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
       </Grid>
 
       {/* Top Products Bar Chart */}
-      <Grid item xs={12}>
+      <Grid item xs={12} component="div">
         <Card elevation={2}>
           <CardContent>
             <Typography variant="h6" gutterBottom>

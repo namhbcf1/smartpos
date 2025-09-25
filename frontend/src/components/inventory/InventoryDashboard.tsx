@@ -51,7 +51,7 @@ import {
   AreaChart
 } from 'recharts';
 import { formatCurrency } from '../config/constants';
-import api from '../services/api';
+import api from '../../services/api';
 
 interface DashboardData {
   summary: {

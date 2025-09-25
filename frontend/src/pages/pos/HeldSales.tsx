@@ -151,7 +151,7 @@ export default function HeldSales() {
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/80  backdrop-blur-lg shadow-lg border-b border-gray-200/50 px-6 py-6 sticky top-0 z-40">
+        className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 px-6 py-6 sticky top-0 z-40"
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -186,7 +186,7 @@ export default function HeldSales() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6">
+          className="mb-6"
         >
           <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-lg">
             <CardContent className="p-6">
@@ -198,7 +198,7 @@ export default function HeldSales() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Tìm kiếm theo mã hóa đơn, tên khách hàng hoặc số điện thoại..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300  rounded-xl bg-white  text-gray-900  placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <Button variant="outline">
@@ -215,7 +215,7 @@ export default function HeldSales() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6"
         >
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
             <CardContent className="p-6">
@@ -299,7 +299,7 @@ export default function HeldSales() {
               {loading ? (
                 <div className="text-center py-12">
                   <RefreshCw className="w-12 h-12 mx-auto mb-4 text-blue-600 animate-spin" />
-                  <p className="text-gray-500 tải danh sách...</p>">
+                  <p className="text-gray-500">Đang tải danh sách...</p>
                 </div>
               ) : filteredItems.length === 0 ? (
                 <div className="text-center py-12">
@@ -381,7 +381,7 @@ export default function HeldSales() {
                                     size="sm"
                                     onClick={() => loadSaleDetail(item.id)}
                                     variant="outline"
-                                    className="w-24">
+                                    className="w-24"
                                   >
                                     <Eye className="w-4 h-4 mr-1" />
                                     Xem
@@ -390,7 +390,7 @@ export default function HeldSales() {
                                     size="sm"
                                     onClick={() => resumeSale(item.id)}
                                     disabled={actionLoading === item.id}
-                                    className="w-24 bg-green-600 hover:bg-green-700 text-white">
+                                    className="w-24 bg-green-600 hover:bg-green-700 text-white"
                                   >
                                     {actionLoading === item.id ? (
                                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -406,7 +406,7 @@ export default function HeldSales() {
                                     onClick={() => deleteSale(item.id)}
                                     disabled={actionLoading === item.id}
                                     variant="outline"
-                                    className="w-24 text-red-600 hover:text-red-700 hover:bg-red-50">
+                                    className="w-24 text-red-600 hover:text-red-700 hover:bg-red-50"
                                   >
                                     <Trash2 className="w-4 h-4 mr-1" />
                                     Xóa
@@ -433,13 +433,13 @@ export default function HeldSales() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
             >
               {/* Modal Header */}
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 ">
@@ -456,7 +456,7 @@ export default function HeldSales() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDetail(false)}
-                    className="text-gray-500 hover:text-gray-700 ">
+                    className="text-gray-500 hover:text-gray-700"
                   >
                     <X className="w-5 h-5" />
                   </Button>
@@ -561,7 +561,7 @@ export default function HeldSales() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-700">
+                      <p className="text-gray-700">{selectedSale.notes}</p>
                     </CardContent>
                   </Card>
                 )}
@@ -578,7 +578,7 @@ export default function HeldSales() {
                       resumeSale(selectedSale.id)
                       setShowDetail(false)
                     }}
-                    className="bg-green-600 hover:bg-green-700 text-white">
+                    className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     <Play className="w-4 h-4 mr-2" />
                     Tiếp tục hóa đơn

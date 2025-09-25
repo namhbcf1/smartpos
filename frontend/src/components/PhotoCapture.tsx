@@ -227,7 +227,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
         {loading && <LinearProgress sx={{ mb: 2 }} />}
 
         <Grid container spacing={2} sx={{ height: '100%' }}>
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} md={8} component="div">
             <Card sx={{ height: '100%' }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <Box 
@@ -383,7 +383,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
           </Grid>
 
           {showMetadata && (
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} component="div">
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>

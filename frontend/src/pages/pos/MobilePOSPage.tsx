@@ -167,7 +167,7 @@ export default function MobilePOSPage() {
               variant="ghost"
               size="icon"
               onClick={() => setShowCart(true)}
-              className="relative">
+              className="relative"
             >
               <ShoppingCart className="w-6 h-6" />
               {cart.length > 0 && (
@@ -189,7 +189,7 @@ export default function MobilePOSPage() {
             placeholder="Tìm sản phẩm..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -281,7 +281,7 @@ export default function MobilePOSPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                            className="w-8 h-8">
+                            className="w-8 h-8"
                           >
                             <Minus className="w-4 h-4" />
                           </Button>
@@ -290,7 +290,7 @@ export default function MobilePOSPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                            className="w-8 h-8">
+                            className="w-8 h-8"
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -321,8 +321,8 @@ export default function MobilePOSPage() {
                   
                   <Button
                     onClick={() => setShowPayment(true)}
-                    className="w-full">
-                    size="lg"
+                    className="w-full"
+                  size="lg"
                     disabled={isProcessing}
                   >
                     <CreditCard className="w-5 h-5 mr-2" />
@@ -375,7 +375,7 @@ export default function MobilePOSPage() {
                 <Button
                   variant="ghost"
                   onClick={() => setShowPayment(false)}
-                  className="flex-1">
+                  className="flex-1"
                 >
                   Hủy
                 </Button>

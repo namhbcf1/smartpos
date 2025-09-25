@@ -220,9 +220,9 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
         <DialogContent>
           <Grid container spacing={3}>
             {/* Header Information */}
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <TextField
                     fullWidth
                     label="Số phiếu"
@@ -231,7 +231,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <DatePicker
                     label="Ngày"
                     value={new Date(formData.date)}
@@ -239,7 +239,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                     slotProps={{ textField: { size: 'small', fullWidth: true } }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={type === 'transfer' ? 6 : 12}>
+                <Grid item xs={12} sm={type === 'transfer' ? 6 : 12} component="div">
                   <FormControl fullWidth size="small">
                     <InputLabel>Kho {type === 'transfer' ? 'nguồn' : ''}</InputLabel>
                     <Select
@@ -255,7 +255,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                   </FormControl>
                 </Grid>
                 {type === 'transfer' && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={6} component="div">
                     <FormControl fullWidth size="small">
                       <InputLabel>Kho đích</InputLabel>
                       <Select
@@ -271,7 +271,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                     </FormControl>
                   </Grid>
                 )}
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <TextField
                     fullWidth
                     label="Ghi chú"
@@ -286,13 +286,13 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
             </Grid>
 
             {/* Add Item Section */}
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Typography variant="h6" gutterBottom>
                 Thêm sản phẩm
               </Typography>
               <Box p={2} border={1} borderColor="grey.300" borderRadius={1}>
                 <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={4} component="div">
                     <Autocomplete
                       options={products}
                       getOptionLabel={(option) => `${option.name} (${option.sku})`}
@@ -303,7 +303,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                       )}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={2}>
+                  <Grid item xs={12} sm={2} component="div">
                     <TextField
                       fullWidth
                       label="Số lượng"
@@ -313,7 +313,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                       size="small"
                     />
                   </Grid>
-                  <Grid item xs={12} sm={2}>
+                  <Grid item xs={12} sm={2} component="div">
                     <TextField
                       fullWidth
                       label="Đơn giá"
@@ -323,7 +323,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                       size="small"
                     />
                   </Grid>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={3} component="div">
                     <TextField
                       fullWidth
                       label="Ghi chú"
@@ -332,7 +332,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                       size="small"
                     />
                   </Grid>
-                  <Grid item xs={12} sm={1}>
+                  <Grid item xs={12} sm={1} component="div">
                     <Button
                       variant="contained"
                       onClick={addItem}
@@ -348,7 +348,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
             </Grid>
 
             {/* Items List */}
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Typography variant="h6" gutterBottom>
                 Danh sách sản phẩm ({formData.items.length})
               </Typography>
@@ -361,12 +361,12 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                   {formData.items.map((item, index) => (
                     <Box key={item.id} p={2} border={1} borderColor="grey.300" borderRadius={1} mb={1}>
                       <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm={4}>
+                        <Grid item xs={12} sm={4} component="div">
                           <Typography variant="body2" fontWeight="bold">
                             {item.product_name}
                           </Typography>
                         </Grid>
-                        <Grid item xs={12} sm={2}>
+                        <Grid item xs={12} sm={2} component="div">
                           <TextField
                             fullWidth
                             label="Số lượng"
@@ -376,7 +376,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                             size="small"
                           />
                         </Grid>
-                        <Grid item xs={12} sm={2}>
+                        <Grid item xs={12} sm={2} component="div">
                           <TextField
                             fullWidth
                             label="Đơn giá"
@@ -386,7 +386,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                             size="small"
                           />
                         </Grid>
-                        <Grid item xs={12} sm={2}>
+                        <Grid item xs={12} sm={2} component="div">
                           <Typography variant="body2" fontWeight="bold">
                             {new Intl.NumberFormat('vi-VN', {
                               style: 'currency',
@@ -394,7 +394,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
                             }).format(item.total_amount)}
                           </Typography>
                         </Grid>
-                        <Grid item xs={12} sm={1}>
+                        <Grid item xs={12} sm={1} component="div">
                           <IconButton
                             onClick={() => removeItem(item.id)}
                             color="error"
@@ -412,7 +412,7 @@ const StockMovementModal: React.FC<StockMovementModalProps> = ({
 
             {/* Total Summary */}
             {formData.items.length > 0 && (
-              <Grid item xs={12}>
+              <Grid item xs={12} component="div">
                 <Box p={2} bgcolor="grey.50" borderRadius={1}>
                   <Typography variant="h6" align="right">
                     Tổng tiền: {new Intl.NumberFormat('vi-VN', {

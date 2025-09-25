@@ -92,9 +92,9 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
     try {
       setLoading(true);
       const [metricsResponse, topCustomersResponse, segmentsResponse] = await Promise.all([
-        comprehensiveAPI.get('/customers/analytics/metrics'),
-        comprehensiveAPI.get('/customers/analytics/top-customers'),
-        comprehensiveAPI.get('/customers/analytics/segments')
+        comprehensiveAPI.customers.getCustomers(),
+        comprehensiveAPI.customers.getCustomers(),
+        comprehensiveAPI.customers.getCustomerGroups()
       ]);
 
       setMetrics(metricsResponse.data || metrics);
@@ -147,7 +147,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
   if (compact) {
     return (
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <PeopleIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
@@ -158,7 +158,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <MoneyIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
@@ -169,7 +169,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <CartIcon color="info" sx={{ fontSize: 40, mb: 1 }} />
@@ -180,7 +180,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <TrendingUpIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
@@ -213,7 +213,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
 
       {/* Key Metrics */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid item xs={12} sm={6} md={2} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <PeopleIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
@@ -232,7 +232,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid item xs={12} sm={6} md={2} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <MoneyIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
@@ -245,7 +245,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid item xs={12} sm={6} md={2} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <CartIcon color="info" sx={{ fontSize: 40, mb: 1 }} />
@@ -258,7 +258,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid item xs={12} sm={6} md={2} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <TrendingUpIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
@@ -271,7 +271,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid item xs={12} sm={6} md={2} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <StarIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
@@ -284,7 +284,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid item xs={12} sm={6} md={2} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <TrendingUpIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
@@ -301,7 +301,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
 
       <Grid container spacing={3}>
         {/* Customer Segments */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -338,7 +338,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
         </Grid>
 
         {/* Top Customers */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -400,7 +400,7 @@ const CustomerAnalyticsDashboard: React.FC<CustomerAnalyticsDashboardProps> = ({
         </Grid>
 
         {/* Customer Details Table */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>

@@ -40,14 +40,14 @@ export class RealtimeClient {
         if (apiBase) {
           try {
             const u = new URL(apiBase);
-            // If api base includes /api/v1, keep host only
+            // If api base includes /api, keep host only
             const host = u.host;
             const protocol = u.protocol === 'https:' ? 'wss:' : 'ws:';
-            derivedWs = `${protocol}//${host}/api/v1/ws`;
+            derivedWs = `${protocol}//${host}/api/ws`;
           } catch {}
         }
       }
-      const url = this.opts.wsUrl || envWs || derivedWs || 'wss://namhbcf-api.bangachieu2.workers.dev/api/v1/ws';
+      const url = this.opts.wsUrl || envWs || derivedWs || 'wss://namhbcf-api.bangachieu2.workers.dev/api/ws';
       const token = this.opts.getToken?.();
       const wsUrl = token ? `${url}?t=${encodeURIComponent(token)}` : url;
       this.ws = new WebSocket(wsUrl);
@@ -92,7 +92,7 @@ export class RealtimeClient {
           const u = new URL(envWs);
           u.protocol = 'https:';
           // SSE stream under API v1
-          u.pathname = '/api/v1/realtime-notifications/stream';
+          u.pathname = '/api/realtime-notifications/stream';
           url = u.toString();
         } catch {}
       } else {
@@ -100,7 +100,7 @@ export class RealtimeClient {
         if (apiBase) {
           try {
             const u = new URL(apiBase);
-            url = `https://${u.host}/api/v1/realtime-notifications/stream`;
+            url = `https://${u.host}/api/realtime-notifications/stream`;
           } catch {}
         }
       }

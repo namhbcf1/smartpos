@@ -25,7 +25,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import api from '../services/api';
+import api from '../../services/api';
 
 interface WarrantyTrend {
   id: string;

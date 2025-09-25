@@ -152,8 +152,8 @@ app.get('/cart',
         ORDER BY ci.created_at DESC
       `).bind(userId, tenantId).all();
 
-      const subtotal = cartItems.results?.reduce((sum: number, item: any) => 
-        sum + (item.line_total || 0), 0) || 0;
+      const subtotal = (cartItems.results || []).reduce((sum: number, item: any) => 
+        sum + (item.line_total || 0), 0);
 
       const cartSummary = {
         items: cartItems.results || [],
@@ -420,7 +420,7 @@ app.post('/checkout',
       const totalAmount = taxableAmount + taxAmount;
 
       // Validate payment amounts
-      const totalPaid = data.payments.reduce((sum, payment) => sum + payment.amount, 0);
+      const totalPaid = (data.payments as Array<{ amount: number }>).reduce((sum: number, payment: { amount: number }) => sum + payment.amount, 0);
       if (Math.abs(totalPaid - totalAmount) > 0.01) {
         return c.json(createErrorResponse('Payment amount does not match total'), 400);
       }
@@ -516,7 +516,7 @@ app.post('/checkout',
           total_amount: totalAmount,
           customer_name: data.customer_info.customer_name,
           items_count: cartItems.results.length,
-          payment_methods: data.payments.map(p => p.payment_method),
+          payment_methods: (data.payments as Array<{ payment_method: string }>).map((p: { payment_method: string }) => p.payment_method),
           cashier: userId,
           timestamp: new Date().toISOString()
         });

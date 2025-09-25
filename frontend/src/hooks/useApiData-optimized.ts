@@ -4,13 +4,13 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { API_V1_BASE_URL } from '../services/api';
+import { API_BASE_URL } from '../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 
 // Optimized API configuration
 const API_CONFIG = {
-  baseURL: API_V1_BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

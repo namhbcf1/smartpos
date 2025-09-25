@@ -227,7 +227,7 @@ const ModernProducts: React.FC = () => {
       setLoading(true);
       const response = await posApi.getProducts(pageParam, limitParam);
       if (response.success && response.data) {
-        const productsData = response.data.data || [];
+        const productsData = Array.isArray(response.data) ? response.data : (response.data.data || []);
         // Transform API data to match our interface
         const transformedProducts = productsData.map((product: any) => ({
           id: product.id || `temp-${Date.now()}`,
@@ -489,14 +489,68 @@ const ModernProducts: React.FC = () => {
     }
   };
 
-  const handleImportExcel = () => {
-    toast.success('Chức năng import Excel sẽ được triển khai');
-    // Implement Excel import functionality
+  const handleImportExcel = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length <= 1) { toast.error('File trống'); return; }
+        const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const idx = (name: string) => header.indexOf(name);
+        let ok = 0, fail = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',');
+          const body: any = {
+            name: cols[idx('name')] || cols[idx('ten')] || '',
+            sku: cols[idx('sku')] || '',
+            price: Number(cols[idx('price')] || 0),
+            cost_price: Number(cols[idx('cost_price')] || cols[idx('cost')] || 0),
+            category_id: cols[idx('category_id')] || '',
+            brand: cols[idx('brand')] || '',
+            stock: Number(cols[idx('stock')] || 0),
+            is_active: (cols[idx('is_active')] || '1') !== '0'
+          };
+          try {
+            const res = await posApi.createProduct(body);
+            if (res.success) ok++; else fail++;
+          } catch { fail++; }
+        }
+        toast.success(`Nhập CSV xong: ${ok} thành công, ${fail} lỗi`);
+        loadProducts();
+      } catch (e) {
+        toast.error('Nhập CSV thất bại');
+      }
+    };
+    input.click();
   };
 
   const handleExportExcel = () => {
-    toast.success('Đang xuất dữ liệu ra Excel...');
-    // Implement Excel export functionality
+    const header = 'id,name,sku,price,cost_price,stock,category,brand\n';
+    const rows = sortedProducts.map(p => [
+      p.id,
+      (p.name || '').replace(/,/g, ' '),
+      p.sku,
+      p.price,
+      p.cost_price,
+      p.stock,
+      (p.category_name || '').replace(/,/g, ' '),
+      (p.brand_name || '').replace(/,/g, ' ')
+    ].join(','));
+    const csv = header + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleAddProduct = () => {

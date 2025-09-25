@@ -283,7 +283,7 @@ export default function EnhancedPOSDashboard({
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Doanh thu hôm nay"
             value={stats.todaySales}
@@ -293,7 +293,7 @@ export default function EnhancedPOSDashboard({
             delay={100}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Số đơn hàng"
             value={stats.todayOrders}
@@ -304,7 +304,7 @@ export default function EnhancedPOSDashboard({
             delay={200}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Khách hàng"
             value={stats.todayCustomers}
@@ -315,7 +315,7 @@ export default function EnhancedPOSDashboard({
             delay={300}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Cảnh báo kho"
             value={stats.lowStockItems}
@@ -329,7 +329,7 @@ export default function EnhancedPOSDashboard({
 
       <Grid container spacing={3}>
         {/* Recent Transactions */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <Zoom in={!isLoading} style={{ transitionDelay: '500ms' }}>
             <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0' }}>
               <CardContent sx={{ p: 3 }}>
@@ -381,7 +381,7 @@ export default function EnhancedPOSDashboard({
         </Grid>
 
         {/* Top Selling Products */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <Zoom in={!isLoading} style={{ transitionDelay: '600ms' }}>
             <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0' }}>
               <CardContent sx={{ p: 3 }}>
@@ -426,7 +426,7 @@ export default function EnhancedPOSDashboard({
         </Grid>
 
         {/* Alerts */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <Fade in={!isLoading} timeout={800}>
             <Box>
               <Typography variant="h6" fontWeight="600" sx={{ mb: 2 }}>

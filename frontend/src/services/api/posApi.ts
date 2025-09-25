@@ -85,11 +85,12 @@ class POSApiService {
     try {
       console.log(`🚀 Making request to: ${endpoint}`);
 
-      // Check token before making request
-      const token = sessionStorage.getItem('auth_token');
+      // Check token before making request - rely on client.ts interceptor to add Authorization header
+      const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
       console.log(`🔑 Auth token exists: ${!!token}`);
       if (token) {
         console.log(`🔑 Token preview: ${token.substring(0, 20)}...`);
+        console.log(`🔧 Relying on client.ts interceptor to add Authorization header`);
       }
 
       let response;
@@ -121,7 +122,7 @@ class POSApiService {
         return response.data;
       } else if (typeof response === 'object' && response.hasOwnProperty('success')) {
         // Direct structured response (from interceptor error handling)
-        return response;
+        return { ...response, success: true };
       } else {
         // Fallback for unexpected response structure
         console.warn('❌ Unexpected response structure:', response);
@@ -223,7 +224,7 @@ class POSApiService {
     }
   }
 
-  async getTopProducts(limit = 10, from?: string, to?: string): Promise<ApiResponse<Product[]>> {
+  async getTopProducts(limit = 10, _from?: string, _to?: string): Promise<ApiResponse<Product[]>> {
     try {
       // Use sales/summary endpoint to get top products data
       const response = await this.request<any>(`/sales/summary`);
@@ -298,18 +299,20 @@ class POSApiService {
     });
   }
 
-  // Categories API - Direct D1 connection
+  // Categories API - Use centralized authenticated client
   async getCategories(): Promise<ApiResponse<Category[]>> {
     try {
-      const response = await this.request<Category[]>('/categories');
-      console.log('🔍 Categories Raw Response:', response);
-      return response;
+      const res = await apiClient.get('/categories');
+      const data = res?.data;
+      if (data && data.success && Array.isArray(data.data)) {
+        return { success: true, data: data.data } as any;
+      }
+      return { success: false, error: data?.message || 'Failed to fetch categories' } as any;
     } catch (error) {
-      console.error('🚨 Categories Request Error:', error);
-      // Return a proper error response instead of throwing
+      console.error('❌ POSApi: Categories error:', error);
       return {
         success: false,
-        error: error.message || 'Failed to fetch categories'
+        error: (error as any).message || 'Failed to fetch categories'
       };
     }
   }
@@ -1387,7 +1390,7 @@ class POSApiService {
   }
 
   getWarrantyExportCsvUrl(): string {
-    // apiClient baseURL already on /api/v1
+    // apiClient baseURL already on /api
     return `${(apiClient.defaults.baseURL || '').replace(/\/$/, '')}/warranties/export.csv`;
   }
 

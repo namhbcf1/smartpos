@@ -32,8 +32,8 @@ const DraftStockInSchema = z.object({
   items: z.array(StockInItemSchema).optional().default([])
 });
 
-// POST /api/v1/inventory/stock-in/drafts - Save draft
-app.post('/drafts', validateRequest(DraftStockInSchema), async (c: any) => {
+// POST /api/inventory/stock-in/drafts - Save draft
+app.post('/drafts', validateRequest({ body: DraftStockInSchema }), async (c: any) => {
   try {
     const body = await c.req.json() as any;
     const user = c.get('jwtPayload') as any;
@@ -109,8 +109,8 @@ app.post('/drafts', validateRequest(DraftStockInSchema), async (c: any) => {
   }
 });
 
-// POST /api/v1/inventory/stock-in - Create stock-in
-app.post('/', validateRequest(CreateStockInSchema), async (c: any) => {
+// POST /api/inventory/stock-in - Create stock-in
+app.post('/', validateRequest({ body: CreateStockInSchema }), async (c: any) => {
   try {
     const body = await c.req.json() as any;
     const user = c.get('jwtPayload') as any;
@@ -209,7 +209,7 @@ app.post('/', validateRequest(CreateStockInSchema), async (c: any) => {
   }
 });
 
-// GET /api/v1/inventory/stock-in/:id - Get stock-in detail
+// GET /api/inventory/stock-in/:id - Get stock-in detail
 app.get('/:id', async (c: any) => {
   try {
     const id = c.req.param('id');
@@ -261,7 +261,7 @@ app.get('/:id', async (c: any) => {
   }
 });
 
-// GET /api/v1/inventory/stock-in - List stock-ins
+// GET /api/inventory/stock-in - List stock-ins
 app.get('/', async (c: any) => {
   try {
     const page = parseInt(c.req.query('page') || '1');
@@ -328,7 +328,7 @@ app.get('/', async (c: any) => {
   }
 });
 
-// PUT /api/v1/inventory/stock-in/:id - Update stock-in
+// PUT /api/inventory/stock-in/:id - Update stock-in
 app.put('/:id', async (c: any) => {
   try {
     const id = c.req.param('id');
@@ -383,7 +383,7 @@ app.put('/:id', async (c: any) => {
   }
 });
 
-// DELETE /api/v1/inventory/stock-in/:id - Delete stock-in (only drafts)
+// DELETE /api/inventory/stock-in/:id - Delete stock-in (only drafts)
 app.delete('/:id', async (c: any) => {
   try {
     const id = c.req.param('id');

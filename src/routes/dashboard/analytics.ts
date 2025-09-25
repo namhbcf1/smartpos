@@ -377,13 +377,13 @@ app.get('/sales-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key-20
       comparison,
       drilldown: {
         orders: {
-          link: `/api/v1/orders?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}${outletId ? `&outlet_id=${encodeURIComponent(outletId as string)}` : ''}`
+          link: `/api/orders?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}${outletId ? `&outlet_id=${encodeURIComponent(outletId as string)}` : ''}`
         },
         products: {
-          link: `/api/v1/analytics-advanced/products/performance?period=month`
+          link: `/api/analytics-advanced/products/performance?period=month`
         },
         categories: {
-          link: `/api/v1/analytics-advanced/categories/performance?period=month`
+          link: `/api/analytics-advanced/categories/performance?period=month`
         }
       }
     };

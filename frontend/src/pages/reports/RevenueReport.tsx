@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
-  Grid,
+  
   Card,
   CardContent,
   Box,
@@ -26,6 +26,7 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   MonetizationOn as MoneyIcon,
@@ -41,8 +42,6 @@ import {
   Timeline as TrendIcon
 } from '@mui/icons-material';
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   XAxis,
@@ -249,7 +248,7 @@ const RevenueReport: React.FC = () => {
           Bộ lọc báo cáo
         </Typography>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={3}>
+          <Grid xs={12} md={3}>
             <TextField
               fullWidth
               label="Từ ngày"
@@ -259,7 +258,7 @@ const RevenueReport: React.FC = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid xs={12} md={3}>
             <TextField
               fullWidth
               label="Đến ngày"
@@ -269,7 +268,7 @@ const RevenueReport: React.FC = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid xs={12} md={3}>
             <FormControl fullWidth>
               <InputLabel>Cửa hàng</InputLabel>
               <Select
@@ -283,7 +282,7 @@ const RevenueReport: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid xs={12} md={3}>
             <Button
               fullWidth
               variant="contained"
@@ -298,7 +297,7 @@ const RevenueReport: React.FC = () => {
 
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -323,7 +322,7 @@ const RevenueReport: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -346,7 +345,7 @@ const RevenueReport: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -369,7 +368,7 @@ const RevenueReport: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -395,7 +394,7 @@ const RevenueReport: React.FC = () => {
 
       {/* Charts and Insights */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} lg={8}>
+        <Grid xs={12} lg={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -420,7 +419,7 @@ const RevenueReport: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} lg={4}>
+        <Grid xs={12} lg={4}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>

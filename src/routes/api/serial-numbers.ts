@@ -3,7 +3,7 @@ import { Env } from '../../types';
 
 const app = new Hono<{ Bindings: Env }>();
 
-// GET /api/v1/serial-numbers - Danh sách số seri
+// GET /api/serial-numbers - Danh sách số seri
 app.get('/', async (c: any) => {
   try {
     const { page = '1', limit = '50', product_id, status, customer_id, search } = c.req.query();
@@ -98,7 +98,7 @@ app.get('/', async (c: any) => {
   }
 });
 
-// POST /api/v1/serial-numbers - Tạo số seri mới
+// POST /api/serial-numbers - Tạo số seri mới
 app.post('/', async (c: any) => {
   try {
     const data = await c.req.json();
@@ -181,7 +181,7 @@ app.post('/', async (c: any) => {
   }
 });
 
-// PUT /api/v1/serial-numbers/:id - Cập nhật số seri
+// PUT /api/serial-numbers/:id - Cập nhật số seri
 app.put('/:id', async (c: any) => {
   try {
     const id = c.req.param('id');
@@ -287,7 +287,7 @@ app.put('/:id', async (c: any) => {
   }
 });
 
-// DELETE /api/v1/serial-numbers/:id - Xóa số seri
+// DELETE /api/serial-numbers/:id - Xóa số seri
 app.delete('/:id', async (c: any) => {
   try {
     const id = c.req.param('id');
@@ -338,7 +338,7 @@ app.delete('/:id', async (c: any) => {
   }
 });
 
-// GET /api/v1/serial-numbers/stats - Thống kê số seri
+// GET /api/serial-numbers/stats - Thống kê số seri
 app.get('/stats', async (c: any) => {
   try {
     // Get serial number stats
@@ -416,7 +416,7 @@ app.get('/stats', async (c: any) => {
   }
 });
 
-// POST /api/v1/serial-numbers/bulk - Tạo hàng loạt
+// POST /api/serial-numbers/bulk - Tạo hàng loạt
 app.post('/bulk', async (c: any) => {
   try {
     const data = await c.req.json();
@@ -513,7 +513,7 @@ app.post('/bulk', async (c: any) => {
   }
 });
 
-// GET /api/v1/serial-numbers/export - Xuất dữ liệu
+// GET /api/serial-numbers/export - Xuất dữ liệu
 app.get('/export', async (c: any) => {
   try {
     const { format = 'json', product_id, status, customer_id } = c.req.query();

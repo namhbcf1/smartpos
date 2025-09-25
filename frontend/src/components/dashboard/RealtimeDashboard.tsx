@@ -198,12 +198,12 @@ const RealtimeDashboard: React.FC = () => {
     <Box>
       <Grid container spacing={3}>
         {/* Connection Status */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <RealtimeStatus />
         </Grid>
 
         {/* Real-time Stats Cards */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -245,7 +245,7 @@ const RealtimeDashboard: React.FC = () => {
           </motion.div>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -287,7 +287,7 @@ const RealtimeDashboard: React.FC = () => {
           </motion.div>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -326,7 +326,7 @@ const RealtimeDashboard: React.FC = () => {
           </motion.div>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -366,7 +366,7 @@ const RealtimeDashboard: React.FC = () => {
         </Grid>
 
         {/* Live Notifications */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -377,7 +377,7 @@ const RealtimeDashboard: React.FC = () => {
         </Grid>
 
         {/* Real-time Activities */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -463,7 +463,7 @@ const RealtimeDashboard: React.FC = () => {
         </Grid>
 
         {/* System Performance */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -486,7 +486,7 @@ const RealtimeDashboard: React.FC = () => {
                 </Stack>
 
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6} md={3}>
+                  <Grid item xs={12} sm={6} md={3} component="div">
                     <Paper sx={{ p: 2, textAlign: 'center' }}>
                       <Typography variant="body2" color="text.secondary">
                         Kết nối
@@ -498,7 +498,7 @@ const RealtimeDashboard: React.FC = () => {
                       />
                     </Paper>
                   </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  <Grid item xs={12} sm={6} md={3} component="div">
                     <Paper sx={{ p: 2, textAlign: 'center' }}>
                       <Typography variant="body2" color="text.secondary">
                         Tin nhắn gửi
@@ -508,7 +508,7 @@ const RealtimeDashboard: React.FC = () => {
                       </Typography>
                     </Paper>
                   </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  <Grid item xs={12} sm={6} md={3} component="div">
                     <Paper sx={{ p: 2, textAlign: 'center' }}>
                       <Typography variant="body2" color="text.secondary">
                         Cảnh báo
@@ -518,7 +518,7 @@ const RealtimeDashboard: React.FC = () => {
                       </Typography>
                     </Paper>
                   </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  <Grid item xs={12} sm={6} md={3} component="div">
                     <Paper sx={{ p: 2, textAlign: 'center' }}>
                       <Typography variant="body2" color="text.secondary">
                         Hoạt động

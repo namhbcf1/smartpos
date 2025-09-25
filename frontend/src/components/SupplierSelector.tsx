@@ -164,7 +164,7 @@ const SupplierSelector: React.FC<SupplierSelectorProps> = ({
               Supplier Details
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <Typography variant="body2" color="text.secondary">
                   Contact Person
                 </Typography>
@@ -172,7 +172,7 @@ const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                   {selectedSupplier.contact_person || 'N/A'}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <Typography variant="body2" color="text.secondary">
                   Phone
                 </Typography>
@@ -183,7 +183,7 @@ const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <Typography variant="body2" color="text.secondary">
                   Email
                 </Typography>
@@ -194,7 +194,7 @@ const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <Typography variant="body2" color="text.secondary">
                   Performance Rating
                 </Typography>
@@ -211,7 +211,7 @@ const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                 </Box>
               </Grid>
               {selectedSupplier.total_orders && (
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <Typography variant="body2" color="text.secondary">
                     Total Orders
                   </Typography>
@@ -223,7 +223,7 @@ const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                 </Grid>
               )}
               {selectedSupplier.last_order_date && (
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <Typography variant="body2" color="text.secondary">
                     Last Order
                   </Typography>

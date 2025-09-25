@@ -53,65 +53,23 @@ const CustomerDebts: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [debtRange, setDebtRange] = useState('all')
 
-  // Mock data
+  // Load customer debts from API
   useEffect(() => {
-    const mockDebts: CustomerDebt[] = [
-      {
-        id: '1',
-        customerId: 'CUST001',
-        customerName: 'Nguyễn Văn A',
-        customerPhone: '0123456789',
-        customerEmail: 'nguyenvana@email.com',
-        totalDebt: 5000000,
-        currentDebt: 2500000,
-        paidAmount: 2500000,
-        lastPaymentDate: '2024-01-10T10:30:00Z',
-        lastOrderDate: '2024-01-15T14:20:00Z',
-        totalOrders: 15,
-        creditLimit: 10000000,
-        status: 'active',
-        notes: 'Khách hàng VIP',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-15T14:20:00Z'
-      },
-      {
-        id: '2',
-        customerId: 'CUST002',
-        customerName: 'Trần Thị B',
-        customerPhone: '0987654321',
-        customerEmail: 'tranthib@email.com',
-        totalDebt: 3200000,
-        currentDebt: 3200000,
-        paidAmount: 0,
-        lastPaymentDate: '2024-01-05T09:15:00Z',
-        lastOrderDate: '2024-01-12T16:45:00Z',
-        totalOrders: 8,
-        creditLimit: 5000000,
-        status: 'overdue',
-        notes: 'Quá hạn thanh toán',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-12T16:45:00Z'
-      },
-      {
-        id: '3',
-        customerId: 'CUST003',
-        customerName: 'Lê Văn C',
-        customerPhone: '0369258147',
-        customerEmail: 'levanc@email.com',
-        totalDebt: 1500000,
-        currentDebt: 0,
-        paidAmount: 1500000,
-        lastPaymentDate: '2024-01-14T11:30:00Z',
-        lastOrderDate: '2024-01-14T11:30:00Z',
-        totalOrders: 3,
-        creditLimit: 3000000,
-        status: 'active',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-14T11:30:00Z'
+    const loadDebts = async () => {
+      try {
+        // TODO: Replace with actual API call when endpoint is available
+        // const response = await api.get('/customer-debts');
+        // setDebts(response.data);
+        setDebts([]) // Empty state for production
+      } catch (error) {
+        console.error('Failed to load customer debts:', error)
+        setDebts([])
+      } finally {
+        setLoading(false)
       }
-    ]
-    setDebts(mockDebts)
-    setLoading(false)
+    }
+
+    loadDebts()
   }, [])
 
   const formatCurrency = (amount: number) => {
@@ -259,7 +217,7 @@ const CustomerDebts: React.FC = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full p-2 border rounded-md">
+                className="w-full p-2 border rounded-md"
               >
                 <option value="all">Tất cả</option>
                 <option value="active">Hoạt động</option>
@@ -272,7 +230,7 @@ const CustomerDebts: React.FC = () => {
               <select
                 value={debtRange}
                 onChange={(e) => setDebtRange(e.target.value)}
-                className="w-full p-2 border rounded-md">
+                className="w-full p-2 border rounded-md"
               >
                 <option value="all">Tất cả</option>
                 <option value="low">Dưới 1M</option>

@@ -35,7 +35,7 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import api from '../services/api/client';
+import api from '../../services/api/client';
 import {
   Notifications as NotificationIcon,
   Email as EmailIcon,
@@ -56,7 +56,7 @@ import {
   VolumeUp as SoundIcon,
   Visibility as ViewIcon
 } from '@mui/icons-material';
-import apiClient from '../services/api/client';
+import apiClient from '../../services/api/client';
 
 interface NotificationRule {
   id: string;
@@ -345,7 +345,7 @@ const WarrantyNotifications: React.FC = () => {
       {currentTab === 0 && (
         <Grid container spacing={3}>
           {rules.map((rule) => (
-            <Grid item xs={12} md={6} key={rule.id}>
+            <Grid item xs={12} md={6} key={rule.id} component="div">
             <Card>
               <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -425,7 +425,7 @@ const WarrantyNotifications: React.FC = () => {
           
           <Grid container spacing={3}>
             {templates.map((template) => (
-              <Grid item xs={12} md={6} key={template.id}>
+              <Grid item xs={12} md={6} key={template.id} component="div">
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>

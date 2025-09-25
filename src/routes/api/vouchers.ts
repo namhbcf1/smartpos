@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
+import { IdempotencyMiddleware } from '../../middleware/idempotency';
+import { withValidation } from '../../middleware/validation';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -118,7 +120,7 @@ app.post('/apply', async (c: any) => {
 });
 
 // GET /api/vouchers - List vouchers
-app.get('/', async (c: any) => {
+app.get('/', withValidation.list, async (c: any) => {
   try {
     // Return empty array for now (table may not exist)
     return c.json({
@@ -147,7 +149,7 @@ app.get('/', async (c: any) => {
 });
 
 // POST /api/vouchers - Create voucher
-app.post('/', async (c: any) => {
+app.post('/', IdempotencyMiddleware.api, async (c: any) => {
   try {
     const tenantId = c.req.header('X-Tenant-ID') || 'default';
     const { code, type, value, min_total, start_at, end_at, usage_limit } = await c.req.json();

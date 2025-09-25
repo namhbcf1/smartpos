@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon, Store, CreditCard, Package,
-  ShoppingCart, Database, Save, AlertCircle, CheckCircle,
-  Loader, Bell, Shield, Globe
+  ShoppingCart, Database, Save, CheckCircle,
+  Loader
 } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import api from '../../services/api';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { toast } from 'react-hot-toast';
-import api from '../../utils/comprehensive-api';
 
 interface StoreSettings {
   name: string;

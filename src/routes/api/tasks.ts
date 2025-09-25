@@ -20,61 +20,11 @@ const taskSchema = z.object({
 })
 
 async function ensureTables(db: D1Database) {
-  try {
-    // Create tasks table
-    await db.prepare(`
-      CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT,
-        category_id INTEGER,
-        assigned_to INTEGER,
-        priority TEXT,
-        status TEXT,
-        due_date TEXT,
-        estimated_hours REAL,
-        actual_hours REAL,
-        progress INTEGER,
-        notes TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run()
-
-    // Create task_comments table
-    await db.prepare(`
-      CREATE TABLE IF NOT EXISTS task_comments (
-        id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
-        author_id INTEGER,
-        content TEXT NOT NULL,
-        created_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run()
-
-    // Create task_checklist table
-    await db.prepare(`
-      CREATE TABLE IF NOT EXISTS task_checklist (
-        id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
-        title TEXT NOT NULL,
-        is_done INTEGER DEFAULT 0,
-        order_index INTEGER DEFAULT 0,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run()
-  } catch (error) {
-    console.error('Error creating tables:', error)
-    // Don't throw error, just log it
-  }
+  // Tables are created via migrations - no runtime DDL needed
 }
 
 async function ensureTaskColumns(db: D1Database) {
-  // Add optional columns, ignore errors if already exist
-  try { await db.prepare(`ALTER TABLE tasks ADD COLUMN assignees_json TEXT`).run() } catch (_) {}
-  try { await db.prepare(`ALTER TABLE tasks ADD COLUMN watchers_json TEXT`).run() } catch (_) {}
-  try { await db.prepare(`ALTER TABLE tasks ADD COLUMN order_index INTEGER DEFAULT 0`).run() } catch (_) {}
+  // Columns are created via migrations - no runtime DDL needed
 }
 
 // GET /api/tasks

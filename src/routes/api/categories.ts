@@ -112,15 +112,12 @@ app.get('/', async (c: any) => {
 app.get('/:id', async (c: any) => {
   try {
     const id = c.req.param('id');
-    
+
+    // Simplified query to avoid GROUP BY issues
     const category = await c.env.DB.prepare(`
-      SELECT
-        c.id, c.name, c.description, c.is_active, c.created_at, c.updated_at,
-        COUNT(p.id) as product_count
-      FROM categories c
-      LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1
-      WHERE c.id = ?
-      GROUP BY c.id, c.name, c.description, c.is_active, c.created_at, c.updated_at
+      SELECT id, name, description, is_active, created_at, updated_at
+      FROM categories
+      WHERE id = ?
     `).bind(id).first();
 
     if (!category) {
@@ -130,9 +127,19 @@ app.get('/:id', async (c: any) => {
       }, 404);
     }
 
+    // Get product count separately if needed
+    const productCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count
+      FROM products
+      WHERE category_id = ? AND (is_active = 1 OR isActive = 1)
+    `).bind(id).first();
+
     return c.json({
       success: true,
-      data: category
+      data: {
+        ...category,
+        product_count: productCount?.count || 0
+      }
     });
   } catch (error) {
     console.error('Error fetching category:', error);
@@ -174,15 +181,11 @@ app.post('/', async (c: any) => {
       throw new Error('Failed to create category');
     }
 
-    // Get the created category
+    // Get the created category - simplified query
     const category = await c.env.DB.prepare(`
-      SELECT
-        c.id, c.name, c.description, c.is_active, c.created_at, c.updated_at,
-        COUNT(p.id) as product_count
-      FROM categories c
-      LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1
-      WHERE c.id = ?
-      GROUP BY c.id, c.name, c.description, c.is_active, c.created_at, c.updated_at
+      SELECT id, name, description, is_active, created_at, updated_at
+      FROM categories
+      WHERE id = ?
     `).bind(category_id).first();
 
     console.log('Category created successfully:', category);
@@ -248,15 +251,11 @@ app.put('/:id', async (c: any) => {
       throw new Error('Failed to update category');
     }
 
-    // Get the updated category
+    // Get the updated category - simplified query
     const category = await c.env.DB.prepare(`
-      SELECT
-        c.id, c.name, c.description, c.is_active, c.created_at, c.updated_at,
-        COUNT(p.id) as product_count
-      FROM categories c
-      LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1
-      WHERE c.id = ?
-      GROUP BY c.id, c.name, c.description, c.is_active, c.created_at, c.updated_at
+      SELECT id, name, description, is_active, created_at, updated_at
+      FROM categories
+      WHERE id = ?
     `).bind(id).first();
 
     console.log('Category updated successfully:', category);

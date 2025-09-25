@@ -31,7 +31,7 @@ async function ensureTables(db: D1Database) {
   // Tables already exist in production, no need to recreate
 }
 
-// GET /api/v1/warranties/stats - Must come before /:id routes
+// GET /api/warranties/stats - Must come before /:id routes
 app.get('/stats', async (c: Context) => {
   try {
     await ensureTables(c.env.DB)
@@ -61,7 +61,7 @@ app.get('/stats', async (c: Context) => {
   }
 })
 
-// GET /api/v1/warranties/export.csv - Must come before /:id routes
+// GET /api/warranties/export.csv - Must come before /:id routes
 app.get('/export.csv', async (c: Context) => {
   try {
     await ensureTables(c.env.DB)
@@ -80,7 +80,7 @@ app.get('/export.csv', async (c: Context) => {
   }
 })
 
-// GET /api/v1/warranties
+// GET /api/warranties
 app.get('/', async (c: Context) => {
   try {
     await ensureTables(c.env.DB)
@@ -110,7 +110,7 @@ app.get('/', async (c: Context) => {
   }
 })
 
-// POST /api/v1/warranties
+// POST /api/warranties
 app.post('/', async (c: Context) => {
   try {
     await ensureTables(c.env.DB)
@@ -155,7 +155,7 @@ app.post('/', async (c: Context) => {
   }
 })
 
-// PUT /api/v1/warranties/:id
+// PUT /api/warranties/:id
 app.put('/:id', async (c: Context) => {
   try {
     await ensureTables(c.env.DB)
@@ -193,7 +193,7 @@ app.put('/:id', async (c: Context) => {
   }
 })
 
-// POST /api/v1/warranties/:id/timeline
+// POST /api/warranties/:id/timeline
 app.post('/:id/timeline', async (c: Context) => {
   try {
     await ensureTables(c.env.DB)

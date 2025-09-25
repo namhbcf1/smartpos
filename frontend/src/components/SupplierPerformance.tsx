@@ -174,7 +174,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
             <Typography variant="h6">{metric.supplier_name}</Typography>
           </Box>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
+            <Grid item xs={6} component="div">
               <Typography variant="body2" color="text.secondary">
                 Performance Score
               </Typography>
@@ -186,7 +186,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
                 {metric.trend === 'down' && <TrendingDownIcon color="error" sx={{ ml: 1 }} />}
               </Box>
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={6} component="div">
               <Typography variant="body2" color="text.secondary">
                 Quality Rating
               </Typography>
@@ -215,7 +215,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
       ) : (
         <Grid container spacing={3}>
           {metrics.map((metric) => (
-            <Grid item xs={12} md={6} lg={4} key={metric.id}>
+            <Grid item xs={12} md={6} lg={4} key={metric.id} component="div">
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -275,7 +275,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
                   </Box>
 
                   <Grid container spacing={1}>
-                    <Grid item xs={6}>
+                    <Grid item xs={6} component="div">
                       <Typography variant="body2" color="text.secondary">
                         Total Orders
                       </Typography>
@@ -283,7 +283,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
                         {metric.total_orders}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={6} component="div">
                       <Typography variant="body2" color="text.secondary">
                         On-Time Rate
                       </Typography>
@@ -291,7 +291,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
                         {metric.on_time_delivery_rate.toFixed(1)}%
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={6} component="div">
                       <Typography variant="body2" color="text.secondary">
                         Avg Order Value
                       </Typography>
@@ -299,7 +299,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
                         ${metric.average_order_value.toFixed(0)}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={6} component="div">
                       <Typography variant="body2" color="text.secondary">
                         Response Time
                       </Typography>
@@ -351,7 +351,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
           {selectedSupplier && (
             <Box>
               <Grid container spacing={3} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={3} component="div">
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <MoneyIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
@@ -364,7 +364,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={3} component="div">
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <ShippingIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
@@ -377,7 +377,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={3} component="div">
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <ScheduleIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
@@ -390,7 +390,7 @@ const SupplierPerformance: React.FC<SupplierPerformanceProps> = ({
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={3} component="div">
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <StarIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />

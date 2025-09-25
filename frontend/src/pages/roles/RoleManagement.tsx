@@ -10,11 +10,7 @@ import {
   Edit,
   Trash2,
   MoreHorizontal,
-  Calendar,
-  Clock,
   CheckCircle,
-  XCircle,
-  AlertCircle,
   Users,
   Settings,
   BarChart3,
@@ -31,7 +27,7 @@ import {
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 
 interface Permission {
@@ -57,7 +53,7 @@ interface Role {
 const RoleManagement: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([])
   const [permissions, setPermissions] = useState<Permission[]>([])
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
 

@@ -294,7 +294,7 @@ app.get('/simple-ws-test', (c) => {
 });
 
 // Real-time events endpoint for polling fallback
-app.get('/api/v1/realtime/events', (c) => {
+app.get('/api/realtime/events', (c) => {
   return c.json({
     success: true,
     events: [
@@ -916,10 +916,10 @@ api.get('/products', async (c: any) => {
 
 // Product detail API (alternative endpoint)
 api.get('/product-detail/:id', async (c: any) => {
-  // Mark as deprecated in favor of /api/v1/products/:id
+  // Mark as deprecated in favor of /api/products/:id
   c.header('Deprecation', 'true');
   c.header('Sunset', new Date(Date.now() + 60 * 24 * 3600 * 1000).toUTCString());
-  c.header('Link', '</api/v1/products/:id>; rel="successor-version"');
+  c.header('Link', '</api/products/:id>; rel="successor-version"');
   const id = c.req.param('id');
 
   // Return mock data for now to test routing
@@ -1086,11 +1086,11 @@ api.get('/dashboard/stats', async (c: any) => {
 });
 
 // Deprecated duplicate path - return 410 Gone with migration note
-api.get('/api/v1/dashboard/stats', (c) => {
+api.get('/api/dashboard/stats', (c) => {
   return c.json({
     success: false,
-    message: 'Deprecated endpoint. Use /api/v1/dashboard/stats (canonical) directly without double prefix.',
-    migrate_to: '/api/v1/dashboard/stats',
+    message: 'Deprecated endpoint. Use /api/dashboard/stats (canonical) directly without double prefix.',
+    migrate_to: '/api/dashboard/stats',
     status: 410
   }, 410);
 });
@@ -1409,7 +1409,7 @@ api.get('/analytics/sales/top-products', async (c: any) => {
     LIMIT ?
   `;
   const res: any = await c.env.DB.prepare(sql).bind(...params, limit).all();
-  return c.json({ success: true, data: res.results || [], filters: { from, to, outlet }, drilldown: { list: `/api/v1/sales?date_from=${from}&date_to=${to}${outlet?`&store_id=${outlet}`:''}` } });
+  return c.json({ success: true, data: res.results || [], filters: { from, to, outlet }, drilldown: { list: `/api/sales?date_from=${from}&date_to=${to}${outlet?`&store_id=${outlet}`:''}` } });
 });
 
 api.get('/analytics/sales/top-categories', async (c: any) => {
@@ -1434,7 +1434,7 @@ api.get('/analytics/sales/top-categories', async (c: any) => {
     LIMIT ?
   `;
   const res: any = await c.env.DB.prepare(sql).bind(...params, limit).all();
-  return c.json({ success: true, data: res.results || [], filters: { from, to, outlet }, drilldown: { list: `/api/v1/sales?date_from=${from}&date_to=${to}${outlet?`&store_id=${outlet}`:''}` } });
+  return c.json({ success: true, data: res.results || [], filters: { from, to, outlet }, drilldown: { list: `/api/sales?date_from=${from}&date_to=${to}${outlet?`&store_id=${outlet}`:''}` } });
 });
 
 api.get('/analytics/low-stock', async (c: any) => {
@@ -4024,7 +4024,7 @@ api.get('/dashboard/stats', async (c: any) => {
 const apiDirectRoutes = new Hono<{ Bindings: Env }>();
 
 // Deprecated dashboard direct path
-apiDirectRoutes.get('/dashboard/stats', (c) => c.json({ success: false, message: 'Deprecated. Use /api/v1/dashboard/stats', migrate_to: '/api/v1/dashboard/stats', status: 410 }, 410));
+apiDirectRoutes.get('/dashboard/stats', (c) => c.json({ success: false, message: 'Deprecated. Use /api/dashboard/stats', migrate_to: '/api/dashboard/stats', status: 410 }, 410));
 
 // Permissions endpoint at /api/permissions/me (without v1)
 apiDirectRoutes.get('/permissions/me', async (c: any) => {
@@ -4050,12 +4050,12 @@ app.get('/api', (c) => {
     version: '1.0.0',
     timezone: tz,
     endpoints: {
-      v1: '/api/v1',
-      health: '/api/v1/health',
-      products: '/api/v1/products',
-      customers: '/api/v1/customers',
-      sales: '/api/v1/sales',
-      dashboard: '/api/v1/dashboard/stats'
+      v1: '/api',
+      health: '/api/health',
+      products: '/api/products',
+      customers: '/api/customers',
+      sales: '/api/sales',
+      dashboard: '/api/dashboard/stats'
     }
   });
 });
@@ -4064,24 +4064,24 @@ app.get('/api', (c) => {
 app.route('/api', apiDirectRoutes);
 
 // Mount main API routes (use central aggregator)
-app.route('/api/v1', routes.api);
+app.route('/api', routes.api);
 
 // Mount enhanced API routes (includes POS, orders, analytics, etc.)
 // api.route('/', apiRoutes); // Commented out for now
 
 // Mount original API with version prefix
-// app.route('/api/v1', api); // Commented out for now
+// app.route('/api', api); // Commented out for now
 
 // Mount fallback API for missing endpoints (should be last)
-// app.route('/api/v1/fallback', fallbackApiRouter); // Commented out for now
+// app.route('/api/fallback', fallbackApiRouter); // Commented out for now
 
 // Mount system routers
-app.route('/api/v1', routes.system.health);
-app.route('/api/v1', routes.system.openapi);
-app.route('/api/v1', routes.system.diagnostics);
+app.route('/api', routes.system.health);
+app.route('/api', routes.system.openapi);
+app.route('/api', routes.system.diagnostics);
 
 // Default route for root path
-app.get('/', (c) => c.text('SmartPOS API - Sử dụng endpoint /api/v1 để truy cập API'));
+app.get('/', (c) => c.text('SmartPOS API - Sử dụng endpoint /api để truy cập API'));
 
 // Not found handler (lean)
 app.notFound((c) => c.json({ success: false, error: 'NOT_FOUND' }, 404));

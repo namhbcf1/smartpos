@@ -6,30 +6,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClipboardList,
   Search,
-  Filter,
   Eye,
-  Calendar,
-  User,
   Package,
   Wrench,
   CheckCircle,
   XCircle,
-  Clock,
-  AlertTriangle,
   FileText,
   Camera,
   Download,
-  Upload,
   MessageSquare,
-  Phone,
-  Mail,
-  MapPin,
   DollarSign,
   Timer,
   Star,
-  TrendingUp,
   BarChart3,
-  Archive,
   RefreshCw
 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
@@ -100,7 +89,7 @@ interface ProcessingStats {
 const WarrantyHistory: React.FC = () => {
   const [historyEntries, setHistoryEntries] = useState<WarrantyHistoryEntry[]>([]);
   const [stats, setStats] = useState<ProcessingStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [technicianFilter, setTechnicianFilter] = useState('all');
@@ -116,7 +105,7 @@ const WarrantyHistory: React.FC = () => {
   }, []);
 
   const loadHistoryEntries = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       // Mock data for demonstration
       const mockEntries: WarrantyHistoryEntry[] = [
@@ -276,7 +265,7 @@ const WarrantyHistory: React.FC = () => {
       console.error('Failed to load history entries:', error);
       toast.error('Không thể tải lịch sử xử lý');
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -467,7 +456,7 @@ const WarrantyHistory: React.FC = () => {
                   placeholder="Tìm kiếm lịch sử, khách hàng, sản phẩm, kỹ thuật viên..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ">
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -475,7 +464,7 @@ const WarrantyHistory: React.FC = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ">
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">Tất cả trạng thái</option>
                 <option value="completed">Hoàn thành</option>
@@ -487,7 +476,7 @@ const WarrantyHistory: React.FC = () => {
               <select
                 value={technicianFilter}
                 onChange={(e) => setTechnicianFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ">
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">Tất cả kỹ thuật viên</option>
                 <option value="Trần Văn Bình">Trần Văn Bình</option>
@@ -497,7 +486,7 @@ const WarrantyHistory: React.FC = () => {
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ">
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">Tất cả thời gian</option>
                 <option value="today">Hôm nay</option>
@@ -680,13 +669,13 @@ const WarrantyHistory: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+              className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
             >
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div>
@@ -713,11 +702,11 @@ const WarrantyHistory: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-                      activeTab === tab.id
-                        ? 'border-indigo-500 text-indigo-600 
-                        : 'border-transparent text-gray-500 hover:text-gray-700  
-                    }`}
+                    className={'flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ' + 
+                      (activeTab === tab.id
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700')
+                    }
                   >
                     <tab.icon className="w-4 h-4" />
                     {tab.label}
@@ -769,10 +758,14 @@ const WarrantyHistory: React.FC = () => {
                           <div>
                             <span className="text-gray-600 text-sm">Vấn đề báo cáo:</span>
                             <p className="text-gray-900">
+                              {selectedEntry.reported_issue || 'Không có mô tả'}
+                            </p>
                           </div>
                           <div>
                             <span className="text-gray-600 text-sm">Chẩn đoán:</span>
                             <p className="text-gray-900">
+                              {selectedEntry.diagnosis || 'Không có chẩn đoán'}
+                            </p>
                           </div>
                           <div>
                             <span className="text-gray-600 text-sm">Trạng thái:</span>
@@ -861,6 +854,8 @@ const WarrantyHistory: React.FC = () => {
                             <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                               <CheckCircle className="w-5 h-5 text-green-600" />
                               <span className="text-gray-900">
+                                {work}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -875,6 +870,8 @@ const WarrantyHistory: React.FC = () => {
                             <div key={index} className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg">
                               <Package className="w-5 h-5 text-blue-600" />
                               <span className="text-gray-900">
+                                {part}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -889,6 +886,8 @@ const WarrantyHistory: React.FC = () => {
                             <div key={index} className="flex items-center gap-3 p-2 bg-green-50 rounded-lg">
                               <CheckCircle className="w-5 h-5 text-green-600" />
                               <span className="text-gray-900">
+                                {result}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -902,9 +901,9 @@ const WarrantyHistory: React.FC = () => {
                     <Card>
                       <CardContent className="p-4">
                         <h3 className="font-semibold text-gray-900 mb-4">Hình ảnh trước khi sửa</h3>
-                        {selectedEntry.photos_before.length > 0 ? (
+                        {selectedEntry.photos_before?.length > 0 ? (
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {selectedEntry.photos_before.map((photo, index) => (
+                            {selectedEntry.photos_before?.map((_photo, index) => (
                               <div key={index} className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
                                 <Camera className="w-8 h-8 text-gray-400" />
                               </div>
@@ -919,9 +918,9 @@ const WarrantyHistory: React.FC = () => {
                     <Card>
                       <CardContent className="p-4">
                         <h3 className="font-semibold text-gray-900 mb-4">Hình ảnh sau khi sửa</h3>
-                        {selectedEntry.photos_after.length > 0 ? (
+                        {selectedEntry.photos_after?.length > 0 ? (
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {selectedEntry.photos_after.map((photo, index) => (
+                            {selectedEntry.photos_after?.map((_photo, index) => (
                               <div key={index} className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
                                 <Camera className="w-8 h-8 text-gray-400" />
                               </div>
@@ -938,6 +937,8 @@ const WarrantyHistory: React.FC = () => {
                         <CardContent className="p-4">
                           <h3 className="font-semibold text-gray-900 mb-4">Ghi chú công khai</h3>
                           <p className="text-gray-700">
+                            {selectedEntry.notes || 'Không có ghi chú công khai'}
+                          </p>
                         </CardContent>
                       </Card>
 
@@ -945,6 +946,8 @@ const WarrantyHistory: React.FC = () => {
                         <CardContent className="p-4">
                           <h3 className="font-semibold text-gray-900 mb-4">Ghi chú nội bộ</h3>
                           <p className="text-gray-700">
+                            {selectedEntry.internal_notes}
+                          </p>
                         </CardContent>
                       </Card>
                     </div>

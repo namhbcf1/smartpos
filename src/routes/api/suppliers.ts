@@ -91,7 +91,7 @@ const mockSuppliers = [
   }
 ];
 
-// GET /api/v1/suppliers/stats - Supplier statistics (must be before /:id route)
+// GET /api/suppliers/stats - Supplier statistics (must be before /:id route)
 app.get('/stats', requireRole('manager'), async (c: any) => {
   try {
     const activeSuppliers = mockSuppliers.filter(s => s.is_active);
@@ -148,7 +148,7 @@ app.get('/stats', requireRole('manager'), async (c: any) => {
   }
 });
 
-// GET /api/v1/suppliers - List suppliers with search and filters
+// GET /api/suppliers - List suppliers with search and filters
 app.get('/', requireRole('manager'), async (c: any) => {
   try {
     const { q, page = '1', limit = '50', status } = c.req.query();
@@ -199,7 +199,7 @@ app.get('/', requireRole('manager'), async (c: any) => {
   }
 });
 
-// GET /api/v1/suppliers/:id - Get supplier details
+// GET /api/suppliers/:id - Get supplier details
 app.get('/:id', requireRole('manager'), async (c: any) => {
   try {
     const id = c.req.param('id');
@@ -228,7 +228,7 @@ app.get('/:id', requireRole('manager'), async (c: any) => {
   }
 });
 
-// POST /api/v1/suppliers - Create new supplier (admin only)
+// POST /api/suppliers - Create new supplier (admin only)
 app.post('/', requireRole('admin'), async (c: any) => {
   try {
     const data = await c.req.json();
@@ -275,7 +275,7 @@ app.post('/', requireRole('admin'), async (c: any) => {
   }
 });
 
-// PUT /api/v1/suppliers/:id - Update supplier (admin only)
+// PUT /api/suppliers/:id - Update supplier (admin only)
 app.put('/:id', requireRole('admin'), async (c: any) => {
   try {
     const id = c.req.param('id');
@@ -313,7 +313,7 @@ app.put('/:id', requireRole('admin'), async (c: any) => {
   }
 });
 
-// DELETE /api/v1/suppliers/:id - Delete supplier (admin only)
+// DELETE /api/suppliers/:id - Delete supplier (admin only)
 app.delete('/:id', requireRole('admin'), async (c: any) => {
   try {
     const id = c.req.param('id');

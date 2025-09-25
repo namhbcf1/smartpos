@@ -97,7 +97,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({
   return (
     <Grid container spacing={3} sx={{ mb: 3 }}>
       {cardData.map((card, index) => (
-        <Grid item xs={12} sm={6} md={3} key={index}>
+        <Grid item xs={12} sm={6} md={3} key={index} component="div">
           <Card
             raised
             data-testid={card.testId}

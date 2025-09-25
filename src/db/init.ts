@@ -41,14 +41,14 @@ async function cacheInitialData(env: Env): Promise<void> {
   
   // Cache active products
   const products = await env.DB.prepare(`
-    SELECT 
-      p.id, p.name, p.description, p.sku, p.barcode, 
-      p.price, p.cost_price, p.tax_rate, 
-      p.stock, p.status, p.image_url, 
+    SELECT
+      p.id, p.name, p.description, p.sku, p.barcode,
+      p.price_cents, p.cost_price_cents,
+      p.stock, p.is_active,
       p.category_id, c.name as category_name
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
-    WHERE p.status = 'active'
+    WHERE p.is_active = 1
     ORDER BY p.name
     LIMIT 100
   `).all();
@@ -57,7 +57,7 @@ async function cacheInitialData(env: Env): Promise<void> {
   
   // Cache settings
   const settings = await env.DB.prepare(`
-    SELECT key, value FROM settings WHERE store_id = 1
+    SELECT key, value FROM settings
   `).all();
   
   const settingsObject = settings.results.reduce((acc: Record<string, string>, setting: any) => {

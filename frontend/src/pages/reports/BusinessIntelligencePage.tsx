@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { posApi } from '../../services/api/posApi';
+import { comprehensiveAPI } from '../../services/business/comprehensiveApi';
 import { formatCurrency } from '../../lib/utils';
 
 interface SegmentData {
@@ -65,7 +66,7 @@ const BusinessIntelligencePage: React.FC = () => {
 
       // Load segment data from real API
       try {
-        const segmentResponse = await posApi.getCustomerSegments({ from: dateFrom, to: dateTo, groupBy });
+        const segmentResponse = await comprehensiveAPI.analytics.getCustomerSegments({ from: dateFrom, to: dateTo, groupBy });
         setSegmentData(segmentResponse.data || []);
       } catch (error) {
         console.error('Failed to load segment data:', error);
@@ -74,7 +75,7 @@ const BusinessIntelligencePage: React.FC = () => {
 
       // Load cohort data from real API
       try {
-        const cohortResponse = await posApi.getCohortAnalysis({ from: dateFrom, to: dateTo });
+        const cohortResponse = await comprehensiveAPI.analytics.getCohortAnalysis({ from: dateFrom, to: dateTo });
         setCohortData(cohortResponse.data || []);
       } catch (error) {
         console.error('Failed to load cohort data:', error);
@@ -83,7 +84,7 @@ const BusinessIntelligencePage: React.FC = () => {
 
       // Load forecast data from real API
       try {
-        const forecastResponse = await posApi.getRevenueForecast({ from: dateFrom, to: dateTo });
+        const forecastResponse = await comprehensiveAPI.analytics.getRevenueForecast({ from: dateFrom, to: dateTo });
         setForecastData(forecastResponse.data || []);
       } catch (error) {
         console.error('Failed to load forecast data:', error);
@@ -170,8 +171,8 @@ const BusinessIntelligencePage: React.FC = () => {
             </label>
             <input
               type="date"
-              className="input input-bordered">
-              value={dateFrom}
+              className="input input-bordered"
+                  value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
@@ -182,8 +183,8 @@ const BusinessIntelligencePage: React.FC = () => {
             </label>
             <input
               type="date"
-              className="input input-bordered">
-              value={dateTo}
+              className="input input-bordered"
+                  value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
           </div>
@@ -193,8 +194,8 @@ const BusinessIntelligencePage: React.FC = () => {
               <span className="label-text">Nhóm theo</span>
             </label>
             <select 
-              className="select select-bordered">
-              value={groupBy}
+              className="select select-bordered"
+                  value={groupBy}
               onChange={(e) => setGroupBy(e.target.value as any)}
             >
               <option value="region">Khu vực</option>
@@ -249,7 +250,7 @@ const BusinessIntelligencePage: React.FC = () => {
               <div className="stat bg-primary text-primary-content">
                 <div className="stat-title">Tổng doanh thu</div>
                 <div className="stat-value">
-                  {formatCurrency(segmentData.reduce((sum, seg) => sum + seg.value, 0))}
+                  {formatCurrency((Array.isArray(segmentData) ? segmentData : []).reduce((sum, seg) => sum + seg.value, 0))}
                 </div>
                 <div className="stat-desc">Từ {dateFrom} đến {dateTo}</div>
               </div>
@@ -257,7 +258,7 @@ const BusinessIntelligencePage: React.FC = () => {
               <div className="stat bg-secondary text-secondary-content">
                 <div className="stat-title">Tổng khách hàng</div>
                 <div className="stat-value">
-                  {segmentData.reduce((sum, seg) => sum + seg.count, 0)}
+                  {(Array.isArray(segmentData) ? segmentData : []).reduce((sum, seg) => sum + seg.count, 0)}
                 </div>
                 <div className="stat-desc">Khách hàng hoạt động</div>
               </div>
@@ -266,8 +267,9 @@ const BusinessIntelligencePage: React.FC = () => {
                 <div className="stat-title">Trung bình/khách</div>
                 <div className="stat-value">
                   {formatCurrency(
-                    segmentData.reduce((sum, seg) => sum + seg.value, 0) / 
-                    segmentData.reduce((sum, seg) => sum + seg.count, 0)
+                    (Array.isArray(segmentData) && segmentData.length > 0 ?
+                      segmentData.reduce((sum, seg) => sum + seg.value, 0) /
+                      segmentData.reduce((sum, seg) => sum + seg.count, 0) : 0)
                   )}
                 </div>
                 <div className="stat-desc">Giá trị trung bình</div>
@@ -306,7 +308,7 @@ const BusinessIntelligencePage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {segmentData.map((segment, index) => (
+                      {(Array.isArray(segmentData) ? segmentData : []).map((segment, index) => (
                         <tr key={index}>
                           <td>
                             <div className="flex items-center gap-2">
@@ -340,7 +342,8 @@ const BusinessIntelligencePage: React.FC = () => {
               <div className="stat bg-success text-success-content">
                 <div className="stat-title">Tỷ lệ giữ chân TB</div>
                 <div className="stat-value">
-                  {(cohortData.reduce((sum, cohort) => sum + cohort.retention_rate, 0) / cohortData.length).toFixed(1)}%
+                  {(Array.isArray(cohortData) && cohortData.length > 0 ?
+                    (cohortData.reduce((sum, cohort) => sum + cohort.retention_rate, 0) / cohortData.length).toFixed(1) : '0')}%
                 </div>
                 <div className="stat-desc">Trung bình các tháng</div>
               </div>
@@ -348,7 +351,8 @@ const BusinessIntelligencePage: React.FC = () => {
               <div className="stat bg-info text-info-content">
                 <div className="stat-title">Khách hàng mới TB</div>
                 <div className="stat-value">
-                  {Math.round(cohortData.reduce((sum, cohort) => sum + cohort.new_customers, 0) / cohortData.length)}
+                  {Array.isArray(cohortData) && cohortData.length > 0 ?
+                    Math.round(cohortData.reduce((sum, cohort) => sum + cohort.new_customers, 0) / cohortData.length) : 0}
                 </div>
                 <div className="stat-desc">Mỗi tháng</div>
               </div>
@@ -356,7 +360,7 @@ const BusinessIntelligencePage: React.FC = () => {
               <div className="stat bg-warning text-warning-content">
                 <div className="stat-title">Tổng khách hàng</div>
                 <div className="stat-value">
-                  {cohortData.reduce((sum, cohort) => sum + cohort.new_customers, 0)}
+                  {(Array.isArray(cohortData) ? cohortData : []).reduce((sum, cohort) => sum + cohort.new_customers, 0)}
                 </div>
                 <div className="stat-desc">Từ {dateFrom} đến {dateTo}</div>
               </div>
@@ -379,7 +383,7 @@ const BusinessIntelligencePage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {cohortData.map((cohort, index) => (
+                  {(Array.isArray(cohortData) ? cohortData : []).map((cohort, index) => (
                     <tr key={index}>
                       <td className="font-bold">{cohort.month}</td>
                       <td>{cohort.new_customers}</td>
@@ -432,7 +436,8 @@ const BusinessIntelligencePage: React.FC = () => {
                 <div className="stat-title">Doanh thu dự báo TB</div>
                 <div className="stat-value">
                   {formatCurrency(
-                    forecastData.reduce((sum, forecast) => sum + forecast.predicted_revenue, 0) / forecastData.length
+                    Array.isArray(forecastData) && forecastData.length > 0 ?
+                      forecastData.reduce((sum, forecast) => sum + forecast.predicted_revenue, 0) / forecastData.length : 0
                   )}
                 </div>
                 <div className="stat-desc">30 ngày tới</div>
@@ -441,7 +446,7 @@ const BusinessIntelligencePage: React.FC = () => {
               <div className="stat bg-secondary text-secondary-content">
                 <div className="stat-title">Tổng doanh thu dự báo</div>
                 <div className="stat-value">
-                  {formatCurrency(forecastData.reduce((sum, forecast) => sum + forecast.predicted_revenue, 0))}
+                  {formatCurrency((Array.isArray(forecastData) ? forecastData : []).reduce((sum, forecast) => sum + forecast.predicted_revenue, 0))}
                 </div>
                 <div className="stat-desc">30 ngày tới</div>
               </div>
@@ -449,7 +454,8 @@ const BusinessIntelligencePage: React.FC = () => {
               <div className="stat bg-accent text-accent-content">
                 <div className="stat-title">Độ tin cậy TB</div>
                 <div className="stat-value">
-                  {Math.round(forecastData.reduce((sum, forecast) => sum + forecast.confidence, 0) / forecastData.length)}%
+                  {Array.isArray(forecastData) && forecastData.length > 0 ?
+                    Math.round(forecastData.reduce((sum, forecast) => sum + forecast.confidence, 0) / forecastData.length) : 0}%
                 </div>
                 <div className="stat-desc">Mô hình dự báo</div>
               </div>
@@ -483,7 +489,7 @@ const BusinessIntelligencePage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {forecastData.slice(0, 15).map((forecast, index) => (
+                  {(Array.isArray(forecastData) ? forecastData : []).slice(0, 15).map((forecast, index) => (
                     <tr key={index}>
                       <td className="font-bold">{forecast.date}</td>
                       <td className="font-bold">{formatCurrency(forecast.predicted_revenue)}</td>

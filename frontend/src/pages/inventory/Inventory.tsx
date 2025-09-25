@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { posApi } from '../../services/api/posApi';
-import { API_V1_BASE_URL } from '../../services/api';
+import { API_BASE_URL } from '../../services/api';
 import apiClient from '../../services/api/client';
 import { toast } from 'react-hot-toast';
 import {
@@ -469,18 +469,18 @@ const Inventory: React.FC = () => {
                     if (maxStock) params.append('max_stock', maxStock);
                     params.append('sort_by', sortBy);
                     params.append('sort_order', sortOrder);
-                    window.open(`${API_V1_BASE_URL}/inventory/export/stock.csv?${params.toString()}`, '_blank');
+                    window.open(`${API_BASE_URL}/inventory/export/stock.csv?${params.toString()}`, '_blank');
                   }}>
                     <FiDownload className="mr-2" />Export CSV
                   </a>
                 </li>
                 <li>
-                  <a onClick={() => window.open(`${API_V1_BASE_URL}/inventory/export/locations.csv`, '_blank')}>
+                  <a onClick={() => window.open(`${API_BASE_URL}/inventory/export/locations.csv`, '_blank')}>
                     <FiDownload className="mr-2" />Export Locations CSV
                   </a>
                 </li>
                 <li>
-                  <a onClick={() => window.open(`${API_V1_BASE_URL}/inventory/audit/export.csv`, '_blank')}>
+                  <a onClick={() => window.open(`${API_BASE_URL}/inventory/audit/export.csv`, '_blank')}>
                     <FiDownload className="mr-2" />Export Audit CSV
                   </a>
                 </li>
@@ -594,8 +594,8 @@ const Inventory: React.FC = () => {
             <input
               type="text"
               placeholder="Tìm kiếm sản phẩm theo tên, SKU, barcode..."
-              className="input input-bordered flex-1">
-              value={searchTerm}
+              className="input input-bordered flex-1"
+                  value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <button className="btn btn-square">
@@ -613,8 +613,8 @@ const Inventory: React.FC = () => {
                 <span className="label-text">Danh mục</span>
               </label>
               <select
-                className="select select-bordered">
-                value={selectedCategory}
+                className="select select-bordered"
+                  value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="">Tất cả danh mục</option>
@@ -633,8 +633,8 @@ const Inventory: React.FC = () => {
               </label>
               <input
                 type="text"
-                className="input input-bordered">
-                placeholder="VD: Apple, Samsung..."
+                className="input input-bordered"
+                  placeholder="VD: Apple, Samsung..."
                 value={selectedBrand}
                 onChange={(e) => setSelectedBrand(e.target.value)}
               />
@@ -646,8 +646,8 @@ const Inventory: React.FC = () => {
                 <span className="label-text">Tình trạng kho</span>
               </label>
               <select
-                className="select select-bordered">
-                value={stockFilter}
+                className="select select-bordered"
+                  value={stockFilter}
                 onChange={(e) => setStockFilter(e.target.value as any)}
               >
                 <option value="all">Tất cả</option>
@@ -663,8 +663,8 @@ const Inventory: React.FC = () => {
                 <span className="label-text">Trạng thái</span>
               </label>
               <select
-                className="select select-bordered">
-                value={statusFilter}
+                className="select select-bordered"
+                  value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
               >
                 <option value="all">Tất cả</option>
@@ -681,7 +681,7 @@ const Inventory: React.FC = () => {
               </label>
               <div className="flex gap-1">
                 <select
-                  className="select select-bordered flex-1">
+                  className="select select-bordered flex-1"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                 >
@@ -706,14 +706,14 @@ const Inventory: React.FC = () => {
               <div className="flex gap-1">
                 <input
                   type="number"
-                  className="input input-bordered flex-1">
+                  className="input input-bordered flex-1"
                   placeholder="Từ"
                   value={priceRange.min}
                   onChange={(e) => setPriceRange({...priceRange, min: parseInt(e.target.value) || 0})}
                 />
                 <input
                   type="number"
-                  className="input input-bordered flex-1">
+                  className="input input-bordered flex-1"
                   placeholder="Đến"
                   value={priceRange.max}
                   onChange={(e) => setPriceRange({...priceRange, max: parseInt(e.target.value) || 10000000})}
@@ -727,8 +727,8 @@ const Inventory: React.FC = () => {
                 <span className="label-text">Dải giá</span>
               </label>
               <select
-                className="select select-bordered">
-                value={priceBand}
+                className="select select-bordered"
+                  value={priceBand}
                 onChange={(e) => setPriceBand(e.target.value)}
               >
                 <option value="">Tất cả</option>
@@ -747,8 +747,8 @@ const Inventory: React.FC = () => {
               </label>
               <input
                 type="number"
-                className="input input-bordered">
-                placeholder="VD: 5"
+                className="input input-bordered"
+                  placeholder="VD: 5"
                 value={minStock}
                 onChange={(e) => setMinStock(e.target.value)}
               />
@@ -759,8 +759,8 @@ const Inventory: React.FC = () => {
               </label>
               <input
                 type="number"
-                className="input input-bordered">
-                placeholder="VD: 100"
+                className="input input-bordered"
+                  placeholder="VD: 100"
                 value={maxStock}
                 onChange={(e) => setMaxStock(e.target.value)}
               />
@@ -798,8 +798,8 @@ const Inventory: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <select
-                className="select select-bordered select-sm">
-                value={itemsPerPage}
+                className="select select-bordered select-sm"
+                  value={itemsPerPage}
                 onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
               >
                 <option value={10}>10/trang</option>
@@ -836,8 +836,8 @@ const Inventory: React.FC = () => {
                   <th>
                     <input
                       type="checkbox"
-                      className="checkbox checkbox-sm">
-                      checked={selectedProducts.length === filteredAndSortedProducts.length && filteredAndSortedProducts.length > 0}
+                      className="checkbox checkbox-sm"
+                  checked={selectedProducts.length === filteredAndSortedProducts.length && filteredAndSortedProducts.length > 0}
                       onChange={handleSelectAll}
                     />
                   </th>
@@ -863,8 +863,8 @@ const Inventory: React.FC = () => {
                       <td>
                         <input
                           type="checkbox"
-                          className="checkbox checkbox-sm">
-                          checked={selectedProducts.includes(product.id)}
+                          className="checkbox checkbox-sm"
+                  checked={selectedProducts.includes(product.id)}
                           onChange={() => handleSelectProduct(product.id)}
                         />
                       </td>
@@ -945,20 +945,20 @@ const Inventory: React.FC = () => {
                       <td>
                         <div className="flex gap-1">
                           <button
-                            className="btn btn-ghost btn-xs">
-                            title="Xem chi tiết"
+                            className="btn btn-ghost btn-xs"
+                  title="Xem chi tiết"
                           >
                             <FiEye />
                           </button>
                           <button
-                            className="btn btn-ghost btn-xs">
-                            title="Chỉnh sửa"
+                            className="btn btn-ghost btn-xs"
+                  title="Chỉnh sửa"
                           >
                             <FiEdit3 />
                           </button>
                           <button
-                            className="btn btn-ghost btn-xs">
-                            title="Nhập/Xuất kho"
+                            className="btn btn-ghost btn-xs"
+                  title="Nhập/Xuất kho"
                             onClick={() => {
                               setSelectedProduct(product);
                               setShowStockMovementModal(true);
@@ -988,8 +988,8 @@ const Inventory: React.FC = () => {
                       <div className="flex items-start justify-between mb-2">
                         <input
                           type="checkbox"
-                          className="checkbox checkbox-sm">
-                          checked={selectedProducts.includes(product.id)}
+                          className="checkbox checkbox-sm"
+                  checked={selectedProducts.includes(product.id)}
                           onChange={() => handleSelectProduct(product.id)}
                         />
                         <div className={`badge badge-${getStatusColor(product.status)} badge-sm`}>
@@ -1053,14 +1053,14 @@ const Inventory: React.FC = () => {
                         </div>
                         <div className="flex gap-1">
                           <button
-                            className="btn btn-ghost btn-xs">
-                            title="Xem chi tiết"
+                            className="btn btn-ghost btn-xs"
+                  title="Xem chi tiết"
                           >
                             <FiEye />
                           </button>
                           <button
-                            className="btn btn-ghost btn-xs">
-                            title="Nhập/Xuất kho"
+                            className="btn btn-ghost btn-xs"
+                  title="Nhập/Xuất kho"
                             onClick={() => {
                               setSelectedProduct(product);
                               setShowStockMovementModal(true);
@@ -1142,16 +1142,16 @@ const Inventory: React.FC = () => {
                   <label className="label"><span className="label-text">Số lượng thay đổi (+ nhập, - xuất)</span></label>
                   <input
                     type="number"
-                    className="input input-bordered">
-                    value={movementDelta}
+                    className="input input-bordered"
+                  value={movementDelta}
                     onChange={(e) => setMovementDelta(parseInt(e.target.value) || 0)}
                   />
                 </div>
                 <div className="form-control mb-3">
                   <label className="label"><span className="label-text">Lý do</span></label>
                   <select
-                    className="select select-bordered">
-                    value={movementReason}
+                    className="select select-bordered"
+                  value={movementReason}
                     onChange={(e) => setMovementReason(e.target.value)}
                   >
                     <option value="manual_adjustment">Điều chỉnh thủ công</option>
@@ -1165,8 +1165,8 @@ const Inventory: React.FC = () => {
                 <div className="form-control">
                   <label className="label"><span className="label-text">Ghi chú</span></label>
                   <textarea
-                    className="textarea textarea-bordered">
-                    placeholder="Ghi chú (tùy chọn)"
+                    className="textarea textarea-bordered"
+                  placeholder="Ghi chú (tùy chọn)"
                     value={movementNotes}
                     onChange={(e) => setMovementNotes(e.target.value)}
                   />

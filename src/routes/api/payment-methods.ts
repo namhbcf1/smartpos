@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
 import { authenticate } from '../../middleware/auth';
+import { IdempotencyMiddleware } from '../../middleware/idempotency';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -10,32 +11,9 @@ app.use('*', authenticate);
 // GET /api/payment-methods - List payment methods
 app.get('/', async (c: any) => {
   try {
-    // Ensure payment_methods table exists - COMPLETE SCHEMA
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS payment_methods (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        code TEXT UNIQUE NOT NULL,
-        description TEXT,
-        fee_percentage REAL DEFAULT 0,
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        created_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
+    // Ensure payment_methods table exists - COMPLETE SCHEMA    // Tables should be created via migrations, not in routes
 
-    // Ensure payments table exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS payments (
-        id TEXT PRIMARY KEY,
-        order_id TEXT NOT NULL,
-        payment_method_id TEXT NOT NULL,
-        amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
-        reference TEXT,
-        status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
-        processed_at TEXT DEFAULT (datetime('now')),
-        created_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
+    // Migration 006 handles all table creation
 
     // Insert default payment methods if table is empty
     const existingCount = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM payment_methods`).first();
@@ -89,7 +67,7 @@ app.get('/', async (c: any) => {
 });
 
 // POST /api/payment-methods - Create new payment method
-app.post('/', async (c: any) => {
+app.post('/', IdempotencyMiddleware.api, async (c: any) => {
   try {
     const data = await c.req.json();
 

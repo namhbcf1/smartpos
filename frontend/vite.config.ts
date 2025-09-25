@@ -1,37 +1,56 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'node:path'
+import path from 'path'
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@/components': path.resolve(__dirname, './src/components'),
+      '@/pages': path.resolve(__dirname, './src/pages'),
+      '@/services': path.resolve(__dirname, './src/services'),
+      '@/hooks': path.resolve(__dirname, './src/hooks'),
+      '@/utils': path.resolve(__dirname, './src/utils'),
+      '@/types': path.resolve(__dirname, './src/types'),
+      '@/lib': path.resolve(__dirname, './src/lib'),
+    },
+  },
   server: {
     port: 5173,
+    host: true,
     strictPort: true,
   },
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'esbuild', // Changed from terser to esbuild (faster and built-in)
+    minify: 'terser',
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
+          mui: ['@mui/material', '@mui/icons-material'],
           router: ['react-router-dom'],
-        }
-      }
-    }
-  },
-  resolve: {
-    alias: {
-      '@src': path.resolve(__dirname, 'src'),
+          charts: ['recharts'],
+          animations: ['framer-motion'],
+        },
+      },
     },
   },
   define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-    // Stop injecting duplicate API URL; rely on VITE_API_BASE_URL in env files
+    // Ensure environment variables are available
+    'process.env': process.env,
   },
-  preview: {
-    port: 3000,
-    host: true
-  }
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      '@mui/material',
+      '@mui/icons-material',
+      'react-router-dom',
+      'recharts',
+      'framer-motion',
+    ],
+  },
 })

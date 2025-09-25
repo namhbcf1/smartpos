@@ -60,16 +60,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       hasInitializedRef.current = true;
 
       try {
-        // Check for existing token in sessionStorage
-        const existingToken = sessionStorage.getItem('auth_token');
+        // Check for existing token in localStorage (persistent across browser sessions)
+        const existingToken = localStorage.getItem('auth_token');
         console.log('Existing token found:', !!existingToken);
 
         if (existingToken && existingToken.split('.').length === 3) {
           console.log('Valid JWT format found, setting auth...');
           setAuthToken(existingToken);
 
-          // Prefer session user, otherwise fetch from backend
-          const userStr = sessionStorage.getItem('user');
+          // Prefer stored user, otherwise fetch from backend
+          const userStr = localStorage.getItem('user');
           if (userStr) {
             try {
               const userData = JSON.parse(userStr);
@@ -82,19 +82,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             }
           }
 
-          // Fallback: verify token and get user from backend
-          try {
-            const me = await comprehensiveAPI.auth.me();
-            if (me.success && me.data) {
-              setUser(me.data as any);
-              setIsAuthenticated(true);
-              sessionStorage.setItem('user', JSON.stringify(me.data));
-              console.log('✅ Auto login via /auth/me successful');
-              return;
+          // Fallback: try to verify token but don't block loading
+          setTimeout(async () => {
+            try {
+              const me = await comprehensiveAPI.auth.me();
+              if (me.success && me.data) {
+                setUser(me.data as any);
+                setIsAuthenticated(true);
+                localStorage.setItem('user', JSON.stringify(me.data));
+                console.log('✅ Auto login via /auth/me successful');
+                return;
+              }
+            } catch (err) {
+              console.warn('Auto login fallback /auth/me failed:', err);
             }
-          } catch (err) {
-            console.warn('Auto login fallback /auth/me failed:', err);
-          }
+          }, 100);
         }
 
         console.log('No valid session found, user needs to login');
@@ -129,6 +131,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       document.cookie = 'auth_token=; Path=/; Max-Age=0; Secure; SameSite=None';
     } catch (_) {}
     try {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
       sessionStorage.removeItem('auth_token');
       sessionStorage.removeItem('user');
     } catch (_) {}
@@ -151,8 +155,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const token = res.data.token;
       const backendUser = res.data.user as any;
 
-      // Persist token and user data for this tab session
+      // Persist token and user data permanently across browser sessions
       try {
+        localStorage.setItem('auth_token', token);
+        if (backendUser) {
+          localStorage.setItem('user', JSON.stringify(backendUser));
+        }
+        // Also store in sessionStorage for environments/tests expecting session storage
         sessionStorage.setItem('auth_token', token);
         if (backendUser) {
           sessionStorage.setItem('user', JSON.stringify(backendUser));
@@ -207,7 +216,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (response.success && response.data) {
         setUser(response.data);
         setIsAuthenticated(true);
-        // No localStorage/sessionStorage - security compliance
+        // Token already persisted in localStorage for auto-login
 
         // Load user permissions
         try {
@@ -240,10 +249,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('🔍 Manual silent auth check...');
       authCheckInProgressRef.current = true;
 
-      // Prefer sessionStorage token; fallback to cookie
+      // Prefer localStorage token; fallback to sessionStorage and cookie
       let token = '' as string | null;
       try {
-        token = sessionStorage.getItem('auth_token');
+        token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
       } catch (_) {}
       if (!token) {
         token = document.cookie

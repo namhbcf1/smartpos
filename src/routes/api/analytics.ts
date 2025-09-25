@@ -160,7 +160,7 @@ app.get('/customers', async (c: any) => {
   }
 });
 
-// GET /api/v1/analytics/dashboard - Dashboard data
+// GET /api/analytics/dashboard - Dashboard data
 app.get('/dashboard', async (c: any) => {
   try {
     const dashboardData = {
@@ -193,6 +193,69 @@ app.get('/dashboard', async (c: any) => {
     return c.json({
       success: false,
       message: 'Failed to fetch dashboard data'
+    }, 500);
+  }
+});
+
+// GET /api/analytics/stats - General stats
+app.get('/stats', async (c: any) => {
+  try {
+    // Get comprehensive system statistics
+    const [salesStats, productsStats, customersStats, ordersStats] = await Promise.all([
+      c.env.DB.prepare(`
+        SELECT
+          COUNT(*) as total_sales,
+          COALESCE(SUM(total), 0) as total_revenue,
+          COALESCE(AVG(total), 0) as average_sale_value,
+          COALESCE(SUM(CASE WHEN DATE(created_at) = DATE('now') THEN total ELSE 0 END), 0) as today_revenue
+        FROM sales
+        WHERE 1=1
+      `).first().catch(() => ({ total_sales: 0, total_revenue: 0, average_sale_value: 0, today_revenue: 0 })),
+
+      c.env.DB.prepare(`
+        SELECT
+          COUNT(*) as total_products,
+          COALESCE(SUM(stock), 0) as total_stock_units,
+          COUNT(CASE WHEN stock <= 10 THEN 1 END) as low_stock_products,
+          COUNT(CASE WHEN stock = 0 THEN 1 END) as out_of_stock_products
+        FROM products
+        WHERE is_active = 1
+      `).first().catch(() => ({ total_products: 0, total_stock_units: 0, low_stock_products: 0, out_of_stock_products: 0 })),
+
+      c.env.DB.prepare(`
+        SELECT
+          COUNT(*) as total_customers,
+          COUNT(CASE WHEN DATE(created_at) >= DATE('now', '-30 days') THEN 1 END) as new_customers_30d,
+          COUNT(CASE WHEN DATE(created_at) >= DATE('now', '-7 days') THEN 1 END) as new_customers_7d
+        FROM customers
+      `).first().catch(() => ({ total_customers: 0, new_customers_30d: 0, new_customers_7d: 0 })),
+
+      c.env.DB.prepare(`
+        SELECT
+          COUNT(*) as total_orders,
+          COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
+          COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
+          COUNT(CASE WHEN DATE(created_at) = DATE('now') THEN 1 END) as today_orders
+        FROM orders
+      `).first().catch(() => ({ total_orders: 0, completed_orders: 0, pending_orders: 0, today_orders: 0 }))
+    ]);
+
+    return c.json({
+      success: true,
+      data: {
+        sales: salesStats || { total_sales: 0, total_revenue: 0, average_sale_value: 0, today_revenue: 0 },
+        products: productsStats || { total_products: 0, total_stock_units: 0, low_stock_products: 0, out_of_stock_products: 0 },
+        customers: customersStats || { total_customers: 0, new_customers_30d: 0, new_customers_7d: 0 },
+        orders: ordersStats || { total_orders: 0, completed_orders: 0, pending_orders: 0, today_orders: 0 },
+        generated_at: new Date().toISOString()
+      },
+      message: 'Analytics statistics retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Stats error:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to fetch statistics: ' + (error as Error).message
     }, 500);
   }
 });

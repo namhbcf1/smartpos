@@ -10,51 +10,14 @@ app.use('*', authenticate);
 // Initialize alerts tables
 async function initAlertsTables(DB: any) {
   try {
-    // Create stock_alerts table
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS stock_alerts (
-        id TEXT PRIMARY KEY,
-        product_id TEXT NOT NULL,
-        alert_type TEXT NOT NULL,
-        threshold_value INTEGER,
-        current_value INTEGER,
-        message TEXT,
-        is_active INTEGER DEFAULT 1,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
+    // Create stock_alerts table    // Tables should be created via migrations, not in routes
 
-    // Create warranty_alerts table
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS warranty_alerts (
-        id TEXT PRIMARY KEY,
-        warranty_id TEXT NOT NULL,
-        alert_type TEXT NOT NULL,
-        days_before_expiry INTEGER,
-        message TEXT,
-        is_active INTEGER DEFAULT 1,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
+    // Migration 006 handles all table creation
 
     // Create customer_notifications table
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS customer_notifications (
-        id TEXT PRIMARY KEY,
-        customer_id TEXT NOT NULL,
-        notification_type TEXT NOT NULL,
-        title TEXT,
-        content TEXT,
-        channel TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
-        scheduled_at TEXT,
-        sent_at TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
+    // Tables should be created via migrations, not in routes
+
+    // Migration 006 handles all table creation
   } catch (error) {
     console.error('Failed to initialize alerts tables:', error);
   }

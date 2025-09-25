@@ -2,7 +2,7 @@ import { Context, Next } from 'hono';
 import { cors } from 'hono/cors';
 
 interface CorsConfig {
-  origin?: string | string[] | ((origin: string) => boolean);
+  origin?: string | string[] | ((origin: string, c: Context) => string | null | undefined | Promise<string | null | undefined>);
   methods?: string[];
   allowedHeaders?: string[];
   exposedHeaders?: string[];
@@ -29,7 +29,7 @@ export const createCorsMiddleware = (config: CorsConfig = {}) => {
   } = config;
 
   return cors({
-    origin: Array.isArray(origin) ? origin : typeof origin === 'string' ? [origin] : ['*'],
+    origin: typeof origin === 'function' ? (origin as any) : (Array.isArray(origin) ? origin : typeof origin === 'string' ? [origin] : ['*']),
     allowMethods: methods,
     allowHeaders: allowedHeaders,
     exposeHeaders: exposedHeaders,
@@ -40,13 +40,16 @@ export const createCorsMiddleware = (config: CorsConfig = {}) => {
 
 // Predefined CORS configurations
 export const productionCors = createCorsMiddleware({
-  origin: [
-    'https://namhbcf.uk',
-    'https://namhbcf-uk.pages.dev',
-    'https://www.namhbcf.uk',
-    'https://4aacc20a.namhbcf-uk.pages.dev',
-    'https://0f024aa5.namhbcf-uk.pages.dev'
-  ],
+  origin: (origin: string) => {
+    const allowedOrigins = [
+      'https://namhbcf.uk',
+      'https://namhbcf-uk.pages.dev',
+      'https://www.namhbcf.uk'
+    ];
+    // Allow any subdomain of namhbcf-uk.pages.dev
+    const isPagesDomain = /^https:\/\/[a-z0-9-]+\.namhbcf-uk\.pages\.dev$/.test(origin);
+    return (allowedOrigins.includes(origin) || isPagesDomain) ? origin : null;
+  },
   credentials: true
 });
 

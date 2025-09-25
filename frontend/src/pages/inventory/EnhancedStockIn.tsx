@@ -32,7 +32,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { API_V1_BASE_URL } from '../../services/api';
+import { API_BASE_URL } from '../../services/api';
 
 // Import all the enhanced components
 import SupplierSelector from '../../components/SupplierSelector';
@@ -176,7 +176,7 @@ const EnhancedStockIn: React.FC = () => {
     try {
       setSubmitting(true);
       const loadingId = toast.loading('Đang lưu bản nháp...');
-      const { data } = await api.post(`${API_V1_BASE_URL}/inventory/stock-in/drafts`, buildPayload());
+      const { data } = await api.post(`${API_BASE_URL}/inventory/stock-in/drafts`, buildPayload());
       toast.success('Đã lưu bản nháp!', { id: loadingId });
       // Navigate to draft detail if returned
       if (data?.id) navigate(`/inventory/stock-in/drafts/${data.id}`);
@@ -201,7 +201,7 @@ const EnhancedStockIn: React.FC = () => {
     try {
       setSubmitting(true);
       const loadingId = toast.loading('Đang tạo phiếu nhập...');
-      const { data } = await api.post(`${API_V1_BASE_URL}/inventory/stock-in`, buildPayload());
+      const { data } = await api.post(`${API_BASE_URL}/inventory/stock-in`, buildPayload());
       clearForm();
       toast.success('Tạo phiếu nhập thành công!', { id: loadingId });
       // Navigate to receipt detail
@@ -220,7 +220,7 @@ const EnhancedStockIn: React.FC = () => {
         return (
           <Grid container spacing={3}>
             {/* Main Stock-In Form */}
-            <Grid item xs={12} lg={8}>
+            <Grid item xs={12} lg={8} component="div">
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -228,7 +228,7 @@ const EnhancedStockIn: React.FC = () => {
                   </Typography>
                   
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} md={6} component="div">
                       <SupplierSelector
                         value={selectedSupplier as any}
                         onChange={(supplier: any) => {
@@ -242,7 +242,7 @@ const EnhancedStockIn: React.FC = () => {
                       />
                     </Grid>
                     
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} md={6} component="div">
                       <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                         <Button
                           variant="outlined"
@@ -303,24 +303,24 @@ const EnhancedStockIn: React.FC = () => {
                         <Card key={index} variant="outlined" sx={{ mb: 2 }}>
                           <CardContent>
                             <Grid container spacing={2} alignItems="center">
-                              <Grid item xs={12} sm={4}>
+                              <Grid item xs={12} sm={4} component="div">
                                 <Typography variant="subtitle2">
                                   {item.product_name}
                                 </Typography>
                               </Grid>
-                              <Grid item xs={6} sm={3}>
+                              <Grid item xs={6} sm={3} component="div">
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                   <Button variant="outlined" size="small" onClick={() => updateItemQuantity(index, -1)}>-</Button>
                                   <Typography variant="body2" sx={{ minWidth: 24, textAlign: 'center' }}>{item.quantity}</Typography>
                                   <Button variant="outlined" size="small" onClick={() => updateItemQuantity(index, 1)}>+</Button>
                                 </Box>
                               </Grid>
-                              <Grid item xs={6} sm={3}>
+                              <Grid item xs={6} sm={3} component="div">
                                 <Typography variant="body2">
                                   Giá: {item.cost_price.toLocaleString()} ₫
                                 </Typography>
                               </Grid>
-                              <Grid item xs={12} sm={2}>
+                              <Grid item xs={12} sm={2} component="div">
                                 <SerialNumberInput
                                   value={item.serial_numbers}
                                   onChange={(serials) => {
@@ -331,7 +331,7 @@ const EnhancedStockIn: React.FC = () => {
                                   maxSerials={item.quantity}
                                 />
                               </Grid>
-                              <Grid item xs={12} sm={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                              <Grid item xs={12} sm={2} sx={{ display: 'flex', justifyContent: 'flex-end' }} component="div">
                                 <Button color="error" size="small" onClick={() => removeItem(index)}>Xóa</Button>
                               </Grid>
                             </Grid>
@@ -345,7 +345,7 @@ const EnhancedStockIn: React.FC = () => {
             </Grid>
 
             {/* Smart Suggestions Sidebar */}
-            <Grid item xs={12} lg={4}>
+            <Grid item xs={12} lg={4} component="div">
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <SmartProductSuggestions
                   supplierId={selectedSupplier?.id}
@@ -360,14 +360,14 @@ const EnhancedStockIn: React.FC = () => {
       case 'suggestions':
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} component="div">
               <SmartProductSuggestions
                 supplierId={selectedSupplier?.id}
                 onProductSelect={handleProductSelect}
                 maxSuggestions={10}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} component="div">
               <InventoryForecasting
                 supplierId={selectedSupplier?.id}
                 onReorderSuggestion={(productId, quantity) => {
@@ -523,11 +523,17 @@ const EnhancedStockIn: React.FC = () => {
         open={photoCaptureOpen}
         onClose={() => setPhotoCaptureOpen(false)}
         onPhotosCapture={(photos: any[]) => {
-          const uploadUrl = `${API_V1_BASE_URL}/r2/upload` as string;
+          const uploadUrl = `${API_BASE_URL}/r2/upload` as string;
           if (!uploadUrl) return;
           const form = new FormData();
           photos.forEach((p: any, idx: number) => form.append('file' + idx, (p?.file as File) || p));
-          fetch(uploadUrl, { method: 'POST', body: form })
+          const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+          fetch(uploadUrl, { 
+            method: 'POST', 
+            body: form,
+            headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+            credentials: 'include'
+          })
             .then(() => {})
             .catch(() => {});
         }}

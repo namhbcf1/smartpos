@@ -1,7 +1,7 @@
 // Layout constants
 export const drawerWidth = 240;
 
-// API endpoints - Updated to remove /api/v1 prefix (backend adds it automatically)
+// API endpoints - Updated to remove /api prefix (backend adds it automatically)
 export const API_ENDPOINTS = {
   // Authentication
   LOGIN: '/simple-login',

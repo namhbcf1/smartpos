@@ -166,7 +166,7 @@ app.post('/momo/create', async (c: any) => {
       secretKey: c.env.MOMO_SECRET_KEY || '',
       endpoint: 'https://test-payment.momo.vn/v2/gateway/api/create',
       returnUrl: 'https://namhbcf-uk.pages.dev/payment/success',
-      notifyUrl: 'https://namhbcf-api.bangachieu2.workers.dev/api/v1/payments/momo/callback'
+      notifyUrl: 'https://namhbcf-api.bangachieu2.workers.dev/api/payments/momo/callback'
     };
 
     const momoService = new MoMoService(momoConfig);

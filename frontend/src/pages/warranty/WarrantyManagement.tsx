@@ -1264,8 +1264,8 @@ const WarrantyManagement: React.FC = () => {
                           value={warrantyForm.brand || ''}
                           onChange={(e) => setWarrantyForm({...warrantyForm, brand: e.target.value})}
                           disabled={!isEditMode && !!selectedWarranty}
-                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50">
-                          placeholder="Nhập thương hiệu"
+                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50"
+                  placeholder="Nhập thương hiệu"
                         />
                       </div>
                     </div>
@@ -1280,8 +1280,8 @@ const WarrantyManagement: React.FC = () => {
                         onChange={(e) => setWarrantyForm({...warrantyForm, product_description: e.target.value})}
                         disabled={!isEditMode && !!selectedWarranty}
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50">
-                        placeholder="Nhập mô tả chi tiết sản phẩm"
+                        className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50"
+                  placeholder="Nhập mô tả chi tiết sản phẩm"
                       />
                     </div>
                   </div>
@@ -1304,8 +1304,8 @@ const WarrantyManagement: React.FC = () => {
                             validateWarrantyForm(next);
                           }}
                           disabled={!isEditMode && !!selectedWarranty}
-                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50">
-                          placeholder="Nhập tên khách hàng"
+                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50"
+                  placeholder="Nhập tên khách hàng"
                         />
                         {formErrors.customer_name && <p className="mt-1 text-xs text-red-600">{formErrors.customer_name}</p>}
                       </div>
@@ -1322,8 +1322,8 @@ const WarrantyManagement: React.FC = () => {
                             validateWarrantyForm(next);
                           }}
                           disabled={!isEditMode && !!selectedWarranty}
-                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50">
-                          placeholder="Nhập số điện thoại"
+                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50"
+                  placeholder="Nhập số điện thoại"
                         />
                         {formErrors.customer_phone && <p className="mt-1 text-xs text-red-600">{formErrors.customer_phone}</p>}
                       </div>
@@ -1340,8 +1340,8 @@ const WarrantyManagement: React.FC = () => {
                             validateWarrantyForm(next);
                           }}
                           disabled={!isEditMode && !!selectedWarranty}
-                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50">
-                          placeholder="Nhập email khách hàng"
+                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50"
+                  placeholder="Nhập email khách hàng"
                         />
                         {formErrors.customer_email && <p className="mt-1 text-xs text-red-600">{formErrors.customer_email}</p>}
                       </div>
@@ -1354,8 +1354,8 @@ const WarrantyManagement: React.FC = () => {
                           value={warrantyForm.customer_company || ''}
                           onChange={(e) => setWarrantyForm({...warrantyForm, customer_company: e.target.value})}
                           disabled={!isEditMode && !!selectedWarranty}
-                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50">
-                          placeholder="Nhập tên công ty"
+                          className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50"
+                  placeholder="Nhập tên công ty"
                         />
                       </div>
                     </div>
@@ -1368,8 +1368,8 @@ const WarrantyManagement: React.FC = () => {
                         onChange={(e) => setWarrantyForm({...warrantyForm, customer_address: e.target.value})}
                         disabled={!isEditMode && !!selectedWarranty}
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50">
-                        placeholder="Nhập địa chỉ khách hàng"
+                        className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50"
+                  placeholder="Nhập địa chỉ khách hàng"
                       />
                     </div>
                   </div>
@@ -1468,8 +1468,8 @@ const WarrantyManagement: React.FC = () => {
                         onChange={(e) => setWarrantyForm({...warrantyForm, warranty_terms: e.target.value})}
                         disabled={!isEditMode && !!selectedWarranty}
                         rows={4}
-                        className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50">
-                        placeholder="Nhập điều khoản bảo hành chi tiết"
+                        className="w-full px-3 py-2 border border-gray-300  rounded-lg focus:ring-2 focus:ring-blue-500  disabled:opacity-50"
+                  placeholder="Nhập điều khoản bảo hành chi tiết"
                       />
                     </div>
                   </div>

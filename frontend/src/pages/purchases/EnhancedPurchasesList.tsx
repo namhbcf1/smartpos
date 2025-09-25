@@ -402,8 +402,8 @@ export default function EnhancedPurchasesList() {
                         <div className="flex items-center justify-end space-x-2">
                           <Link
                             to={`/purchases/${order.id}`}
-                            className="text-blue-600 hover:text-blue-800">
-                            title="Xem chi tiết"
+                            className="text-blue-600 hover:text-blue-800"
+                  title="Xem chi tiết"
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
@@ -411,8 +411,8 @@ export default function EnhancedPurchasesList() {
                           {order.status === 'pending' && hasPermission?.('purchases.approve') && (
                             <button
                               onClick={() => handleQuickAction(order.id, 'approve')}
-                              className="text-green-600 hover:text-green-800">
-                              title="Duyệt đơn"
+                              className="text-green-600 hover:text-green-800"
+                  title="Duyệt đơn"
                             >
                               <CheckCircle className="w-4 h-4" />
                             </button>
@@ -421,8 +421,8 @@ export default function EnhancedPurchasesList() {
                           {order.status === 'approved' && hasPermission?.('purchases.receive') && (
                             <Link
                               to={`/purchases/${order.id}/receive`}
-                              className="text-purple-600 hover:text-purple-800">
-                              title="Nhận hàng"
+                              className="text-purple-600 hover:text-purple-800"
+                  title="Nhận hàng"
                             >
                               <Truck className="w-4 h-4" />
                             </Link>
@@ -431,8 +431,8 @@ export default function EnhancedPurchasesList() {
                           {(order.status === 'pending' || order.status === 'approved') && hasPermission?.('purchases.cancel') && (
                             <button
                               onClick={() => handleQuickAction(order.id, 'cancel')}
-                              className="text-red-600 hover:text-red-800">
-                              title="Hủy đơn"
+                              className="text-red-600 hover:text-red-800"
+                  title="Hủy đơn"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>

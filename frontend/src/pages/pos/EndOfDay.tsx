@@ -243,7 +243,7 @@ export default function EndOfDay() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
           >
             {/* Performance Metrics */}
             <Card className="shadow-xl border-0 bg-white/70 backdrop-blur-lg">
@@ -255,17 +255,17 @@ export default function EndOfDay() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 trị đơn hàng TB:</span>">
+                  <span className="text-gray-600">Giá trị đơn hàng TB:</span>
                   <span className="font-semibold">
                     {sum.sales_count > 0 ? (sum.total / sum.sales_count).toLocaleString('vi-VN') : '0'} ₫
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 cao điểm:</span>">
+                  <span className="text-gray-600">Khung giờ cao điểm:</span>
                   <span className="font-semibold">{sum.peak_hour || '14:00-15:00'}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 hàng:</span>">
+                  <span className="text-gray-600">Số khách hàng:</span>
                   <span className="font-semibold">{sum.customer_count || sum.sales_count}</span>
                 </div>
               </CardContent>
@@ -290,7 +290,7 @@ export default function EndOfDay() {
                     return (
                       <div key={item.method} className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">
+                          <span className="text-gray-600">{item.method}</span>
                           <span className="font-medium">{percentage.toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
@@ -317,7 +317,8 @@ export default function EndOfDay() {
               <CardContent className="space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full justify-start" onClick={() => setShowDetailedReport(!showDetailedReport)}
+                  className="w-full justify-start"
+                  onClick={() => setShowDetailedReport(!showDetailedReport)}
                 >
                   <BarChart3 className="w-4 h-4 mr-2" />
                   {showDetailedReport ? 'Ẩn' : 'Xem'} báo cáo chi tiết
@@ -349,7 +350,7 @@ export default function EndOfDay() {
                     <Clock className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 ngày</h3>">
+                    <h3 className="text-2xl font-bold text-gray-900">Chốt ngày</h3>
                     <p className="text-gray-600">
                       Hoàn tất báo cáo và khóa dữ liệu ngày hôm nay
                     </p>
@@ -359,7 +360,7 @@ export default function EndOfDay() {
                 <Button
                   onClick={closeDay}
                   disabled={closing || !sum || !hasPermission?.('pos.end_of_day')}
-                  className="h-14 px-8 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-semibold text-lg shadow-lg">
+                  className="h-14 px-8 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-semibold text-lg shadow-lg"
                 >
                   {closing ? (
                     <div className="flex items-center space-x-2">

@@ -206,7 +206,7 @@ const StockTransfer = () => {
         <CardContent>
           <Grid container spacing={3}>
             {/* Product Selection */}
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Typography variant="h6" gutterBottom>
                 Chọn sản phẩm
               </Typography>
@@ -253,7 +253,7 @@ const StockTransfer = () => {
             {selectedProduct && (
               <>
                 {/* Product Info */}
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <Alert severity="info">
                     <Typography variant="body2">
                       <strong>Sản phẩm:</strong> {selectedProduct.name} ({selectedProduct.sku})
@@ -267,7 +267,7 @@ const StockTransfer = () => {
                   </Alert>
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Button variant="text" startIcon={<SwapIcon />} onClick={swapStores} disabled={fromStoreId === toStoreId}>
                       Đổi chiều chi nhánh
@@ -276,7 +276,7 @@ const StockTransfer = () => {
                 </Grid>
 
                 {/* Transfer Details */}
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <FormControl fullWidth>
                     <InputLabel>Từ chi nhánh</InputLabel>
                     <Select
@@ -301,7 +301,7 @@ const StockTransfer = () => {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <FormControl fullWidth>
                     <InputLabel>Đến chi nhánh</InputLabel>
                     <Select
@@ -326,7 +326,7 @@ const StockTransfer = () => {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <TextField
                     fullWidth
                     type="number"
@@ -338,7 +338,7 @@ const StockTransfer = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} component="div">
                   <TextField
                     fullWidth
                     label="Tổng giá trị"
@@ -350,7 +350,7 @@ const StockTransfer = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <TextField
                     fullWidth
                     label="Ghi chú"
@@ -363,7 +363,7 @@ const StockTransfer = () => {
                 </Grid>
 
                 {/* Transfer Summary */}
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <Alert severity="warning">
                     <Typography variant="body2" gutterBottom>
                       <strong>Xác nhận chuyển kho:</strong>
@@ -379,7 +379,7 @@ const StockTransfer = () => {
                 </Grid>
 
                 {/* Submit Button */}
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Button
                       variant="contained"

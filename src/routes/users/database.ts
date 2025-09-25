@@ -394,9 +394,8 @@ export class UserDatabase {
         admin_count: stats?.admin_count || 0,
         manager_count: stats?.manager_count || 0,
         cashier_count: stats?.cashier_count || 0,
-        staff_count: stats?.staff_count || 0,
-        recent_logins: stats?.recent_logins || 0,
-        stores_count: storesCount?.count || 0
+        employee_count: stats?.staff_count || 0,
+        recent_logins: stats?.recent_logins || 0
       };
     } catch (error) {
       console.error('Error getting user stats:', error);

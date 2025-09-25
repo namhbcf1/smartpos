@@ -19,18 +19,9 @@ app.get('/', async (c: any) => {
     if (!hasBrands) {
       // Create brands table and sample data
       try {
-        await c.env.DB.prepare(`
-          CREATE TABLE IF NOT EXISTS brands (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            logo_url TEXT,
-            website TEXT,
-            is_active INTEGER DEFAULT 1,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          )
-        `).run();
+        // Tables should be created via migrations, not in routes
+
+        // Migration 006 handles all table creation
 
         // Insert sample brands
         await c.env.DB.prepare(`

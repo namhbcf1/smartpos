@@ -4,7 +4,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   Box,
   Typography,
   TextField,
@@ -15,9 +14,7 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider,
   Paper,
-  Grid,
   Card,
   CardContent,
   IconButton,
@@ -25,14 +22,13 @@ import {
 } from '@mui/material';
 import {
   CloudUpload as UploadIcon,
-  Download as DownloadIcon,
   CheckCircle as CheckIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,
   ContentCopy as CopyIcon,
-  Clear as ClearIcon,
   GetApp as TemplateIcon
 } from '@mui/icons-material';
+import { Button } from './ui/Button';
 import { comprehensiveAPI } from '../services/business/comprehensiveApi';
 
 interface SerialImportResult {
@@ -135,7 +131,7 @@ SERIAL005`;
         return;
       }
 
-      const response = await comprehensiveAPI.post('/inventory/bulk-serial-import', {
+      const response = await comprehensiveAPI.inventory.createSerialNumber({
         product_id: productId,
         serial_numbers: processedSerials
       });
@@ -196,26 +192,26 @@ SERIAL005`;
 
       <DialogContent>
         <Box sx={{ mb: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
               <Button
-                variant={importMode === 'text' ? 'contained' : 'outlined'}
+                variant={importMode === 'text' ? 'default' : 'outline'}
                 onClick={() => setImportMode('text')}
-                fullWidth
+                className="w-full"
               >
                 Text Input
               </Button>
-            </Grid>
-            <Grid item xs={12} md={6}>
+            </div>
+            <div>
               <Button
-                variant={importMode === 'file' ? 'contained' : 'outlined'}
+                variant={importMode === 'file' ? 'default' : 'outline'}
                 onClick={() => setImportMode('file')}
-                fullWidth
+                className="w-full"
               >
                 File Upload
               </Button>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </Box>
 
         {importMode === 'text' ? (
@@ -223,9 +219,8 @@ SERIAL005`;
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Enter Serial Numbers</Typography>
               <Button
-                size="small"
+                size="sm"
                 onClick={generateSampleSerials}
-                startIcon={<CopyIcon />}
               >
                 Generate Samples
               </Button>
@@ -450,10 +445,9 @@ SERIAL005`;
         </Button>
         {!result && (
           <Button
-            variant="contained"
+            variant="default"
             onClick={handleImport}
             disabled={!serialNumbers.trim() || loading}
-            startIcon={<UploadIcon />}
           >
             Import Serial Numbers
           </Button>

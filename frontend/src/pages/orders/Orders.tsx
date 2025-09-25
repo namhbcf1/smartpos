@@ -213,23 +213,10 @@ const Orders = () => {
   const loadOrderData = async () => {
     setLoading(true);
     try {
-      // API endpoint to fetch orders - needs proper backend implementation
-      const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
-      const token = localStorage.getItem('authToken');
-
-      const response = await fetch(`${apiUrl}/api/v1/orders?page=1&limit=20&search=${filters.search}&status=${filters.status}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Tenant-ID': 'default'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load orders');
-      }
-
-      const data = await response.json();
-      if (data.success) {
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.get(`/orders?page=1&limit=20&search=${filters.search}&status=${filters.status}`);
+      const data = response?.data;
+      if (data.success && data.data && Array.isArray(data.data.orders)) {
         // Map API data to component format
         const mappedOrders = data.data.orders.map((order: any, index: number) => ({
           id: order.id || index + 1,
@@ -420,27 +407,15 @@ const Orders = () => {
   // Event handlers
   const handleViewOrder = async (order: Order) => {
     try {
-      // Fetch order details from API
-      const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
-      const token = localStorage.getItem('authToken');
-
-      const response = await fetch(`${apiUrl}/api/v1/orders/${order.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Tenant-ID': 'default'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.get(`/orders/${order.id}`);
+      const data = response?.data;
+        if (data?.success && data?.data) {
           setSelectedOrder({ order, items: data.data.items || [] });
         } else {
           setSelectedOrder({ order, items: [] });
         }
-      } else {
-        setSelectedOrder({ order, items: [] });
-      }
+      
     } catch (error) {
       console.error('Failed to load order details:', error);
       setSelectedOrder({ order, items: [] });
@@ -450,27 +425,14 @@ const Orders = () => {
 
   const handleEditOrder = async (order: Order) => {
     try {
-      // Fetch order details from API for editing
-      const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
-      const token = localStorage.getItem('authToken');
-
-      const response = await fetch(`${apiUrl}/api/v1/orders/${order.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Tenant-ID': 'default'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.get(`/orders/${order.id}`);
+      const data = response?.data;
+      if (data?.success && data?.data) {
           setSelectedOrder({ order, items: data.data.items || [] });
         } else {
           setSelectedOrder({ order, items: [] });
         }
-      } else {
-        setSelectedOrder({ order, items: [] });
-      }
     } catch (error) {
       console.error('Failed to load order details:', error);
       setSelectedOrder({ order, items: [] });
@@ -480,27 +442,14 @@ const Orders = () => {
 
   const handleUpdateStatus = async (order: Order) => {
     try {
-      // Fetch order details from API
-      const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
-      const token = localStorage.getItem('authToken');
-
-      const response = await fetch(`${apiUrl}/api/v1/orders/${order.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Tenant-ID': 'default'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.get(`/orders/${order.id}`);
+      const data = response?.data;
+      if (data?.success && data?.data) {
           setSelectedOrder({ order, items: data.data.items || [] });
         } else {
           setSelectedOrder({ order, items: [] });
         }
-      } else {
-        setSelectedOrder({ order, items: [] });
-      }
     } catch (error) {
       console.error('Failed to load order details:', error);
       setSelectedOrder({ order, items: [] });

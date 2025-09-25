@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
 import { authenticate } from '../../middleware/auth';
+import { IdempotencyMiddleware } from '../../middleware/idempotency';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -195,7 +196,7 @@ app.get('/:id', async (c: any) => {
 });
 
 // POST /api/purchase-orders - Create purchase order
-app.post('/', async (c: any) => {
+app.post('/', IdempotencyMiddleware.api, async (c: any) => {
   try {
     const data = await c.req.json();
     const { supplier_id, items, expected_delivery_date, notes } = data;

@@ -103,27 +103,20 @@ const CategoriesNew: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/v1/categories', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          description: formData.description.trim() || null,
-          is_active: formData.is_active
-        })
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.post('/categories', {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        is_active: formData.is_active
       });
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response?.data?.success) {
         toast.success('Tạo danh mục thành công');
         setShowCreateModal(false);
         resetForm();
         loadCategories();
       } else {
-        throw new Error(result.message || 'Failed to create category');
+        throw new Error(response?.data?.message || 'Failed to create category');
       }
     } catch (error) {
       console.error('Create category error:', error);
@@ -139,28 +132,21 @@ const CategoriesNew: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/v1/categories/${selectedCategory.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          description: formData.description.trim() || null,
-          is_active: formData.is_active
-        })
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.put(`/categories/${selectedCategory.id}`, {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        is_active: formData.is_active
       });
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response?.data?.success) {
         toast.success('Cập nhật danh mục thành công');
         setShowEditModal(false);
         setSelectedCategory(null);
         resetForm();
         loadCategories();
       } else {
-        throw new Error(result.message || 'Failed to update category');
+        throw new Error(response?.data?.message || 'Failed to update category');
       }
     } catch (error) {
       console.error('Update category error:', error);
@@ -173,19 +159,16 @@ const CategoriesNew: React.FC = () => {
     if (!selectedCategory) return;
 
     try {
-      const response = await fetch(`/api/v1/categories/${selectedCategory.id}`, {
-        method: 'DELETE'
-      });
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.delete(`/categories/${selectedCategory.id}`);
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response?.data?.success) {
         toast.success('Xóa danh mục thành công');
         setShowDeleteConfirm(false);
         setSelectedCategory(null);
         loadCategories();
       } else {
-        throw new Error(result.message || 'Failed to delete category');
+        throw new Error(response?.data?.message || 'Failed to delete category');
       }
     } catch (error) {
       console.error('Delete category error:', error);

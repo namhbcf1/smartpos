@@ -61,6 +61,7 @@ interface Device {
 const DeviceManagement: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<Device | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -248,11 +249,24 @@ const DeviceManagement: React.FC = () => {
           <p className="text-gray-600">Theo dõi và quản lý tất cả thiết bị trong hệ thống</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => {
+            const header = 'deviceId,name,type,brand,model,serial,status,branch\n'
+            const rows = filteredDevices.map(d => `${d.deviceId},${d.name},${d.type},${d.brand},${d.model},${d.serialNumber},${d.status},${d.branchName}`).join('\n')
+            const csv = header + rows
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `devices_${new Date().toISOString().slice(0,10)}.csv`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+          }}>
             <Download className="w-4 h-4 mr-2" />
             Xuất báo cáo
           </Button>
-          <Button>
+          <Button onClick={() => alert('Thêm thiết bị mới')}>
             <Plus className="w-4 h-4 mr-2" />
             Thêm thiết bị
           </Button>
@@ -338,7 +352,7 @@ const DeviceManagement: React.FC = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full p-2 border rounded-md">
+                className="w-full p-2 border rounded-md"
               >
                 <option value="all">Tất cả</option>
                 <option value="active">Hoạt động</option>
@@ -353,7 +367,7 @@ const DeviceManagement: React.FC = () => {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full p-2 border rounded-md">
+                className="w-full p-2 border rounded-md"
               >
                 <option value="all">Tất cả</option>
                 <option value="pos">POS</option>
@@ -370,7 +384,7 @@ const DeviceManagement: React.FC = () => {
               <select
                 value={branchFilter}
                 onChange={(e) => setBranchFilter(e.target.value)}
-                className="w-full p-2 border rounded-md">
+                className="w-full p-2 border rounded-md"
               >
                 <option value="all">Tất cả</option>
                 <option value="BR001">Chi nhánh trung tâm</option>
@@ -499,10 +513,10 @@ const DeviceManagement: React.FC = () => {
                       </td>
                       <td className="p-3">
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => setSelected(device)}>
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => setSelected(device)}>
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button size="sm" variant="outline">
@@ -521,8 +535,34 @@ const DeviceManagement: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      {selected && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setSelected(null)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Chi tiết thiết bị</h3>
+              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div><span className="font-medium">Tên:</span> {selected.name}</div>
+              <div><span className="font-medium">Mã:</span> {selected.deviceId}</div>
+              <div><span className="font-medium">Loại:</span> {selected.type}</div>
+              <div><span className="font-medium">Serial:</span> {selected.serialNumber}</div>
+              <div><span className="font-medium">Chi nhánh:</span> {selected.branchName}</div>
+              <div><span className="font-medium">Trạng thái:</span> {getStatusInfo(selected.status).label}</div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSelected(null)}>Đóng</Button>
+              <Button onClick={() => alert('Lưu cập nhật (tương lai sẽ gọi API)')}>Lưu</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
+// Simple details modal
+// Note: Using inline modal to avoid extra imports
+// Render after table
 
 export default DeviceManagement

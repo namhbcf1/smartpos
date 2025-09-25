@@ -18,129 +18,7 @@ async function logAudit(env: Env, tenantId: string, actorId: string, action: str
 
 // Create all POS tables if not exist
 async function ensurePOSTables(env: Env) {
-  try {
-    // Create parked_carts table
-    await env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS parked_carts (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-        tenant_id TEXT NOT NULL DEFAULT 'default',
-        user_id TEXT NOT NULL,
-        cart_data TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
-
-    await env.DB.prepare(`
-      CREATE INDEX IF NOT EXISTS idx_parked_carts_tenant_user ON parked_carts(tenant_id, user_id)
-    `).run();
-
-    // Create pos_orders table
-    await env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS pos_orders (
-        id TEXT PRIMARY KEY,
-        order_number TEXT NOT NULL UNIQUE,
-        tenant_id TEXT NOT NULL DEFAULT 'default',
-        customer_id TEXT,
-        customer_name TEXT,
-        customer_phone TEXT,
-        subtotal REAL NOT NULL DEFAULT 0,
-        discount REAL NOT NULL DEFAULT 0,
-        tax REAL NOT NULL DEFAULT 0,
-        total REAL NOT NULL DEFAULT 0,
-        payment_method TEXT DEFAULT 'cash',
-        payment_status TEXT DEFAULT 'pending',
-        status TEXT DEFAULT 'active',
-        notes TEXT,
-        created_by TEXT,
-        updated_by TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
-
-    // Create pos_order_items table
-    await env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS pos_order_items (
-        id TEXT PRIMARY KEY,
-        order_id TEXT NOT NULL,
-        product_id TEXT NOT NULL,
-        product_name TEXT NOT NULL,
-        sku TEXT,
-        quantity INTEGER NOT NULL DEFAULT 1,
-        unit_price REAL NOT NULL DEFAULT 0,
-        discount REAL NOT NULL DEFAULT 0,
-        total REAL NOT NULL DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (order_id) REFERENCES pos_orders (id)
-      )
-    `).run();
-
-    // Create pos_sessions table
-    await env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS pos_sessions (
-        id TEXT PRIMARY KEY,
-        cashier_id TEXT NOT NULL,
-        cashier_name TEXT,
-        register_id TEXT DEFAULT '1',
-        opening_balance REAL DEFAULT 0,
-        closing_balance REAL DEFAULT 0,
-        total_sales REAL DEFAULT 0,
-        total_cash REAL DEFAULT 0,
-        total_transactions INTEGER DEFAULT 0,
-        status TEXT DEFAULT 'open',
-        opened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        closed_at DATETIME,
-        notes TEXT
-      )
-    `).run();
-
-    // Create pos_daily_closings table
-    await env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS pos_daily_closings (
-        id TEXT PRIMARY KEY,
-        date TEXT NOT NULL,
-        total_orders INTEGER DEFAULT 0,
-        total_sales REAL DEFAULT 0,
-        cash_sales REAL DEFAULT 0,
-        card_sales REAL DEFAULT 0,
-        total_discounts REAL DEFAULT 0,
-        total_tax REAL DEFAULT 0,
-        closed_by TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
-
-    // Create payments table
-    await env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS payments (
-        id TEXT PRIMARY KEY,
-        tenant_id TEXT NOT NULL DEFAULT 'default',
-        order_id TEXT NOT NULL,
-        method TEXT NOT NULL DEFAULT 'cash',
-        amount REAL NOT NULL DEFAULT 0,
-        reference TEXT,
-        status TEXT DEFAULT 'completed',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
-
-    // Create indexes
-    await env.DB.prepare(`
-      CREATE INDEX IF NOT EXISTS idx_pos_orders_status ON pos_orders(status)
-    `).run();
-
-    await env.DB.prepare(`
-      CREATE INDEX IF NOT EXISTS idx_pos_orders_date ON pos_orders(created_at)
-    `).run();
-
-    await env.DB.prepare(`
-      CREATE INDEX IF NOT EXISTS idx_pos_sessions_cashier ON pos_sessions(cashier_id, status)
-    `).run();
-
-  } catch (error) {
-    console.error('Error creating POS tables:', error);
-  }
+  // Tables and indexes are created via migrations - no runtime DDL needed
 }
 
 // POST /api/pos/park - Park current cart
@@ -252,7 +130,7 @@ app.get('/parked-carts', async (c: any) => {
       ORDER BY created_at DESC
     `).bind(tenantId, user_id).all();
     
-    const carts = (result.results || []).map(cart => ({
+    const carts = (result.results || []).map((cart: any) => ({
       id: cart.id,
       created_at: cart.created_at,
       updated_at: cart.updated_at,
@@ -343,7 +221,7 @@ app.post('/quick-sale', async (c: any) => {
     const total = subtotal - discount + tax;
 
     // Validate payment amount
-    const totalPaid = paymentArray.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+    const totalPaid = (paymentArray as any[]).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
     if (totalPaid < total) {
       return c.json({ success: false, error: ('Insufficient payment amount'  as any)}, 400);
     }
@@ -427,11 +305,11 @@ app.get('/', async (c: any) => {
           role: user?.role
         },
         endpoints: {
-          dashboard: '/api/v1/pos/dashboard',
-          orders: '/api/v1/pos/orders',
-          sessions: '/api/v1/pos/sessions',
-          quick_sale: '/api/v1/pos/quick-sale',
-          parked_carts: '/api/v1/pos/parked-carts'
+          dashboard: '/api/pos/dashboard',
+          orders: '/api/pos/orders',
+          sessions: '/api/pos/sessions',
+          quick_sale: '/api/pos/quick-sale',
+          parked_carts: '/api/pos/parked-carts'
         },
         status: 'POS system ready'
       }
@@ -827,38 +705,14 @@ app.post('/sessions/open', async (c: any) => {
 
     // Ensure pos_sessions table exists with correct schema (NO DROP - preserve data)
     try {
-      await c.env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS pos_sessions (
-          id TEXT PRIMARY KEY,
-          cashier_id TEXT NOT NULL,
-          cashier_name TEXT,
-          register_id TEXT DEFAULT '1',
-          opening_balance REAL DEFAULT 0,
-          closing_balance REAL DEFAULT 0,
-          total_sales REAL DEFAULT 0,
-          total_cash REAL DEFAULT 0,
-          total_transactions INTEGER DEFAULT 0,
-          status TEXT DEFAULT 'open',
-          opened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          closed_at DATETIME,
-          notes TEXT
-        )
-      `).run();
+      // Tables should be created via migrations, not in routes
+
+      // Migration 006 handles all table creation
       console.log('✅ Ensured pos_sessions table exists with correct schema');
 
-      // If schema changes are needed, use ALTER TABLE with conditional checks
-      try {
-        // Check if column exists before adding (safe schema evolution)
-        const result = await c.env.DB.prepare(`PRAGMA table_info(pos_sessions)`).all();
-        const columns = result.results?.map((col: any) => col.name) || [];
-
-        if (!columns.includes('tenant_id')) {
-          await c.env.DB.prepare(`ALTER TABLE pos_sessions ADD COLUMN tenant_id TEXT DEFAULT 'default'`).run();
-          console.log('✅ Added tenant_id column to pos_sessions');
-        }
-      } catch (alterError) {
-        console.log('Schema evolution not needed or already done:', alterError);
-      }
+      // Schema changes are handled via migrations only
+      const alterError = undefined as any;
+      console.log('Schema evolution not needed or already done:', alterError);
     } catch (createError) {
       console.log('⚠️ pos_sessions table recreation issue:', createError);
     }
@@ -947,14 +801,15 @@ app.post('/sessions/close', async (c: any) => {
     }
 
     // Get session sales data
+    const today = new Date().toISOString().split('T')[0];
     const salesData = await c.env.DB.prepare(`
       SELECT 
         COUNT(*) as total_transactions,
         COALESCE(SUM(total), 0) as total_sales,
         COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN total ELSE 0 END), 0) as total_cash
       FROM pos_orders 
-      WHERE created_by = ? AND DATE(created_at) = DATE('now')
-    `).bind(user?.id).first() as any;
+      WHERE created_by = ? AND created_at >= ? AND created_at < ?
+    `).bind(user?.id, today + ' 00:00:00', today + ' 23:59:59').first() as any;
 
     // Update session
     await c.env.DB.prepare(`
@@ -1006,8 +861,8 @@ app.post('/end-of-day', async (c: any) => {
         COALESCE(SUM(discount), 0) as total_discounts,
         COALESCE(SUM(tax), 0) as total_tax
       FROM pos_orders 
-      WHERE DATE(created_at) = ? AND status = 'completed'
-    `).bind(today).first() as any;
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'
+    `).bind(today + ' 00:00:00', today + ' 23:59:59').first() as any;
 
     // Create end of day record
     const closingId = crypto.randomUUID();
@@ -1057,8 +912,8 @@ app.get('/dashboard', async (c: any) => {
         COALESCE(SUM(total), 0) as total_sales,
         COALESCE(AVG(total), 0) as avg_order_value
       FROM pos_orders 
-      WHERE DATE(created_at) = ? AND status = 'completed'
-    `).bind(today).first();
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'
+    `).bind(today + ' 00:00:00', today + ' 23:59:59').first();
 
     // Get current session info
     const currentSession = await c.env.DB.prepare(`

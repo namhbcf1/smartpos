@@ -419,7 +419,7 @@ const Suppliers: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Tìm kiếm nhà cung cấp..."
-                  className="input input-bordered flex-1">
+                  className="input input-bordered flex-1"
                   value={searchTerm}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -436,7 +436,7 @@ const Suppliers: React.FC = () => {
             
             <div className="flex gap-2">
               <select
-                className="select select-bordered">
+                className="select select-bordered"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
               >
@@ -491,7 +491,7 @@ const Suppliers: React.FC = () => {
                   <span className="label-text">Số lượng hiển thị</span>
                 </label>
                 <select
-                  className="select select-bordered">
+                  className="select select-bordered"
                   value={itemsPerPage}
                   onChange={(e) => setItemsPerPage(Number(e.target.value))}
                 >
@@ -583,7 +583,7 @@ const Suppliers: React.FC = () => {
                   <th>
                     <input
                       type="checkbox"
-                      className="checkbox">
+                      className="checkbox"
                       checked={selectedSuppliers.length === (suppliersResponse?.data?.length || 0) && (suppliersResponse?.data?.length || 0) > 0}
                       onChange={handleSelectAll}
                     />
@@ -603,7 +603,7 @@ const Suppliers: React.FC = () => {
                     <td>
                       <input
                         type="checkbox"
-                        className="checkbox">
+                        className="checkbox"
                         checked={selectedSuppliers.includes(supplier.id)}
                         onChange={() => handleSelectSupplier(supplier.id)}
                       />
@@ -777,7 +777,7 @@ const Suppliers: React.FC = () => {
             </div>
             <div className="join">
               <button
-                className="join-item btn">
+                className="join-item btn"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(currentPage - 1)}
               >
@@ -787,7 +787,7 @@ const Suppliers: React.FC = () => {
                 {currentPage}
               </button>
               <button
-                className="join-item btn">
+                className="join-item btn"
                 disabled={currentPage >= suppliersResponse.pagination.pages}
                 onClick={() => setCurrentPage(currentPage + 1)}
               >
@@ -810,11 +810,11 @@ const Suppliers: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text text-gray-700 công ty *</span>">
+                  <span className="label-text text-gray-700">Tên công ty *</span>
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered bg-white  text-gray-900 border-gray-300">
+                  className="input input-bordered bg-white  text-gray-900 border-gray-300"
                   value={formData.name}
                   onChange={(e) => { const next = { ...formData, name: e.target.value }; setFormData(next); validateSupplierForm(next); }}
                   required
@@ -828,7 +828,7 @@ const Suppliers: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered">
+                  className="input input-bordered"
                   value={formData.contactPerson}
                   onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                 />
@@ -840,7 +840,7 @@ const Suppliers: React.FC = () => {
                 </label>
                 <input
                   type="tel"
-                  className="input input-bordered">
+                  className="input input-bordered"
                   value={formData.phone}
                   onChange={(e) => { const next = { ...formData, phone: e.target.value }; setFormData(next); validateSupplierForm(next); }}
                   required
@@ -854,7 +854,7 @@ const Suppliers: React.FC = () => {
                 </label>
                 <input
                   type="email"
-                  className="input input-bordered">
+                  className="input input-bordered"
                   value={formData.email}
                   onChange={(e) => { const next = { ...formData, email: e.target.value }; setFormData(next); validateSupplierForm(next); }}
                 />
@@ -866,7 +866,7 @@ const Suppliers: React.FC = () => {
                   <span className="label-text">Địa chỉ</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered">
+                  className="textarea textarea-bordered"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 />
@@ -877,7 +877,7 @@ const Suppliers: React.FC = () => {
                   <span className="label-text">Trạng thái</span>
                 </label>
                 <select
-                  className="select select-bordered">
+                  className="select select-bordered"
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                 >
@@ -889,29 +889,34 @@ const Suppliers: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label"><span className="label-text">Mã số thuế (MST)</span></label>
-                  <input type="text" className="input input-bordered"> value={formData.tax_number}
+                  <input type="text" className="input input-bordered"
+                    value={formData.tax_number}
                     onChange={(e) => setFormData({ ...formData, tax_number: e.target.value })} />
                 </div>
                 <div className="form-control">
                   <label className="label"><span className="label-text">Website</span></label>
-                  <input type="url" className="input input-bordered"> value={formData.website}
+                  <input type="url" className="input input-bordered"
+                    value={formData.website}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })} />
                 </div>
                 <div className="form-control">
                   <label className="label"><span className="label-text">Tài khoản ngân hàng</span></label>
-                  <input type="text" className="input input-bordered"> value={formData.bank_account}
+                  <input type="text" className="input input-bordered"
+                    value={formData.bank_account}
                     onChange={(e) => setFormData({ ...formData, bank_account: e.target.value })} />
                 </div>
                 <div className="form-control">
                   <label className="label"><span className="label-text">Ngân hàng</span></label>
-                  <input type="text" className="input input-bordered"> value={formData.bank_name}
+                  <input type="text" className="input input-bordered"
+                    value={formData.bank_name}
                     onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })} />
                 </div>
               </div>
 
               <div className="form-control">
                 <label className="label"><span className="label-text">Ghi chú</span></label>
-                <textarea className="textarea textarea-bordered"> value={formData.notes}
+                <textarea className="textarea textarea-bordered"
+                  value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
               </div>
 
@@ -939,7 +944,7 @@ const Suppliers: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-primary">
+                  className="btn btn-primary"
                   disabled={createSupplierMutation.isPending || updateSupplierMutation.isPending}
                 >
                   {(createSupplierMutation.isPending || updateSupplierMutation.isPending) && (

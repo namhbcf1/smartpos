@@ -488,7 +488,8 @@ const ModernPOSPage: React.FC = () => {
                         Xóa
                       </Button>
                       <Button
-                        className="px-6" onClick={() => setShowPayment(true)}
+                        className="px-6"
+                        onClick={() => setShowPayment(true)}
                         disabled={loading}
                       >
                         <CreditCard className="w-4 h-4 mr-2" />
@@ -784,7 +785,7 @@ const ModernPOSPage: React.FC = () => {
                     setSelectedCustomer(customer || null);
                     console.log('👤 Selected customer:', customer);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Chọn khách hàng (tùy chọn)</option>
                   {customers.map(customer => (
@@ -855,8 +856,8 @@ const ModernPOSPage: React.FC = () => {
 
                   {/* Payment Button */}
                   <Button 
-                    className="w-full mt-6"> 
-                    size="lg"
+                    className="w-full mt-6"
+                  size="lg"
                     onClick={() => {
                       console.log('💳 Payment button clicked');
                       setShowPayment(true);

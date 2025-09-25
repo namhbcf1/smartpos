@@ -71,7 +71,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
     <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
       <Grid container spacing={3} alignItems="center">
         {/* Search */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={4} component="div">
           <TextField
             fullWidth
             size="small"
@@ -90,7 +90,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         </Grid>
 
         {/* Payment Method Filter */}
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={2} component="div">
           <FormControl fullWidth size="small">
             <InputLabel>Phương thức</InputLabel>
             <Select
@@ -109,7 +109,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         </Grid>
 
         {/* Status Filter */}
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={2} component="div">
           <FormControl fullWidth size="small">
             <InputLabel>Trạng thái</InputLabel>
             <Select
@@ -128,7 +128,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         </Grid>
 
         {/* Date Range */}
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={2} component="div">
           <DatePicker
             label="Từ ngày"
             value={dateRange.start}
@@ -143,7 +143,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={2} component="div">
           <DatePicker
             label="Đến ngày"
             value={dateRange.end}

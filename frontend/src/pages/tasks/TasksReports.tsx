@@ -1,13 +1,11 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
 import { 
-  BarChart3, Download, Filter, Calendar, TrendingUp, TrendingDown,
-  CheckSquare, Users, Clock, AlertCircle, CheckCircle, XCircle,
-  FileText, PieChart, LineChart, Activity, Target, Award, Timer,
-  User, Building2, Zap, Star, Award as AwardIcon
+  BarChart3, Download, Filter, TrendingUp,
+  FileText, PieChart, Timer,
+  Building2, Award, Target
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 
 interface ReportData {
@@ -347,7 +345,7 @@ export const TasksReports: React.FC = () => {
               <select
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="7d">7 ngày qua</option>
                 <option value="30d">30 ngày qua</option>
@@ -358,7 +356,7 @@ export const TasksReports: React.FC = () => {
               <select
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả phòng ban</option>
                 <option value="Design">Design</option>
@@ -370,7 +368,7 @@ export const TasksReports: React.FC = () => {
               <select
                 value={selectedReportType}
                 onChange={(e) => setSelectedReportType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="summary">Tổng quan</option>
                 <option value="detailed">Chi tiết</option>
@@ -546,7 +544,7 @@ export const TasksReports: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AwardIcon className="w-5 h-5" />
+            <Award className="w-5 h-5" />
             Top nhân viên xuất sắc
           </CardTitle>
         </CardHeader>
@@ -560,9 +558,9 @@ export const TasksReports: React.FC = () => {
                     index === 1 ? 'bg-gray-100' : 
                     index === 2 ? 'bg-orange-100' : 'bg-blue-100'
                   }`}>
-                    {index === 0 && <AwardIcon className="w-4 h-4 text-yellow-600" />}
-                    {index === 1 && <AwardIcon className="w-4 h-4 text-gray-600" />}
-                    {index === 2 && <AwardIcon className="w-4 h-4 text-orange-600" />}
+                    {index === 0 && <Award className="w-4 h-4 text-yellow-600" />}
+                    {index === 1 && <Award className="w-4 h-4 text-gray-600" />}
+                    {index === 2 && <Award className="w-4 h-4 text-orange-600" />}
                     {index > 2 && <span className="text-sm font-bold text-blue-600">{index + 1}</span>}
                   </div>
                   <div>

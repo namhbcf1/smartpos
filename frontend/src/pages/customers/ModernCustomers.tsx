@@ -55,6 +55,10 @@ const ModernCustomers: React.FC = () => {
   const [selectedTier, setSelectedTier] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<boolean>(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Partial<Customer> | null>(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     loadCustomers();
@@ -93,6 +97,105 @@ const ModernCustomers: React.FC = () => {
       setCustomers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportCSV = () => {
+    const header = 'id,full_name,phone,email,address,customer_type,loyalty_points,total_spent,customer_tier\n';
+    const rows = (sortedCustomers || []).map(c => [
+      c.id,
+      (c.full_name || '').replace(/,/g, ' '),
+      c.phone || '',
+      c.email || '',
+      (c.address || '').replace(/,/g, ' '),
+      c.customer_type,
+      c.loyalty_points,
+      c.total_spent,
+      c.customer_tier || ''
+    ].join(','));
+    const csv = header + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleOpenCreate = () => {
+    setEditing(false);
+    setSelectedCustomer({
+      id: '', full_name: '', phone: '', email: '', address: '', customer_type: 'individual', loyalty_points: 0, total_spent: 0, is_active: true
+    });
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (c: Customer) => {
+    setEditing(true);
+    setSelectedCustomer({ ...c });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!selectedCustomer) return;
+    try {
+      const payload: any = {
+        name: selectedCustomer.full_name,
+        phone: selectedCustomer.phone,
+        email: selectedCustomer.email,
+        address: selectedCustomer.address,
+        customer_type: selectedCustomer.customer_type || 'individual'
+      };
+      if (editing && selectedCustomer.id) {
+        const res = await apiClient.put(`/customers/${selectedCustomer.id}`, payload);
+        if (res.data?.success !== false) toast.success('Cập nhật khách hàng thành công');
+      } else {
+        const res = await apiClient.post('/customers', payload);
+        if (res.data?.success !== false) toast.success('Tạo khách hàng thành công');
+      }
+      setShowModal(false);
+      await loadCustomers();
+    } catch (err) {
+      console.error(err);
+      toast.error('Lưu khách hàng thất bại');
+    }
+  };
+
+  const handleImportCSV = async (file: File) => {
+    try {
+      setImporting(true);
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length <= 1) { toast.error('File trống'); setImporting(false); return; }
+      const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const idx = (name: string) => header.indexOf(name);
+      let success = 0; let failed = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',');
+        const body: any = {
+          name: cols[idx('full_name')] || cols[idx('name')] || '',
+          phone: cols[idx('phone')] || '',
+          email: cols[idx('email')] || '',
+          address: cols[idx('address')] || '',
+          customer_type: (cols[idx('customer_type')] || 'individual').trim()
+        };
+        try {
+          const res = await apiClient.post('/customers', body);
+          if (res.data?.success === false) failed++; else success++;
+        } catch {
+          failed++;
+        }
+      }
+      toast.success(`Nhập ${success} bản ghi, lỗi ${failed}`);
+      await loadCustomers();
+    } catch (e) {
+      console.error(e);
+      toast.error('Nhập CSV thất bại');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -187,15 +290,19 @@ const ModernCustomers: React.FC = () => {
           subtitle={`Tổng cộng ${totalCustomers} khách hàng`}
           actions={
             <div className="flex items-center space-x-3">
-              <Button variant="outline">
+              <label className="inline-flex items-center px-3 py-2 border rounded-lg cursor-pointer bg-white">
                 <Upload className="w-4 h-4 mr-2" />
-                Nhập Excel
-              </Button>
-              <Button variant="outline">
+                <span>{importing ? 'Đang nhập...' : 'Nhập CSV'}</span>
+                <input type="file" accept=".csv" className="hidden" onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImportCSV(f);
+                }} />
+              </label>
+              <Button variant="outline" onClick={exportCSV}>
                 <Download className="w-4 h-4 mr-2" />
-                Xuất Excel
+                Xuất CSV
               </Button>
-              <Button>
+              <Button onClick={handleOpenCreate}>
                 <Plus className="w-4 h-4 mr-2" />
                 Thêm khách hàng
               </Button>
@@ -350,10 +457,10 @@ const ModernCustomers: React.FC = () => {
                         </div>
                         
                         <div className="flex items-center space-x-1">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleOpenEdit(customer)}>
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleOpenEdit(customer)}>
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button 
@@ -435,6 +542,30 @@ const ModernCustomers: React.FC = () => {
             />
           )}
         </Section>
+        {showModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowModal(false)}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">{editing ? 'Sửa khách hàng' : 'Thêm khách hàng'}</h3>
+                <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowModal(false)}>✕</button>
+              </div>
+              <div className="space-y-3">
+                <input className="w-full border rounded-lg px-3 py-2" placeholder="Họ tên" value={selectedCustomer?.full_name || ''} onChange={(e) => setSelectedCustomer({ ...(selectedCustomer as any), full_name: e.target.value })} />
+                <input className="w-full border rounded-lg px-3 py-2" placeholder="SĐT" value={selectedCustomer?.phone || ''} onChange={(e) => setSelectedCustomer({ ...(selectedCustomer as any), phone: e.target.value })} />
+                <input className="w-full border rounded-lg px-3 py-2" placeholder="Email" value={selectedCustomer?.email || ''} onChange={(e) => setSelectedCustomer({ ...(selectedCustomer as any), email: e.target.value })} />
+                <input className="w-full border rounded-lg px-3 py-2" placeholder="Địa chỉ" value={selectedCustomer?.address || ''} onChange={(e) => setSelectedCustomer({ ...(selectedCustomer as any), address: e.target.value })} />
+                <select className="w-full border rounded-lg px-3 py-2" value={selectedCustomer?.customer_type || 'individual'} onChange={(e) => setSelectedCustomer({ ...(selectedCustomer as any), customer_type: e.target.value as any })}>
+                  <option value="individual">Cá nhân</option>
+                  <option value="business">Doanh nghiệp</option>
+                </select>
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowModal(false)}>Hủy</Button>
+                <Button onClick={handleSave}>Lưu</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -49,216 +49,139 @@ interface Task {
   parent_task_id?: number;
   created_at: string;
   updated_at: string;
-  completed_at?: string;
-  comments?: TaskComment[];
-  time_logs?: TimeLog[];
+  comments?: Array<{
+    id: number;
+    content: string;
+    user_name: string;
+    created_at: string;
+  }>;
 }
 
-interface TaskComment {
-  id: number;
-  task_id: number;
-  user_id: number;
-  user_name: string;
-  comment: string;
-  is_internal: boolean;
-  created_at: string;
-}
-
-interface TimeLog {
-  id: number;
-  task_id: number;
-  user_id: number;
-  user_name: string;
-  start_time: string;
-  end_time?: string;
-  duration_minutes: number;
+interface TaskForm {
+  title: string;
   description?: string;
-  created_at: string;
+  category_id?: number | undefined;
+  assigned_to?: number | undefined;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold';
+  due_date?: string | undefined;
+  estimated_hours?: number | undefined;
+  progress: number;
 }
 
-interface TaskCategory {
+interface Category {
   id: number;
   name: string;
-  description?: string;
   color: string;
   icon: string;
-  is_active: boolean;
 }
 
-interface TaskTemplate {
-  id: number;
-  name: string;
-  description?: string;
-  category_id?: number;
-  category_name?: string;
-  priority: string;
-  estimated_hours?: number;
-  tags?: string[];
-  checklist?: string[];
-  is_active: boolean;
-}
-
-interface Employee {
-  id: number;
-  full_name: string;
-  role: string;
-  is_active: boolean;
+interface TaskStats {
+  total_tasks: number;
+  completed_tasks: number;
+  overdue_tasks: number;
+  today_tasks: number;
 }
 
 const TaskManagement: React.FC = () => {
-  // State management
+  // State
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [categories, setCategories] = useState<TaskCategory[]>([]);
-  const [, setTemplates] = useState<TaskTemplate[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'my' | 'assigned' | 'templates'>('all');
+  const [error, setError] = useState<string | null>(null);
   
-  // Modals and forms
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  
-  // Form data
-  const [taskForm, setTaskForm] = useState<Partial<Task>>({});
-
-  // Search and filters
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [assignedToFilter] = useState('all');
-
-  // Stats
-  const [taskStats, setTaskStats] = useState({
-    total_tasks: 0,
-    pending_tasks: 0,
-    in_progress_tasks: 0,
-    completed_tasks: 0,
-    overdue_tasks: 0,
-    today_tasks: 0,
-    my_tasks: 0,
-    urgent_tasks: 0
+  
+  // UI state
+  const [activeTab, setActiveTab] = useState('all');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskForm, setTaskForm] = useState<TaskForm>({
+    title: '',
+    description: '',
+    priority: 'medium',
+    status: 'pending',
+    progress: 0
   });
 
+  // Load data
   useEffect(() => {
     loadTaskData();
+    loadCategories();
   }, []);
 
   const loadTaskData = async () => {
     try {
       setLoading(true);
-      
-      // Use fallback data for all task-related API calls
-      // Mock tasks data
-      const mockTasks = [
-        {
-          id: '1',
-          title: 'Kiểm tra tồn kho',
-          description: 'Kiểm tra và cập nhật tồn kho sản phẩm',
-          status: 'pending',
-          priority: 'medium',
-          category: 'inventory',
-          assignee_id: '1',
-          assignee_name: 'Nguyễn Văn A',
-          due_date: new Date(Date.now() + 86400000).toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          title: 'Báo cáo doanh thu',
-          description: 'Tạo báo cáo doanh thu tháng này',
-          status: 'in_progress',
-          priority: 'high',
-          category: 'reports',
-          assignee_id: '2',
-          assignee_name: 'Trần Thị B',
-          due_date: new Date(Date.now() + 172800000).toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-
-      setTasks(mockTasks);
-
-      // Mock categories data
-      const mockCategories = [
-        { id: 'inventory', name: 'Quản lý kho', color: '#3B82F6' },
-        { id: 'reports', name: 'Báo cáo', color: '#10B981' },
-        { id: 'sales', name: 'Bán hàng', color: '#F59E0B' },
-        { id: 'maintenance', name: 'Bảo trì', color: '#EF4444' }
-      ];
-      setCategories(mockCategories);
-
-      // Mock templates data
-      const mockTemplates = [
-        {
-          id: '1',
-          name: 'Kiểm tra tồn kho hàng ngày',
-          description: 'Template cho việc kiểm tra tồn kho',
-          tasks: [
-            { title: 'Kiểm tra sản phẩm sắp hết', priority: 'high' },
-            { title: 'Cập nhật số lượng', priority: 'medium' }
-          ]
-        }
-      ];
-      setTemplates(mockTemplates);
-
-      // Mock employees data
-      const mockEmployees = [
-        { id: '1', name: 'Nguyễn Văn A', email: 'a@example.com', role: 'staff' },
-        { id: '2', name: 'Trần Thị B', email: 'b@example.com', role: 'manager' }
-      ];
-      setEmployees(mockEmployees);
-
-      // Mock stats data
-      setTaskStats({
-        total_tasks: mockTasks.length,
-        pending_tasks: mockTasks.filter(t => t.status === 'pending').length,
-        in_progress_tasks: mockTasks.filter(t => t.status === 'in_progress').length,
-        completed_tasks: mockTasks.filter(t => t.status === 'completed').length,
-        overdue_tasks: 0,
-        today_tasks: 1,
-        my_tasks: 0,
-        urgent_tasks: mockTasks.filter(t => t.priority === 'urgent').length
-      });
-
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.get('/tasks');
+      if (response?.data?.success) {
+        setTasks(response.data.data || []);
+      }
     } catch (error) {
-      console.error('Error loading task data:', error);
-      // Set empty data on error
-      setTasks([]);
-      setCategories([]);
-      setTemplates([]);
-      setEmployees([]);
-      setTaskStats({
-        total_tasks: 0,
-        pending_tasks: 0,
-        in_progress_tasks: 0,
-        completed_tasks: 0,
-        overdue_tasks: 0,
-        today_tasks: 0,
-        my_tasks: 0,
-        urgent_tasks: 0
-      });
+      console.error('Error loading tasks:', error);
+      setError('Không thể tải dữ liệu công việc');
     } finally {
       setLoading(false);
     }
   };
 
-  // Task table columns
+  const loadCategories = async () => {
+    try {
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.get('/categories');
+      if (response?.data?.success) {
+        setCategories(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  // Filter tasks
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+    const matchesCategory = categoryFilter === 'all' || task.category_id?.toString() === categoryFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+  });
+
+  // Calculate stats
+  const taskStats: TaskStats = {
+    total_tasks: tasks.length,
+    completed_tasks: tasks.filter(t => t.status === 'completed').length,
+    overdue_tasks: tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'completed').length,
+    today_tasks: tasks.filter(t => {
+      if (!t.due_date) return false;
+      const today = new Date();
+      const dueDate = new Date(t.due_date);
+      return dueDate.toDateString() === today.toDateString() && t.status !== 'completed';
+    }).length
+  };
+
+  // Table columns
   const taskColumns: Column<Task>[] = [
     {
       key: 'title',
-      title: 'Tiêu đề',
+      title: 'Công việc',
       sortable: true,
-      render: (value: string, record: Task) => (
+      render: (_value: string, record: Task) => (
         <div className="flex items-center space-x-3">
           <div 
-            className="w-3 h-3 rounded-full">
+            className="w-3 h-3 rounded-full"
             style={{ backgroundColor: record.category_color || '#6B7280' }}
           />
           <div>
             <div className="font-medium text-gray-900">
+              {record.title}
+            </div>
             {record.description && (
               <div className="text-sm text-gray-500 truncate max-w-xs">
                 {record.description}
@@ -272,15 +195,15 @@ const TaskManagement: React.FC = () => {
       key: 'category_name',
       title: 'Danh mục',
       sortable: true,
-      render: (value: string, record: Task) => (
+      render: (_value: string, record: Task) => (
         <span 
-          className="px-2 py-1 text-xs font-medium rounded-full">
+          className="px-2 py-1 text-xs font-medium rounded-full"
           style={{ 
             backgroundColor: record.category_color + '20', 
             color: record.category_color 
           }}
         >
-          {value || 'Không phân loại'}
+          {record.category_name || 'Không phân loại'}
         </span>
       )
     },
@@ -308,9 +231,8 @@ const TaskManagement: React.FC = () => {
         };
         const config = priorityConfig[value as keyof typeof priorityConfig];
         return (
-          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-${config.color}-100 text-${config.color}-800  
-            <span className="mr-1">{config.icon}</span>
-            {config.text}
+          <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+            {config?.text || value}
           </span>
         );
       }
@@ -328,8 +250,10 @@ const TaskManagement: React.FC = () => {
           on_hold: { color: 'yellow', text: 'Tạm dừng' }
         };
         const config = statusConfig[value as keyof typeof statusConfig];
+        const bgColor = 'bg-' + config.color + '-100';
+        const textColor = 'text-' + config.color + '-800';
         return (
-          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-${config.color}-100 text-${config.color}-800  
+          <span className={'inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ' + bgColor + ' ' + textColor}>
             {config.text}
           </span>
         );
@@ -341,13 +265,15 @@ const TaskManagement: React.FC = () => {
       sortable: true,
       render: (value: string) => {
         if (!value) return <span className="text-gray-400">Không có</span>;
+        
         const dueDate = new Date(value);
         const today = new Date();
         const isOverdue = dueDate < today;
         const isToday = dueDate.toDateString() === today.toDateString();
         
+        const dateClass = isOverdue ? 'text-red-600' : isToday ? 'text-orange-600' : 'text-gray-600';
         return (
-          <div className={`text-sm ${isOverdue ? 'text-red-600' : isToday ? 'text-orange-600' : 'text-gray-600'}`}>
+          <div className={'text-sm ' + dateClass}>
             {formatDate(value)}
             {isOverdue && <AlertTriangle className="w-3 h-3 inline ml-1" />}
             {isToday && <Clock className="w-3 h-3 inline ml-1" />}
@@ -364,8 +290,8 @@ const TaskManagement: React.FC = () => {
         <div className="flex items-center justify-center">
           <div className="w-16 bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300">
-              style={{ width: `${value}%` }}
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: value + '%' }}
             />
           </div>
           <span className="ml-2 text-xs font-medium">{value}%</span>
@@ -376,27 +302,43 @@ const TaskManagement: React.FC = () => {
       key: 'id' as keyof Task,
       title: 'Thao tác',
       align: 'center',
-      render: (_: any, record: Task) => (
-        <div className="flex items-center justify-center space-x-1">
+      render: (_value: any, record: Task) => (
+        <div className="flex items-center space-x-2">
           <Button
             size="sm"
-            variant="ghost"
-            onClick={() => handleViewTask(record)}
+            variant="outline"
+            onClick={() => {
+              setSelectedTask(record);
+              setShowTaskModal(true);
+            }}
           >
             <Eye className="w-4 h-4" />
           </Button>
           <Button
             size="sm"
-            variant="ghost"
-            onClick={() => handleEditTask(record)}
+            variant="outline"
+            onClick={() => {
+              setSelectedTask(record);
+              setTaskForm({
+                title: record.title,
+                description: record.description || '',
+                category_id: record.category_id,
+                assigned_to: record.assigned_to,
+                priority: record.priority,
+                status: record.status,
+                due_date: record.due_date,
+                estimated_hours: record.estimated_hours,
+                progress: record.progress
+              });
+              setShowTaskModal(true);
+            }}
           >
             <Edit className="w-4 h-4" />
           </Button>
           <Button
             size="sm"
-            variant="ghost"
+            variant="outline"
             onClick={() => handleDeleteTask(record.id)}
-            className="text-red-600 hover:text-red-700">
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -405,23 +347,12 @@ const TaskManagement: React.FC = () => {
     }
   ];
 
-  const handleViewTask = (task: Task) => {
-    setSelectedTask(task);
-    setShowTaskModal(true);
-  };
-
-  const handleEditTask = (task: Task) => {
-    setTaskForm(task);
-    setShowTaskModal(true);
-  };
-
   const handleDeleteTask = async (id: number) => {
     if (confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
       try {
-        const response = await fetch(`/api/tasks/${id}`, {
-          method: 'DELETE'
-        });
-        if (response.ok) {
+        const { default: apiClient } = await import('../../services/api/client');
+        const res = await apiClient.delete('/tasks/' + id);
+        if (res?.data?.success) {
           setTasks(tasks.filter(t => t.id !== id));
         }
       } catch (error) {
@@ -430,633 +361,615 @@ const TaskManagement: React.FC = () => {
     }
   };
 
-  const handleCreateTask = () => {
-    setTaskForm({});
-    setShowTaskModal(true);
-  };
-
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
-    const matchesCategory = categoryFilter === 'all' || task.category_id?.toString() === categoryFilter;
-    const matchesAssignedTo = assignedToFilter === 'all' || task.assigned_to?.toString() === assignedToFilter;
-    
-    return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesAssignedTo;
-  });
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 tải dữ liệu công việc...</p>">
+      <div className="min-h-screen bg-base-200 p-4">
+        <div className="bg-base-100 rounded-lg shadow-sm p-8 text-center">
+          <div className="loading loading-spinner loading-lg"></div>
+          <p className="mt-4">Đang tải dữ liệu công việc...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-base-200 p-4">
+        <div className="bg-base-100 rounded-lg shadow-sm p-8 text-center">
+          <div className="text-6xl mb-4">❌</div>
+          <h2 className="text-2xl font-bold mb-4">Lỗi tải dữ liệu</h2>
+          <p className="text-base-content/70 mb-6">{error}</p>
+          <Button onClick={loadTaskData}>
+            Thử lại
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-            <CheckSquare className="w-8 h-8 mr-3 text-blue-600" />
-            Quản lý công việc
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Chia công việc và theo dõi tiến độ nhân viên
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Button onClick={handleCreateTask}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tạo công việc
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 công việc</p>">
-                <p className="text-3xl font-bold text-gray-900">
-                <p className="text-sm text-blue-600">
-                  {taskStats.pending_tasks} chờ thực hiện
-                </p>
-              </div>
-              <CheckSquare className="w-12 h-12 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 thực hiện</p>">
-                <p className="text-3xl font-bold text-gray-900">
-                <p className="text-sm text-green-600">
-                  {taskStats.completed_tasks} đã hoàn thành
-                </p>
-              </div>
-              <Play className="w-12 h-12 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 hạn</p>">
-                <p className="text-3xl font-bold text-gray-900">
-                <p className="text-sm text-red-600">
-                  Cần xử lý ngay
-                </p>
-              </div>
-              <AlertTriangle className="w-12 h-12 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 nay</p>">
-                <p className="text-3xl font-bold text-gray-900">
-                <p className="text-sm text-orange-600">
-                  Cần hoàn thành
-                </p>
-              </div>
-              <Calendar className="w-12 h-12 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs Navigation */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="flex border-b border-gray-200">
-          {[
-            { id: 'all', label: 'Tất cả công việc', icon: CheckSquare },
-            { id: 'my', label: 'Công việc của tôi', icon: User },
-            { id: 'assigned', label: 'Tôi giao việc', icon: Users },
-            { id: 'templates', label: 'Mẫu công việc', icon: FileText }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 bg-blue-50 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <tab.icon className="w-4 h-4 mr-2" />
-              {tab.label}
-            </button>
-          ))}
+    <div className="min-h-screen bg-base-200 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý công việc</h1>
+          <p className="text-gray-600">Quản lý và theo dõi tất cả công việc trong hệ thống</p>
         </div>
 
-        {/* Tab Content */}
-        <div className="p-6">
-          {activeTab === 'all' && (
-            <div className="space-y-6">
-              {/* Search and Filters */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Tìm kiếm công việc..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ">
-                    />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Tổng công việc</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {taskStats.total_tasks}
+                  </p>
+                  <p className="text-sm text-blue-600">
+                    Tất cả công việc
+                  </p>
+                </div>
+                <CheckSquare className="w-12 h-12 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Đã thực hiện</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {taskStats.completed_tasks}
+                  </p>
+                  <p className="text-sm text-green-600">
+                    {taskStats.completed_tasks} đã hoàn thành
+                  </p>
+                </div>
+                <Play className="w-12 h-12 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Quá hạn</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {taskStats.overdue_tasks}
+                  </p>
+                  <p className="text-sm text-red-600">
+                    Cần xử lý ngay
+                  </p>
+                </div>
+                <AlertTriangle className="w-12 h-12 text-red-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Hôm nay</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {taskStats.today_tasks}
+                  </p>
+                  <p className="text-sm text-orange-600">
+                    Cần hoàn thành
+                  </p>
+                </div>
+                <Calendar className="w-12 h-12 text-orange-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <Card>
+          <CardContent className="p-6">
+            {/* Tabs */}
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="flex space-x-8">
+                {[
+                  { id: 'all', label: 'Tất cả', icon: CheckSquare },
+                  { id: 'my', label: 'Của tôi', icon: User },
+                  { id: 'assigned', label: 'Tôi giao việc', icon: Users },
+                  { id: 'templates', label: 'Mẫu công việc', icon: FileText }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={'flex items-center px-6 py-4 text-sm font-medium border-b-2 transition-colors ' + 
+                      (activeTab === tab.id
+                        ? 'border-blue-600 text-blue-600 bg-blue-50'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')
+                    }
+                  >
+                    <tab.icon className="w-4 h-4 mr-2" />
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'all' && (
+              <div className="space-y-6">
+                {/* Search and Filters */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm công việc..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Tất cả trạng thái</option>
+                      <option value="pending">Chờ thực hiện</option>
+                      <option value="in_progress">Đang thực hiện</option>
+                      <option value="completed">Hoàn thành</option>
+                      <option value="cancelled">Đã hủy</option>
+                      <option value="on_hold">Tạm dừng</option>
+                    </select>
+                    <select
+                      value={priorityFilter}
+                      onChange={(e) => setPriorityFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Tất cả độ ưu tiên</option>
+                      <option value="urgent">Khẩn cấp</option>
+                      <option value="high">Cao</option>
+                      <option value="medium">Trung bình</option>
+                      <option value="low">Thấp</option>
+                    </select>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Tất cả danh mục</option>
+                      {categories.map(category => (
+                        <option key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    <Button variant="outline">
+                      <Download className="w-4 h-4 mr-2" />
+                      Xuất Excel
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                  >
-                    <option value="all">Tất cả trạng thái</option>
-                    <option value="pending">Chờ thực hiện</option>
-                    <option value="in_progress">Đang thực hiện</option>
-                    <option value="completed">Hoàn thành</option>
-                    <option value="cancelled">Đã hủy</option>
-                    <option value="on_hold">Tạm dừng</option>
-                  </select>
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                  >
-                    <option value="all">Tất cả độ ưu tiên</option>
-                    <option value="urgent">Khẩn cấp</option>
-                    <option value="high">Cao</option>
-                    <option value="medium">Trung bình</option>
-                    <option value="low">Thấp</option>
-                  </select>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                  >
-                    <option value="all">Tất cả danh mục</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Button variant="outline">
-                    <Download className="w-4 h-4 mr-2" />
-                    Xuất Excel
+
+                {/* Task Table */}
+                <DataTable
+                  data={filteredTasks}
+                  columns={taskColumns}
+                  searchable={false}
+                  pagination
+                  pageSize={20}
+                  className="border-0"
+                />
+              </div>
+            )}
+
+            {activeTab === 'my' && (
+              <div className="space-y-6">
+                <div className="text-center py-12">
+                  <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Công việc của tôi
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Hiển thị các công việc được giao cho bạn
+                  </p>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tạo công việc mới
                   </Button>
                 </div>
               </div>
+            )}
 
-              {/* Task Table */}
-              <DataTable
-                data={filteredTasks}
-                columns={taskColumns}
-                searchable={false}
-                pagination
-                pageSize={20}
-                className="border-0">
-              />
-            </div>
-          )}
-
-          {activeTab === 'my' && (
-            <div className="space-y-6">
-              <div className="text-center py-12">
-                <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Công việc của tôi
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Xem và quản lý các công việc được giao cho bạn
-                </p>
-                <Button onClick={() => setActiveTab('all')}>
-                  <CheckSquare className="w-4 h-4 mr-2" />
-                  Xem tất cả công việc
-                </Button>
+            {activeTab === 'assigned' && (
+              <div className="space-y-6">
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Công việc tôi giao
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Hiển thị các công việc bạn đã giao cho người khác
+                  </p>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Giao việc mới
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTab === 'assigned' && (
-            <div className="space-y-6">
-              <div className="text-center py-12">
-                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Công việc tôi giao
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Theo dõi các công việc bạn đã giao cho nhân viên khác
-                </p>
-                <Button onClick={() => setActiveTab('all')}>
-                  <CheckSquare className="w-4 h-4 mr-2" />
-                  Xem tất cả công việc
-                </Button>
+            {activeTab === 'templates' && (
+              <div className="space-y-6">
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Mẫu công việc
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Quản lý các mẫu công việc để tạo nhanh
+                  </p>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tạo mẫu mới
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-
-          {activeTab === 'templates' && (
-            <div className="space-y-6">
-              <div className="text-center py-12">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Mẫu công việc
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Tính năng mẫu công việc sẽ được phát triển trong phiên bản tiếp theo
-                </p>
-                <Button onClick={() => setActiveTab('all')}>
-                  <CheckSquare className="w-4 h-4 mr-2" />
-                  Xem tất cả công việc
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Task Modal */}
+      {/* Task Detail Modal */}
       <AnimatePresence>
-        {showTaskModal && (
+        {showTaskModal && selectedTask && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowTaskModal(false)}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowTaskModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto text-gray-900" onClick={(e) => e.stopPropagation()}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {selectedTask ? 'Chi tiết công việc' : 'Tạo công việc mới'}
-                </h3>
-              </div>
-              
               <div className="p-6">
-                {selectedTask ? (
-                  // Task Details View
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <div className="lg:col-span-2">
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="text-xl font-bold text-gray-900">
-                            {selectedTask.description && (
-                              <p className="text-gray-600 mt-2">{selectedTask.description}</p>
-                            )}
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Chi tiết công việc
+                  </h2>
+                  <button
+                    onClick={() => setShowTaskModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="p-6">
+                  {selectedTask ? (
+                    // Task Details View
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                          <div className="space-y-4">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Trạng thái
-                              </label>
-                              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                                selectedTask.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                selectedTask.status === 'pending' ? 'bg-gray-100 text-gray-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {selectedTask.status}
-                              </span>
+                              <h4 className="text-xl font-bold text-gray-900">
+                                {selectedTask.title}
+                              </h4>
+                              {selectedTask.description && (
+                                <p className="text-gray-600 mt-2">{selectedTask.description}</p>
+                              )}
                             </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Độ ưu tiên
-                              </label>
-                              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                                selectedTask.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                selectedTask.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                selectedTask.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                                {selectedTask.priority}
-                              </span>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Người thực hiện
-                              </label>
-                              <p className="text-gray-900 || 'Chưa giao'}</p>">
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Hạn hoàn thành
-                              </label>
-                              <p className="text-gray-900">
-                                {selectedTask.due_date ? formatDate(selectedTask.due_date) : 'Không có'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Tiến độ
-                            </label>
-                            <div className="flex items-center space-x-3">
-                              <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300">
-                                  style={{ width: `${selectedTask.progress}%` }}
-                                />
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Trạng thái
+                                </label>
+                                <span className={'inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ' + 
+                                  (selectedTask.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                  selectedTask.status === 'pending' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-red-100 text-red-800')
+                                }>
+                                  {selectedTask.status}
+                                </span>
                               </div>
-                              <span className="text-sm font-medium">{selectedTask.progress}%</span>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Độ ưu tiên
+                                </label>
+                                <span className={'inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ' + 
+                                  (selectedTask.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                                  selectedTask.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                  selectedTask.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800')
+                                }>
+                                  {selectedTask.priority}
+                                </span>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Người thực hiện
+                                </label>
+                                <p className="text-gray-900">
+                                  {selectedTask.assigned_to_name || 'Chưa giao'}
+                                </p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Hạn hoàn thành
+                                </label>
+                                <p className="text-gray-900">
+                                  {selectedTask.due_date ? formatDate(selectedTask.due_date) : 'Không có'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tiến độ
+                              </label>
+                              <div className="flex items-center space-x-3">
+                                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: selectedTask.progress + '%' }}
+                                  />
+                                </div>
+                                <span className="text-sm font-medium">{selectedTask.progress}%</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="lg:col-span-1">
+                          <div className="space-y-4">
+                            <div>
+                              <h5 className="font-medium text-gray-800 mb-3">Thông tin bổ sung</h5>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Danh mục:</span>
+                                  <span>{selectedTask.category_name || 'Không phân loại'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Thời gian ước tính:</span>
+                                  <span>{selectedTask.estimated_hours || 0}h</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Thời gian thực tế:</span>
+                                  <span>{selectedTask.actual_hours || 0}h</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Ngày giao:</span>
+                                  <span>{selectedTask.assigned_by_name || 'Hệ thống'}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h5 className="font-medium text-gray-800 mb-3">Thao tác</h5>
+                              <div className="space-y-2">
+                                <Button className="w-full" variant="outline">
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Chỉnh sửa
+                                </Button>
+                                <Button className="w-full" variant="outline">
+                                  <RefreshCw className="w-4 h-4 mr-2" />
+                                  Cập nhật tiến độ
+                                </Button>
+                                <Button className="w-full" variant="outline">
+                                  <Users className="w-4 h-4 mr-2" />
+                                  Giao việc
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="lg:col-span-1">
-                        <div className="space-y-4">
-                          <div>
-                            <h5 className="font-medium text-gray-800 mb-3">Thông tin bổ sung</h5>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 mục:</span>">
-                                <span>{selectedTask.category_name || 'Không phân loại'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 gian ước tính:</span>">
-                                <span>{selectedTask.estimated_hours || 0}h</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 gian thực tế:</span>">
-                                <span>{selectedTask.actual_hours || 0}h</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 giao:</span>">
-                                <span>{selectedTask.assigned_by_name || 'Hệ thống'}</span>
-                              </div>
-                            </div>
-                          </div>
 
-                          {selectedTask.tags && selectedTask.tags.length > 0 && (
-                            <div>
-                              <h5 className="font-medium text-gray-800 mb-2">Tags</h5>
-                              <div className="flex flex-wrap gap-1">
-                                {selectedTask.tags.map((tag, index) => (
-                                  <span key={index} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                    {tag}
-                                  </span>
-                                ))}
+                      {/* Comments Section */}
+                      {selectedTask.comments && selectedTask.comments.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-3">Bình luận</h5>
+                          <div className="space-y-3">
+                            {selectedTask.comments.map(comment => (
+                              <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-sm">{comment.user_name}</span>
+                                  <span className="text-xs text-gray-500">{formatDate(comment.created_at)}</span>
+                                </div>
+                                <p className="text-sm text-gray-700">
+                                  {comment.content}
+                                </p>
                               </div>
-                            </div>
-                          )}
+                            ))}
+                          </div>
                         </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Task Form
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tiêu đề *
+                          </label>
+                          <input
+                            type="text"
+                            value={taskForm.title}
+                            onChange={(e) => setTaskForm({...taskForm, title: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="Nhập tiêu đề công việc"
+                          />
+                        </div>
+                        
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Mô tả
+                          </label>
+                          <textarea
+                            value={taskForm.description || ''}
+                            onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="Mô tả chi tiết công việc"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Danh mục
+                          </label>
+                          <select
+                            value={taskForm.category_id || ''}
+                            onChange={(e) => setTaskForm({...taskForm, category_id: e.target.value ? parseInt(e.target.value) : undefined})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Chọn danh mục</option>
+                            {categories.map(category => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Độ ưu tiên
+                          </label>
+                          <select
+                            value={taskForm.priority || 'medium'}
+                            onChange={(e) => setTaskForm({...taskForm, priority: e.target.value as any})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="low">Thấp</option>
+                            <option value="medium">Trung bình</option>
+                            <option value="high">Cao</option>
+                            <option value="urgent">Khẩn cấp</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Hạn hoàn thành
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={taskForm.due_date || ''}
+                            onChange={(e) => setTaskForm({...taskForm, due_date: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Thời gian ước tính (giờ)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            value={taskForm.estimated_hours || ''}
+                            onChange={(e) => setTaskForm({...taskForm, estimated_hours: e.target.value ? parseFloat(e.target.value) : undefined})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.0"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tiến độ (%)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={taskForm.progress || 0}
+                            onChange={(e) => setTaskForm({...taskForm, progress: parseInt(e.target.value) || 0})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Trạng thái
+                          </label>
+                          <select
+                            value={taskForm.status || 'pending'}
+                            onChange={(e) => setTaskForm({...taskForm, status: e.target.value as any})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="pending">Chờ thực hiện</option>
+                            <option value="in_progress">Đang thực hiện</option>
+                            <option value="completed">Hoàn thành</option>
+                            <option value="cancelled">Đã hủy</option>
+                            <option value="on_hold">Tạm dừng</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end space-x-3">
+                        <Button variant="outline" onClick={() => setShowTaskModal(false)}>
+                          Hủy
+                        </Button>
+                        {selectedTask && (
+                          <Button onClick={async () => {
+                            try {
+                              const { default: apiClient } = await import('../../services/api/client');
+                              const res = await apiClient.put('/tasks/' + ((selectedTask as any)?.id || '0'), taskForm);
+                              if (res?.data?.success) {
+                                loadTaskData();
+                                setShowTaskModal(false);
+                                setSelectedTask(null);
+                              }
+                            } catch (error) {
+                              console.error('Error updating task:', error);
+                            }
+                          }}>
+                            Cập nhật
+                          </Button>
+                        )}
+                        {!selectedTask && (
+                          <Button onClick={async () => {
+                            try {
+                              const { default: apiClient } = await import('../../services/api/client');
+                              const res = await apiClient.post('/tasks', taskForm);
+                              if (res?.data?.success) {
+                                loadTaskData();
+                                setShowTaskModal(false);
+                                setTaskForm({
+                                  title: '',
+                                  description: '',
+                                  priority: 'medium',
+                                  status: 'pending',
+                                  progress: 0
+                                });
+                              }
+                            } catch (error) {
+                              console.error('Error creating task:', error);
+                            }
+                          }}>
+                            Tạo công việc
+                          </Button>
+                        )}
                       </div>
                     </div>
-
-                    {/* Comments Section */}
-                    {selectedTask.comments && selectedTask.comments.length > 0 && (
-                      <div>
-                        <h5 className="font-medium text-gray-800 mb-3">Bình luận</h5>
-                        <div className="space-y-3">
-                          {selectedTask.comments.map(comment => (
-                            <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-sm">{comment.user_name}</span>
-                                <span className="text-xs text-gray-500">{formatDate(comment.created_at)}</span>
-                              </div>
-                              <p className="text-sm text-gray-700">
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Task Form
-                  <form className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Tiêu đề công việc *
-                        </label>
-                        <input
-                          type="text"
-                          value={taskForm.title || ''}
-                          onChange={(e) => setTaskForm({...taskForm, title: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                          placeholder="Nhập tiêu đề công việc"
-                        />
-                      </div>
-                      
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Mô tả
-                        </label>
-                        <textarea
-                          value={taskForm.description || ''}
-                          onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                          placeholder="Mô tả chi tiết công việc"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Danh mục
-                        </label>
-                        <select
-                          value={taskForm.category_id || ''}
-                          onChange={(e) => setTaskForm({...taskForm, category_id: e.target.value ? parseInt(e.target.value) : undefined})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        >
-                          <option value="">Chọn danh mục</option>
-                          {categories.map(category => (
-                            <option key={category.id} value={category.id}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Người thực hiện *
-                        </label>
-                        <select
-                          value={taskForm.assigned_to || ''}
-                          onChange={(e) => setTaskForm({...taskForm, assigned_to: e.target.value ? parseInt(e.target.value) : undefined})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        >
-                          <option value="">Chọn nhân viên</option>
-                          {employees.map(employee => (
-                            <option key={employee.id} value={employee.id}>
-                              {employee.full_name} ({employee.role})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Độ ưu tiên
-                        </label>
-                        <select
-                          value={taskForm.priority || 'medium'}
-                          onChange={(e) => setTaskForm({...taskForm, priority: e.target.value as any})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        >
-                          <option value="low">Thấp</option>
-                          <option value="medium">Trung bình</option>
-                          <option value="high">Cao</option>
-                          <option value="urgent">Khẩn cấp</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Hạn hoàn thành
-                        </label>
-                        <input
-                          type="datetime-local"
-                          value={taskForm.due_date || ''}
-                          onChange={(e) => setTaskForm({...taskForm, due_date: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Thời gian ước tính (giờ)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          value={taskForm.estimated_hours || ''}
-                          onChange={(e) => setTaskForm({...taskForm, estimated_hours: e.target.value ? parseFloat(e.target.value) : undefined})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                          placeholder="0.0"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Tiến độ (%)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={taskForm.progress || 0}
-                          onChange={(e) => setTaskForm({...taskForm, progress: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Trạng thái
-                        </label>
-                        <select
-                          value={taskForm.status || 'pending'}
-                          onChange={(e) => setTaskForm({...taskForm, status: e.target.value as any})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        >
-                          <option value="pending">Chờ thực hiện</option>
-                          <option value="in_progress">Đang thực hiện</option>
-                          <option value="completed">Hoàn thành</option>
-                          <option value="cancelled">Đã hủy</option>
-                          <option value="on_hold">Tạm dừng</option>
-                        </select>
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Ghi chú
-                        </label>
-                        <textarea
-                          value={taskForm.notes || ''}
-                          onChange={(e) => setTaskForm({...taskForm, notes: e.target.value})}
-                          rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                          placeholder="Ghi chú bổ sung"
-                        />
-                      </div>
-                    </div>
-                  </form>
-                )}
-              </div>
-              
-              <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowTaskModal(false);
-                    setSelectedTask(null);
-                  }}
-                >
-                  Hủy
-                </Button>
-                {!selectedTask && (
-                  <Button onClick={async () => {
-                    try {
-                      const response = await fetch('/api/tasks', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(taskForm)
-                      });
-                      if (response.ok) {
-                        loadTaskData();
-                        setShowTaskModal(false);
-                      }
-                    } catch (error) {
-                      console.error('Error creating task:', error);
-                    }
-                  }}>
-                    Tạo công việc
-                  </Button>
-                )}
-                {selectedTask && (
-                  <Button onClick={async () => {
-                    try {
-                      const response = await fetch(`/api/tasks/${selectedTask.id}`, {
-                        method: 'PUT',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(taskForm)
-                      });
-                      if (response.ok) {
-                        loadTaskData();
-                        setShowTaskModal(false);
-                        setSelectedTask(null);
-                      }
-                    } catch (error) {
-                      console.error('Error updating task:', error);
-                    }
-                  }}>
-                    Cập nhật
-                  </Button>
-                )}
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>

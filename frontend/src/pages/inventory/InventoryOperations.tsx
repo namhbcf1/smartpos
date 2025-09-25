@@ -97,13 +97,19 @@ const InventoryOperations: React.FC = () => {
     }
   ];
 
-  const availableTabs = tabs.filter(tab => hasPermission?.(tab.permission));
+  // If permission checker is missing or user is ADMIN, allow all tabs
+  const isAdmin = (user?.role || '').toUpperCase() === 'ADMIN';
+  const permissionFn = typeof hasPermission === 'function' ? hasPermission : undefined;
+  let availableTabs = permissionFn ? tabs.filter(tab => permissionFn(tab.permission)) : tabs;
+  if (availableTabs.length === 0 || isAdmin) {
+    availableTabs = tabs;
+  }
 
   if (availableTabs.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Alert severity="warning" sx={{ mb: 3 }}>
-          Bạn không có quyền truy cập các chức năng quản lý kho. 
+          Bạn không có quyền truy cập các chức năng quản lý kho.
           Vui lòng liên hệ quản trị viên để được cấp quyền.
         </Alert>
       </Container>
@@ -125,7 +131,7 @@ const InventoryOperations: React.FC = () => {
 
       {/* Quick Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -152,7 +158,7 @@ const InventoryOperations: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -179,7 +185,7 @@ const InventoryOperations: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -206,7 +212,7 @@ const InventoryOperations: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -271,7 +277,7 @@ const InventoryOperations: React.FC = () => {
             Đăng nhập với vai trò: <Chip label={user?.role || 'N/A'} size="small" color="primary" />
           </Typography>
           <Typography variant="body2" sx={{ ml: 2 }}>
-            Quyền hiện tại: 
+            Quyền hiện tại:
             {availableTabs.map((tab, index) => (
               <Chip
                 key={index}

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { posApi } from '../../services/api/posApi'
-import { API_V1_BASE_URL } from '../../services/api'
+import { API_BASE_URL } from '../../services/api'
 
 type Batch = {
   id: string
@@ -79,7 +79,7 @@ export default function InventoryBatches() {
   // Realtime: refetch on inventory updates
   useEffect(() => {
     try {
-      const url = (import.meta as any).env.VITE_CLOUDFLARE_WS_URL || 'wss://namhbcf-api.bangachieu2.workers.dev/api/v1/ws'
+      const url = (import.meta as any).env.VITE_CLOUDFLARE_WS_URL || 'wss://namhbcf-api.bangachieu2.workers.dev/api/ws'
       wsRef.current = new WebSocket(url)
       wsRef.current.onmessage = (e) => {
         try {
@@ -102,7 +102,7 @@ export default function InventoryBatches() {
     if (productId) params.append('product_id', productId)
     if (locationId) params.append('location_id', locationId)
     if (supplierId) params.append('supplier_id', supplierId)
-    return `${API_V1_BASE_URL}/inventory/batches/export.csv?${params.toString()}`
+    return `${API_BASE_URL}/inventory/batches/export.csv?${params.toString()}`
   }
 
   const getExpiryInfo = (date?: string) => {
@@ -234,17 +234,17 @@ export default function InventoryBatches() {
       {showForm && (
         <div className="modal modal-open">
           <div className="modal-box max-w-3xl bg-white text-gray-900">
-            <h3 className="font-bold text-lg mb-4 text-gray-900 ? 'Cập nhật lô hàng' : 'Thêm lô hàng'}</h3>">
+            <h3 className="font-bold text-lg mb-4 text-gray-900">{editing ? 'Cập nhật lô hàng' : 'Thêm lô hàng'}</h3>
             <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input name="product_id" defaultValue={editing?.product_id} className="input input-bordered bg-white  text-gray-900  border-gray-300 placeholder="Product ID" required />
-              <input name="batch_number" defaultValue={editing?.batch_number} className="input input-bordered bg-white  text-gray-900  border-gray-300 placeholder="Batch number" required />
-              <input name="lot_number" defaultValue={editing?.lot_number} className="input input-bordered bg-white  text-gray-900  border-gray-300 placeholder="Lot number" />
-              <input type="date" name="expiry_date" defaultValue={editing?.expiry_date?.slice(0,10)} className="input input-bordered bg-white  text-gray-900  border-gray-300 />">
-              <input type="date" name="manufacture_date" defaultValue={editing?.manufacture_date?.slice(0,10)} className="input input-bordered bg-white  text-gray-900  border-gray-300 />">
-              <input type="number" name="quantity" defaultValue={editing?.quantity || 0} className="input input-bordered bg-white  text-gray-900  border-gray-300 placeholder="Số lượng" required />
-              <input name="location_id" defaultValue={editing?.location_id} className="input input-bordered bg-white  text-gray-900  border-gray-300 placeholder="Location ID" />
-              <input name="supplier_id" defaultValue={editing?.supplier_id} className="input input-bordered bg-white  text-gray-900  border-gray-300 placeholder="Supplier ID" />
-              <input type="number" step="0.01" name="purchase_price" defaultValue={editing?.purchase_price || 0} className="input input-bordered bg-white  text-gray-900  border-gray-300 placeholder="Giá nhập" />
+              <input name="product_id" defaultValue={editing?.product_id} className="input input-bordered bg-white text-gray-900 border-gray-300" placeholder="Product ID" required />
+              <input name="batch_number" defaultValue={editing?.batch_number} className="input input-bordered bg-white text-gray-900 border-gray-300" placeholder="Batch number" required />
+              <input name="lot_number" defaultValue={editing?.lot_number} className="input input-bordered bg-white text-gray-900 border-gray-300" placeholder="Lot number" />
+              <input type="date" name="expiry_date" defaultValue={editing?.expiry_date?.slice(0,10)} className="input input-bordered bg-white text-gray-900 border-gray-300" />
+              <input type="date" name="manufacture_date" defaultValue={editing?.manufacture_date?.slice(0,10)} className="input input-bordered bg-white text-gray-900 border-gray-300" />
+              <input type="number" name="quantity" defaultValue={editing?.quantity || 0} className="input input-bordered bg-white text-gray-900 border-gray-300" placeholder="Số lượng" required />
+              <input name="location_id" defaultValue={editing?.location_id} className="input input-bordered bg-white text-gray-900 border-gray-300" placeholder="Location ID" />
+              <input name="supplier_id" defaultValue={editing?.supplier_id} className="input input-bordered bg-white text-gray-900 border-gray-300" placeholder="Supplier ID" />
+              <input type="number" step="0.01" name="purchase_price" defaultValue={editing?.purchase_price || 0} className="input input-bordered bg-white text-gray-900 border-gray-300" placeholder="Giá nhập" />
 
               <div className="md:col-span-2 flex justify-end gap-2 mt-2">
                 <button type="button" className="btn btn-ghost" onClick={() => { setShowForm(false); setEditing(null) }}>Huỷ</button>

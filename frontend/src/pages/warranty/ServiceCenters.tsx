@@ -11,23 +11,21 @@ import {
   Eye,
   MapPin,
   Phone,
-  Mail,
   Clock,
   Users,
   Star,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   Navigation,
   Calendar,
   TrendingUp,
-  Award,
-  Filter
+  Award
 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/ButtonSimplified';
 import { formatDate } from '../../lib/utils';
 import toast from 'react-hot-toast';
+import { posApi } from '../../services/api/posApi';
 
 interface ServiceCenter {
   id: string;
@@ -71,13 +69,13 @@ interface ServiceCenter {
 
 const ServiceCenters: React.FC = () => {
   const [centers, setCenters] = useState<ServiceCenter[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedCenter, setSelectedCenter] = useState<ServiceCenter | null>(null);
   const [showCenterModal, setShowCenterModal] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [_showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
 
   useEffect(() => {
@@ -87,179 +85,40 @@ const ServiceCenters: React.FC = () => {
   const loadServiceCenters = async () => {
     setLoading(true);
     try {
-      // Mock data for demonstration
-      const mockCenters: ServiceCenter[] = [
-        {
-          id: 'SC_001',
-          name: 'Trung tâm Bảo hành TP.HCM',
-          type: 'main',
-          status: 'active',
-          address: '123 Nguyễn Huệ, Quận 1',
-          city: 'TP.HCM',
-          district: 'Quận 1',
-          phone: '028 1234 5678',
-          email: 'hcm@warranty.com',
-          website: 'https://warranty-hcm.com',
-          manager_name: 'Nguyễn Văn An',
-          manager_phone: '0901 234 567',
-          operating_hours: {
-            weekdays: '8:00 - 18:00',
-            weekends: '8:00 - 17:00',
-            holidays: '9:00 - 16:00'
-          },
-          services: [
-            'Sửa chữa laptop',
-            'Sửa chữa máy tính để bàn',
-            'Sửa chữa điện thoại',
-            'Thay thế linh kiện',
-            'Cài đặt phần mềm',
-            'Bảo trì định kỳ'
-          ],
-          specialties: ['Dell', 'HP', 'Lenovo', 'Asus', 'Apple'],
-          capacity_per_day: 50,
-          current_workload: 35,
-          rating: 4.8,
-          total_reviews: 1250,
-          coordinates: { lat: 10.7769, lng: 106.7009 },
-          established_date: '2020-01-15',
-          last_inspection: '2025-08-15',
-          certification: ['ISO 9001', 'Authorized Service Partner'],
-          warranty_brands: ['Dell', 'HP', 'Lenovo', 'Asus', 'Apple', 'Samsung'],
-          stats: {
-            total_repairs: 15420,
-            completed_this_month: 892,
-            customer_satisfaction: 96.5,
-            average_repair_time: 2.3
-          }
-        },
-        {
-          id: 'SC_002',
-          name: 'Trung tâm Bảo hành Hà Nội',
-          type: 'main',
-          status: 'active',
-          address: '456 Lê Lợi, Hoàn Kiếm',
-          city: 'Hà Nội',
-          district: 'Hoàn Kiếm',
-          phone: '024 1234 5678',
-          email: 'hanoi@warranty.com',
-          website: 'https://warranty-hanoi.com',
-          manager_name: 'Trần Thị Bình',
-          manager_phone: '0912 345 678',
-          operating_hours: {
-            weekdays: '8:00 - 18:00',
-            weekends: '8:30 - 17:30',
-            holidays: '9:00 - 16:00'
-          },
-          services: [
-            'Sửa chữa laptop',
-            'Sửa chữa máy tính để bàn',
-            'Sửa chữa máy in',
-            'Thay thế màn hình',
-            'Nâng cấp RAM',
-            'Khôi phục dữ liệu'
-          ],
-          specialties: ['HP', 'Dell', 'MSI', 'Gigabyte'],
-          capacity_per_day: 40,
-          current_workload: 28,
-          rating: 4.6,
-          total_reviews: 950,
-          coordinates: { lat: 21.0285, lng: 105.8542 },
-          established_date: '2020-03-20',
-          last_inspection: '2025-07-22',
-          certification: ['ISO 9001', 'HP Authorized Service'],
-          warranty_brands: ['HP', 'Dell', 'MSI', 'Gigabyte', 'Canon', 'Epson'],
-          stats: {
-            total_repairs: 12680,
-            completed_this_month: 675,
-            customer_satisfaction: 94.2,
-            average_repair_time: 2.8
-          }
-        },
-        {
-          id: 'SC_003',
-          name: 'Chi nhánh Đà Nẵng',
-          type: 'branch',
-          status: 'active',
-          address: '789 Lê Duẩn, Hải Châu',
-          city: 'Đà Nẵng',
-          district: 'Hải Châu',
-          phone: '0236 123 456',
-          email: 'danang@warranty.com',
-          manager_name: 'Lê Văn Cường',
-          manager_phone: '0923 456 789',
-          operating_hours: {
-            weekdays: '8:00 - 17:30',
-            weekends: '8:30 - 17:00',
-            holidays: 'Đóng cửa'
-          },
-          services: [
-            'Sửa chữa laptop',
-            'Thay thế bàn phím',
-            'Sửa chữa màn hình',
-            'Cài đặt hệ điều hành'
-          ],
-          specialties: ['Asus', 'Acer', 'Lenovo'],
-          capacity_per_day: 25,
-          current_workload: 18,
-          rating: 4.4,
-          total_reviews: 420,
-          coordinates: { lat: 16.0471, lng: 108.2068 },
-          established_date: '2021-06-10',
-          last_inspection: '2025-06-15',
-          certification: ['Local Service Certificate'],
-          warranty_brands: ['Asus', 'Acer', 'Lenovo'],
-          stats: {
-            total_repairs: 6890,
-            completed_this_month: 385,
-            customer_satisfaction: 92.8,
-            average_repair_time: 3.1
-          }
-        },
-        {
-          id: 'SC_004',
-          name: 'Đối tác Cần Thơ Tech',
-          type: 'partner',
-          status: 'active',
-          address: '321 Trần Hưng Đạo, Ninh Kiều',
-          city: 'Cần Thơ',
-          district: 'Ninh Kiều',
-          phone: '0292 987 654',
-          email: 'cantho@techpartner.com',
-          manager_name: 'Phạm Minh Tuấn',
-          manager_phone: '0934 567 890',
-          operating_hours: {
-            weekdays: '7:30 - 18:30',
-            weekends: '8:00 - 17:00',
-            holidays: '9:00 - 15:00'
-          },
-          services: [
-            'Sửa chữa laptop',
-            'Sửa chữa máy in',
-            'Bảo trì mạng'
-          ],
-          specialties: ['Canon', 'Epson', 'Brother'],
-          capacity_per_day: 20,
-          current_workload: 12,
-          rating: 4.2,
-          total_reviews: 280,
-          coordinates: { lat: 10.0452, lng: 105.7469 },
-          established_date: '2022-02-28',
-          last_inspection: '2025-05-10',
-          certification: ['Partner Certificate'],
-          warranty_brands: ['Canon', 'Epson', 'Brother'],
-          stats: {
-            total_repairs: 3450,
-            completed_this_month: 234,
-            customer_satisfaction: 89.5,
-            average_repair_time: 3.5
-          }
-        }
-      ];
-
-      setCenters(mockCenters);
+      const res: any = await (posApi as any).request?.('/warranty/service-centers');
+      const list = res?.data || res?.data?.data || [];
+      const normalized: ServiceCenter[] = list.map((c: any, i: number) => ({
+        id: c.id || `SC_${i + 1}`,
+        name: c.name || '',
+        type: (c.type || 'main'),
+        status: (c.status || 'active'),
+        address: c.address || '',
+        city: c.city || '',
+        district: c.district || '',
+        phone: c.phone || '',
+        email: c.email || '',
+        website: c.website || '',
+        manager_name: c.manager_name || c.managerName || '',
+        manager_phone: c.manager_phone || c.managerPhone || '',
+        operating_hours: c.operating_hours || { weekdays: '8:00 - 18:00', weekends: '8:00 - 17:00', holidays: '9:00 - 16:00' },
+        services: c.services || [],
+        specialties: c.specialties || [],
+        capacity_per_day: c.capacity_per_day || 0,
+        current_workload: c.current_workload || 0,
+        rating: c.rating || 0,
+        total_reviews: c.total_reviews || 0,
+        coordinates: c.coordinates,
+        established_date: c.established_date || new Date().toISOString(),
+        last_inspection: c.last_inspection || new Date().toISOString(),
+        certification: c.certification || [],
+        warranty_brands: c.warranty_brands || [],
+        stats: c.stats || { total_repairs: 0, completed_this_month: 0, customer_satisfaction: 0, average_repair_time: 0 }
+      }));
+      setCenters(normalized);
     } catch (error) {
       console.error('Failed to load service centers:', error);
       toast.error('Không thể tải danh sách trung tâm bảo hành');
+      setCenters([]);
     } finally {
       setLoading(false);
     }

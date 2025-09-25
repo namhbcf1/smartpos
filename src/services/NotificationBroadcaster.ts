@@ -33,11 +33,11 @@ export class NotificationBroadcaster {
       }
 
       const obj = env.NOTIFICATIONS.get(doId);
-      const response = await obj.fetch('https://do.local/broadcast', {
+      const response = await obj.fetch(new Request('https://do.local/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(event)
-      });
+      }));
 
       if (!response.ok) {
         console.error('Broadcast failed:', response.status);

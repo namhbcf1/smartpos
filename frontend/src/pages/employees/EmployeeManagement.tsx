@@ -205,23 +205,9 @@ const EmployeeManagement: React.FC = () => {
     try {
       setLoading(true);
 
-      // Fetch employees from real API
-      const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
-      const token = localStorage.getItem('authToken');
-
-      const response = await fetch(`${apiUrl}/api/v1/employees`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Tenant-ID': 'default',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch employees');
-      }
-
-      const data = await response.json();
+      const { default: apiClient } = await import('../../services/api/client');
+      const response = await apiClient.get('/employees');
+      const data = response?.data;
 
       if (data.success && data.data) {
         const employees = data.data.employees || [];
@@ -312,8 +298,8 @@ const EmployeeManagement: React.FC = () => {
           <div className="w-12 h-12 relative">
             <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
               <path
-                className="text-gray-300">
-                stroke="currentColor"
+                className="text-gray-300"
+                  stroke="currentColor"
                 strokeWidth="3"
                 fill="none"
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -651,7 +637,7 @@ const EmployeeManagement: React.FC = () => {
                     <option value="on_leave">Đang nghỉ phép</option>
                     <option value="inactive">Nghỉ việc</option>
                   </select>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => exportToCSV(filteredEmployees as any, `employees_${new Date().toISOString().slice(0,10)}.csv`)}>
                     <Download className="w-4 h-4 mr-2" />
                     Xuất Excel
                   </Button>
@@ -1017,7 +1003,14 @@ const EmployeeManagement: React.FC = () => {
                             Cập nhật: {new Date().toLocaleDateString('vi-VN')}
                           </div>
                           <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setShowPerformanceModal(true);
+                              }}
+                            >
                               <Eye className="w-3 h-3 mr-1" />
                               Chi tiết
                             </Button>
@@ -1243,13 +1236,50 @@ const EmployeeManagement: React.FC = () => {
                               </td>
                               <td className="py-3 px-4 text-center">
                                 <div className="flex justify-center space-x-1">
-                                  <Button variant="outline" size="sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedEmployee(employee);
+                                      setShowEmployeeModal(true);
+                                    }}
+                                  >
                                     <Eye className="w-3 h-3" />
                                   </Button>
-                                  <Button variant="outline" size="sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setPayrollForm({
+                                        employee_id: employee.id,
+                                        period: new Date().toISOString().slice(0,7),
+                                        basic_salary: baseSalary,
+                                        overtime_pay: 0,
+                                        bonus,
+                                        deductions: deduction,
+                                        status: 'pending' as any
+                                      });
+                                      setShowPayrollModal(true);
+                                    }}
+                                  >
                                     <Edit className="w-3 h-3" />
                                   </Button>
-                                  <Button variant="outline" size="sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const row = [{
+                                        employee: employee.full_name,
+                                        employee_code: employee.employee_code,
+                                        base_salary: baseSalary,
+                                        allowance,
+                                        bonus,
+                                        deduction,
+                                        net_salary: netSalary
+                                      }];
+                                      exportToCSV(row as any, `payroll_${employee.employee_code}_${new Date().toISOString().slice(0,7)}.csv`);
+                                    }}
+                                  >
                                     <Download className="w-3 h-3" />
                                   </Button>
                                 </div>
@@ -1498,8 +1528,8 @@ const EmployeeManagement: React.FC = () => {
                         type="text"
                         value={employeeForm.full_name || ''}
                         onChange={(e) => setEmployeeForm({...employeeForm, full_name: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        placeholder="Nhập họ và tên"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 "
+                  placeholder="Nhập họ và tên"
                       />
                     </div>
                     <div>
@@ -1510,8 +1540,8 @@ const EmployeeManagement: React.FC = () => {
                         type="email"
                         value={employeeForm.email || ''}
                         onChange={(e) => setEmployeeForm({...employeeForm, email: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        placeholder="Nhập email"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 "
+                  placeholder="Nhập email"
                       />
                     </div>
                     <div>
@@ -1522,8 +1552,8 @@ const EmployeeManagement: React.FC = () => {
                         type="tel"
                         value={employeeForm.phone || ''}
                         onChange={(e) => setEmployeeForm({...employeeForm, phone: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        placeholder="Nhập số điện thoại"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 "
+                  placeholder="Nhập số điện thoại"
                       />
                     </div>
                     <div>
@@ -1534,8 +1564,8 @@ const EmployeeManagement: React.FC = () => {
                         type="text"
                         value={employeeForm.position || ''}
                         onChange={(e) => setEmployeeForm({...employeeForm, position: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        placeholder="Nhập chức vụ"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 "
+                  placeholder="Nhập chức vụ"
                       />
                     </div>
                     <div>
@@ -1578,8 +1608,8 @@ const EmployeeManagement: React.FC = () => {
                         type="number"
                         value={employeeForm.salary || ''}
                         onChange={(e) => setEmployeeForm({...employeeForm, salary: Number(e.target.value)})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        placeholder="Nhập lương cơ bản"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 "
+                  placeholder="Nhập lương cơ bản"
                       />
                     </div>
                     <div>
@@ -1601,8 +1631,8 @@ const EmployeeManagement: React.FC = () => {
                         value={employeeForm.address || ''}
                         onChange={(e) => setEmployeeForm({...employeeForm, address: e.target.value})}
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ">
-                        placeholder="Nhập địa chỉ"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 "
+                  placeholder="Nhập địa chỉ"
                       />
                     </div>
                   </form>

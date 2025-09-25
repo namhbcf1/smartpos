@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
+import { IdempotencyMiddleware } from '../../middleware/idempotency';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -18,7 +19,7 @@ const ALLOWED_TYPES = [
 ];
 
 // POST /api/file-upload - Upload file
-app.post('/', async (c: any) => {
+app.post('/', IdempotencyMiddleware.api, async (c: any) => {
   try {
     const formData = await c.req.formData();
     const file = formData.get('file') as File;
@@ -103,25 +104,9 @@ app.post('/', async (c: any) => {
 app.get('/', async (c: any) => {
   try {
     // Create table if not exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS file_uploads (
-        id TEXT PRIMARY KEY,
-        original_name TEXT NOT NULL,
-        filename TEXT NOT NULL UNIQUE,
-        file_type TEXT NOT NULL,
-        file_size INTEGER NOT NULL,
-        category TEXT DEFAULT 'general',
-        description TEXT,
-        uploaded_by TEXT NOT NULL,
-        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        deleted_at DATETIME,
-        status TEXT DEFAULT 'active' CHECK (status IN ('active', 'deleted', 'processing')),
-        metadata TEXT,
-        download_count INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
+    // Tables should be created via migrations, not in routes
+
+    // Migration 006 handles all table creation
 
     const page = parseInt(c.req.query('page') || '1');
     const limit = parseInt(c.req.query('limit') || '20');

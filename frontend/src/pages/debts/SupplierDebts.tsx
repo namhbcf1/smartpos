@@ -53,65 +53,23 @@ const SupplierDebts: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [debtRange, setDebtRange] = useState('all')
 
-  // Mock data
+  // Load supplier debts from API
   useEffect(() => {
-    const mockDebts: SupplierDebt[] = [
-      {
-        id: '1',
-        supplierId: 'SUPP001',
-        supplierName: 'Công ty TNHH ABC',
-        supplierPhone: '0123456789',
-        supplierEmail: 'contact@abc.com',
-        totalDebt: 15000000,
-        currentDebt: 8000000,
-        paidAmount: 7000000,
-        lastPaymentDate: '2024-01-10T10:30:00Z',
-        lastOrderDate: '2024-01-15T14:20:00Z',
-        totalOrders: 25,
-        creditLimit: 20000000,
-        status: 'active',
-        notes: 'Nhà cung cấp chính',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-15T14:20:00Z'
-      },
-      {
-        id: '2',
-        supplierId: 'SUPP002',
-        supplierName: 'Công ty XYZ',
-        supplierPhone: '0987654321',
-        supplierEmail: 'info@xyz.com',
-        totalDebt: 8000000,
-        currentDebt: 8000000,
-        paidAmount: 0,
-        lastPaymentDate: '2024-01-05T09:15:00Z',
-        lastOrderDate: '2024-01-12T16:45:00Z',
-        totalOrders: 12,
-        creditLimit: 10000000,
-        status: 'overdue',
-        notes: 'Quá hạn thanh toán',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-12T16:45:00Z'
-      },
-      {
-        id: '3',
-        supplierId: 'SUPP003',
-        supplierName: 'Nhà phân phối DEF',
-        supplierPhone: '0369258147',
-        supplierEmail: 'sales@def.com',
-        totalDebt: 5000000,
-        currentDebt: 0,
-        paidAmount: 5000000,
-        lastPaymentDate: '2024-01-14T11:30:00Z',
-        lastOrderDate: '2024-01-14T11:30:00Z',
-        totalOrders: 8,
-        creditLimit: 8000000,
-        status: 'active',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-14T11:30:00Z'
+    const loadDebts = async () => {
+      try {
+        // TODO: Replace with actual API call when endpoint is available
+        // const response = await api.get('/supplier-debts');
+        // setDebts(response.data);
+        setDebts([]) // Empty state for production
+      } catch (error) {
+        console.error('Failed to load supplier debts:', error)
+        setDebts([])
+      } finally {
+        setLoading(false)
       }
-    ]
-    setDebts(mockDebts)
-    setLoading(false)
+    }
+
+    loadDebts()
   }, [])
 
   const formatCurrency = (amount: number) => {

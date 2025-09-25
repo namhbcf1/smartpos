@@ -86,7 +86,7 @@ export const POSProductGrid: React.FC<POSProductGridProps> = React.memo(({
     return (
       <Grid container spacing={2}>
         {Array.from({ length: 8 }).map((_, index) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={index} component="div">
             <Card
               sx={{
                 height: '100%',
@@ -194,7 +194,7 @@ export const POSProductGrid: React.FC<POSProductGridProps> = React.memo(({
         const isOutOfStock = product.stock <= 0;
         
         return (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={product.id} component="div">
             <Card 
               sx={{ 
                 height: '100%',

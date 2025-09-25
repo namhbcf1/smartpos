@@ -68,7 +68,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     return (
       <Grid container spacing={2}>
         {Array.from({ length: 8 }).map((_, index) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={index} component="div">
             <Card sx={{ height: '100%' }}>
               <Box sx={{ height: 140, bgcolor: 'grey.200' }} />
               <CardContent>
@@ -116,7 +116,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         const isOutOfStock = product.stock <= 0;
         
         return (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={product.id} component="div">
             <Card 
               sx={{ 
                 height: '100%',

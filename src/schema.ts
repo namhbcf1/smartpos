@@ -149,6 +149,7 @@ CREATE TABLE IF NOT EXISTS products (
     -- D1 DENORMALIZED: Performance optimization per detailed schema
     category_name TEXT, -- Denormalized from categories.name
     brand_name TEXT, -- Denormalized from brands.name
+    supplier_name TEXT, -- Denormalized from suppliers.name
 
     -- Timestamps
     created_at TEXT DEFAULT (datetime('now')),
@@ -697,7 +698,7 @@ INSERT OR IGNORE INTO payment_methods (id, name, code) VALUES
 ('pm-vnpay', 'VNPay', 'vnpay');
 
 -- Insert default tax rate
-INSERT OR IGNORE INTO tax_rates (id, name, rate, description)
+INSERT OR IGNORE INTO tax_rates (id, name, rate_percentage, description)
 VALUES ('tax-vat', 'VAT', 10.0, 'Value Added Tax');
 
 -- Insert default categories

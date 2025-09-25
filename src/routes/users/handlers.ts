@@ -20,7 +20,7 @@ export class UserHandlers {
   async getUsers(c: Context<{ Bindings: Env }>): Promise<Response> {
     try {
       const query = c.req.query();
-      const params: UserQueryParams = {
+      const params: any = {
         page: query.page ? parseInt(query.page) : 1,
         limit: query.limit ? parseInt(query.limit) : 20,
         search: query.search,

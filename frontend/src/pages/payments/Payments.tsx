@@ -24,6 +24,7 @@ import { Button } from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
+import { posApi } from '../../services/api/posApi'
 
 interface Payment {
   id: string
@@ -50,57 +51,41 @@ const Payments: React.FC = () => {
   const [methodFilter, setMethodFilter] = useState('all')
   const [dateRange, setDateRange] = useState('today')
 
-  // Mock data
+  // Load real payments
   useEffect(() => {
-    const mockPayments: Payment[] = [
-      {
-        id: '1',
-        transactionId: 'TXN001',
-        orderId: 'ORD001',
-        customerName: 'Nguyễn Văn A',
-        customerPhone: '0123456789',
-        amount: 2500000,
-        method: 'cash',
-        status: 'completed',
-        processedAt: '2024-01-15T10:30:00Z',
-        processedBy: 'Nhân viên 1',
-        fee: 0,
-        netAmount: 2500000,
-        notes: 'Thanh toán tiền mặt'
-      },
-      {
-        id: '2',
-        transactionId: 'TXN002',
-        orderId: 'ORD002',
-        customerName: 'Trần Thị B',
-        customerPhone: '0987654321',
-        amount: 1800000,
-        method: 'card',
-        status: 'completed',
-        processedAt: '2024-01-15T11:15:00Z',
-        processedBy: 'Nhân viên 2',
-        fee: 18000,
-        netAmount: 1782000,
-        reference: 'CARD123456789'
-      },
-      {
-        id: '3',
-        transactionId: 'TXN003',
-        orderId: 'ORD003',
-        customerName: 'Lê Văn C',
-        customerPhone: '0369258147',
-        amount: 3200000,
-        method: 'bank_transfer',
-        status: 'pending',
-        processedAt: '2024-01-15T12:00:00Z',
-        processedBy: 'Hệ thống',
-        fee: 32000,
-        netAmount: 3168000,
-        reference: 'TRF987654321'
+    (async () => {
+      try {
+        setLoading(true)
+        const res = await posApi.getPaymentStatus('health-check')
+        // Health check call just to warm up auth; actual list would come from /payments
+      } catch {}
+      try {
+        // Try common endpoints: /payments/list or /orders with payments
+        const resp: any = await (posApi as any).request?.('/payments')
+        const list = resp?.data || resp?.data?.data || []
+        const normalized: Payment[] = list.map((p: any) => ({
+          id: p.id || p.transactionId,
+          transactionId: p.transactionId || p.id,
+          orderId: p.order_id || p.orderId || '',
+          customerName: p.customer_name || p.customerName || '',
+          customerPhone: p.customer_phone || p.customerPhone || '',
+          amount: p.amount || 0,
+          method: (p.method || 'cash').toLowerCase(),
+          status: (p.status || 'completed').toLowerCase(),
+          processedAt: p.created_at || p.processedAt || new Date().toISOString(),
+          processedBy: p.processed_by || p.processedBy || 'System',
+          fee: p.fee || 0,
+          netAmount: p.net_amount || p.netAmount || p.amount || 0,
+          reference: p.reference,
+          notes: p.notes
+        }))
+        setPayments(normalized)
+      } catch {
+        setPayments([])
+      } finally {
+        setLoading(false)
       }
-    ]
-    setPayments(mockPayments)
-    setLoading(false)
+    })()
   }, [])
 
   const formatCurrency = (amount: number) => {

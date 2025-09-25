@@ -1,16 +1,15 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
 import { 
-  ArrowLeft, CheckSquare, User, Phone, Mail, MapPin, CreditCard, 
-  Clock, AlertCircle, CheckCircle, XCircle, Calendar, Flag, 
-  MoreVertical, MessageSquare, Paperclip, Star, TrendingUp,
-  DollarSign, ShoppingCart, Building2, Globe, History, Eye, 
+  ArrowLeft, CheckSquare, User, Phone, Mail, 
+  Clock, AlertCircle, CheckCircle, XCircle, 
+  MessageSquare, Paperclip,
+  History, Eye, 
   Download, Share2, Edit, Trash2, Plus, Send, FileText, Image,
-  Video, Archive, Tag, Users, Target, Timer, Award
+  Video, Users, Target, Timer
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 
 interface TaskDetail {
@@ -416,14 +415,6 @@ export const TaskDetail: React.FC = () => {
     return Math.round((completed / task.subtasks.length) * 100)
   }
 
-  const getDaysRemaining = () => {
-    const today = new Date()
-    const deadlineDate = new Date(task.deadline)
-    const diffTime = deadlineDate.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  }
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -751,6 +742,8 @@ export const TaskDetail: React.FC = () => {
                         )}
                       </div>
                       <p className="text-sm text-gray-700">
+                        {comment.content}
+                      </p>
                       
                       {/* Replies */}
                       {comment.replies && comment.replies.length > 0 && (
@@ -766,6 +759,8 @@ export const TaskDetail: React.FC = () => {
                                   <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
                                 </div>
                                 <p className="text-xs text-gray-600">
+                                  {reply.content}
+                                </p>
                               </div>
                             </div>
                           ))}

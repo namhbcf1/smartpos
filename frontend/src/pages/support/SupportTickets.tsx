@@ -7,23 +7,17 @@ import {
   Download,
   Eye,
   Edit,
-  Trash2,
   MoreHorizontal,
-  Calendar,
   Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
-  User,
-  Phone,
-  Mail,
   Tag,
-  Flag,
-  BarChart3
+  Flag
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 
 interface SupportTicket {
@@ -51,7 +45,7 @@ interface SupportTicket {
 
 const SupportTickets: React.FC = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([])
-  const [loading, setLoading] = useState(true)
+  const [_loading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
@@ -121,7 +115,7 @@ const SupportTickets: React.FC = () => {
       }
     ]
     setTickets(mockTickets)
-    setLoading(false)
+    // setLoading(false)
   }, [])
 
   const formatDate = (dateString: string) => {

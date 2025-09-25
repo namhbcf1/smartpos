@@ -1,10 +1,10 @@
 // Customers API Service - DB Schema Compliant
-import { apiClient } from './client';
-import { Customer, CustomerFormData, CustomerFilters } from '../../pages/customers/components/types';
+import apiClient from './client';
+// import { Customer, CustomerFormData, CustomerFilters } from '../../pages/customers/components/types';
 
 export const customersService = {
   // Get all customers with filters
-  async getAll(filters?: Partial<CustomerFilters>) {
+  async getAll(filters?: any) {
     const params = new URLSearchParams();
 
     if (filters?.search) params.append('q', filters.search);
@@ -26,7 +26,7 @@ export const customersService = {
   },
 
   // Create new customer
-  async create(data: CustomerFormData) {
+  async create(data: any) {
     // Transform form data to match DB schema
     const customerData = {
       name: data.name,
@@ -43,7 +43,7 @@ export const customersService = {
   },
 
   // Update customer
-  async update(id: string, data: Partial<CustomerFormData>) {
+  async update(id: string, data: any) {
     const customerData: any = {};
 
     if (data.name) customerData.name = data.name;

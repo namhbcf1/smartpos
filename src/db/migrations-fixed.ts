@@ -207,17 +207,17 @@ const fixedMigrations: Migration[] = [
       
       // Add missing indexes
       `CREATE INDEX IF NOT EXISTS idx_products_category_active ON products(category_id, is_active)`,
-      `CREATE INDEX IF NOT EXISTS idx_sales_store_date ON sales(store_id, created_at)`,
+      `CREATE INDEX IF NOT EXISTS idx_orders_store_date ON orders(store_id, created_at)`,
       `CREATE INDEX IF NOT EXISTS idx_products_supplier_active ON products(supplier_id, is_active)`,
-      
+
       // Add constraints validation
-      `UPDATE products SET price = 0.00 WHERE price < 0`,
-      `UPDATE products SET cost_price = 0.00 WHERE cost_price < 0`,
+      `UPDATE products SET price_cents = 0 WHERE price_cents < 0`,
+      `UPDATE products SET cost_price_cents = 0 WHERE cost_price_cents < 0`,
       `UPDATE products SET stock = 0 WHERE stock < 0`
     ],
     down: [
       `DROP INDEX IF EXISTS idx_products_category_active`,
-      `DROP INDEX IF EXISTS idx_sales_store_date`,
+      `DROP INDEX IF EXISTS idx_orders_store_date`,
       `DROP INDEX IF EXISTS idx_products_supplier_active`
     ]
   },
@@ -229,14 +229,14 @@ const fixedMigrations: Migration[] = [
     up: [
       // Search optimization indexes
       `CREATE INDEX IF NOT EXISTS idx_products_name_search ON products(name COLLATE NOCASE)`,
-      `CREATE INDEX IF NOT EXISTS idx_customers_name_search ON customers(full_name COLLATE NOCASE)`,
+      `CREATE INDEX IF NOT EXISTS idx_customers_name_search ON customers(name COLLATE NOCASE)`,
       `CREATE INDEX IF NOT EXISTS idx_suppliers_name_search ON suppliers(name COLLATE NOCASE)`,
-      
+
       // Performance indexes for reports
-      `CREATE INDEX IF NOT EXISTS idx_sales_summary ON sales(store_id, created_at, final_amount, sale_status)`,
-      `CREATE INDEX IF NOT EXISTS idx_products_summary ON products(category_id, is_active, name, price, stock)`,
-      `CREATE INDEX IF NOT EXISTS idx_sale_items_summary ON sale_items(sale_id, product_id, quantity, subtotal)`,
-      
+      `CREATE INDEX IF NOT EXISTS idx_orders_summary ON orders(store_id, created_at, total_cents, status)`,
+      `CREATE INDEX IF NOT EXISTS idx_products_summary ON products(category_id, is_active, name, price_cents, stock)`,
+      `CREATE INDEX IF NOT EXISTS idx_order_items_summary ON order_items(order_id, product_id, quantity, total_price_cents)`,
+
       // Inventory management indexes
       `CREATE INDEX IF NOT EXISTS idx_products_stock_alert ON products(stock, min_stock)`
     ],
@@ -244,9 +244,9 @@ const fixedMigrations: Migration[] = [
       `DROP INDEX IF EXISTS idx_products_name_search`,
       `DROP INDEX IF EXISTS idx_customers_name_search`,
       `DROP INDEX IF EXISTS idx_suppliers_name_search`,
-      `DROP INDEX IF EXISTS idx_sales_summary`,
+      `DROP INDEX IF EXISTS idx_orders_summary`,
       `DROP INDEX IF EXISTS idx_products_summary`,
-      `DROP INDEX IF EXISTS idx_sale_items_summary`,
+      `DROP INDEX IF EXISTS idx_order_items_summary`,
       `DROP INDEX IF EXISTS idx_products_stock_alert`,
       `DROP INDEX IF EXISTS idx_products_reorder`
     ],

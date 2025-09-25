@@ -12,8 +12,6 @@ import {
   Bell,
   ClipboardList,
   ArrowRight,
-  Users,
-  Settings,
   AlertTriangle,
   CheckCircle,
   Clock,

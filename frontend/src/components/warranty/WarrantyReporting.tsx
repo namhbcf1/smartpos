@@ -52,7 +52,7 @@ import {
   Search as SearchIcon
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import apiClient from '../services/api/client';
+    import apiClient from '../../services/api/client';
 
 interface ReportData {
   id: string;
@@ -316,7 +316,7 @@ const WarrantyReporting: React.FC = () => {
       {currentTab === 0 && (
         <Grid container spacing={3}>
           {templates.map((template) => (
-            <Grid item xs={12} md={6} lg={4} key={template.id}>
+            <Grid item xs={12} md={6} lg={4} key={template.id} component="div">
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -452,7 +452,7 @@ const WarrantyReporting: React.FC = () => {
       {currentTab === 2 && (
         <Grid container spacing={3}>
           {/* Quick Stats */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} component="div">
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -484,7 +484,7 @@ const WarrantyReporting: React.FC = () => {
           </Grid>
 
           {/* Cost Analysis */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} component="div">
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -531,7 +531,7 @@ const WarrantyReporting: React.FC = () => {
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <TextField
                   fullWidth
                   label="Tên báo cáo"
@@ -540,7 +540,7 @@ const WarrantyReporting: React.FC = () => {
                 />
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <TextField
                   fullWidth
                   label="Mô tả"
@@ -549,7 +549,7 @@ const WarrantyReporting: React.FC = () => {
                 />
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <TextField
                   fullWidth
                   label="Từ ngày"
@@ -560,7 +560,7 @@ const WarrantyReporting: React.FC = () => {
                 />
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <TextField
                   fullWidth
                   label="Đến ngày"
@@ -571,7 +571,7 @@ const WarrantyReporting: React.FC = () => {
                 />
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <FormControl fullWidth>
                   <InputLabel>Trạng thái</InputLabel>
                   <Select
@@ -588,7 +588,7 @@ const WarrantyReporting: React.FC = () => {
                 </FormControl>
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <FormControl fullWidth>
                   <InputLabel>Loại bảo hành</InputLabel>
                   <Select
@@ -604,7 +604,7 @@ const WarrantyReporting: React.FC = () => {
                 </FormControl>
               </Grid>
               
-              <Grid item xs={12}>
+              <Grid item xs={12} component="div">
                 <TextField
                   fullWidth
                   label="Ghi chú bổ sung"

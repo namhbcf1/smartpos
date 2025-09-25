@@ -235,7 +235,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
   return (
     <Box>
       <Grid container spacing={2} alignItems="flex-start">
-        <Grid item xs={12} md={showQuantityInput ? 8 : 12}>
+        <Grid item xs={12} md={showQuantityInput ? 8 : 12} component="div">
           <Autocomplete
             value={value}
             onChange={(_, newValue) => handleProductChange(newValue)}
@@ -286,7 +286,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
         </Grid>
         
         {showQuantityInput && (
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4} component="div">
             <TextField
               label="Quantity"
               type="number"
@@ -305,7 +305,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
         <Card variant="outlined" sx={{ mt: 2 }}>
           <CardContent>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <Typography variant="h6" gutterBottom>
                   Selected Product
                 </Typography>
@@ -321,7 +321,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                   </Typography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
@@ -357,7 +357,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
           {selectedProduct && (
             <Box>
               <Grid container spacing={3}>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={4} component="div">
                   <Box sx={{ textAlign: 'center' }}>
                     <Avatar
                       src={selectedProduct.image_url}
@@ -371,7 +371,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={8}>
+                <Grid item xs={12} md={8} component="div">
                   <List>
                     <ListItem>
                       <ListItemText primary="Price" secondary={formatCurrency(selectedProduct.price)} />

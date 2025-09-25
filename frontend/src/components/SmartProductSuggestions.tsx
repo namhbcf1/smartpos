@@ -237,7 +237,7 @@ const SmartProductSuggestions: React.FC<SmartProductSuggestionsProps> = ({
       ) : (
         <Grid container spacing={2}>
           {suggestions.map((suggestion) => (
-            <Grid item xs={12} md={6} lg={4} key={suggestion.id}>
+            <Grid item xs={12} md={6} lg={4} key={suggestion.id} component="div">
               <Card 
                 sx={{ 
                   height: '100%',
@@ -270,7 +270,7 @@ const SmartProductSuggestions: React.FC<SmartProductSuggestionsProps> = ({
 
                   <Box sx={{ mb: 2 }}>
                     <Grid container spacing={1}>
-                      <Grid item xs={6}>
+                      <Grid item xs={6} component="div">
                         <Typography variant="body2" color="text.secondary">
                           Current Stock
                         </Typography>
@@ -281,7 +281,7 @@ const SmartProductSuggestions: React.FC<SmartProductSuggestionsProps> = ({
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={6}>
+                      <Grid item xs={6} component="div">
                         <Typography variant="body2" color="text.secondary">
                           Suggested Order
                         </Typography>
@@ -360,7 +360,7 @@ const SmartProductSuggestions: React.FC<SmartProductSuggestionsProps> = ({
           {selectedProduct && (
             <Box>
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} component="div">
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
@@ -397,7 +397,7 @@ const SmartProductSuggestions: React.FC<SmartProductSuggestionsProps> = ({
                   </Card>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} component="div">
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
@@ -432,7 +432,7 @@ const SmartProductSuggestions: React.FC<SmartProductSuggestionsProps> = ({
                   </Card>
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid item xs={12} component="div">
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>

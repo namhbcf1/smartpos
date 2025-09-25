@@ -201,7 +201,7 @@ export const LiveStats: React.FC<LiveStatsProps> = ({
 
       <Grid container spacing={3}>
         {/* Sales Stats */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Doanh thu hôm nay"
             value={formatCurrency(salesStats.todayTotal)}
@@ -213,7 +213,7 @@ export const LiveStats: React.FC<LiveStatsProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Đơn hàng hôm nay"
             value={salesStats.todayCount}
@@ -226,7 +226,7 @@ export const LiveStats: React.FC<LiveStatsProps> = ({
         </Grid>
 
         {/* Inventory Stats */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Cảnh báo tồn kho"
             value={lowStockCount}
@@ -239,7 +239,7 @@ export const LiveStats: React.FC<LiveStatsProps> = ({
         </Grid>
 
         {/* Customer Stats */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Khách hàng mới"
             value={customerStats.newCustomersToday}
@@ -252,7 +252,7 @@ export const LiveStats: React.FC<LiveStatsProps> = ({
         </Grid>
 
         {/* Additional Stats Row */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Điểm thưởng"
             value={formatNumber(customerStats.totalLoyaltyPoints)}
@@ -262,7 +262,7 @@ export const LiveStats: React.FC<LiveStatsProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Khách VIP"
             value={customerStats.vipCustomers}
@@ -272,7 +272,7 @@ export const LiveStats: React.FC<LiveStatsProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Sản phẩm"
             value="1,234"
@@ -282,7 +282,7 @@ export const LiveStats: React.FC<LiveStatsProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <StatCard
             title="Trung bình đơn hàng"
             value={formatCurrency(salesStats.todayCount > 0 ? salesStats.todayTotal / salesStats.todayCount : 0)}

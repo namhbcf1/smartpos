@@ -34,7 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import SerialNumberInput from './SerialNumberInput';
-import api from '../services/api';
+import api from '../../services/api';
 
 interface CartItem {
   product: {
@@ -245,7 +245,7 @@ const SerialNumberAssignment: React.FC<SerialNumberAssignmentProps> = ({
               Tổng quan
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={4} component="div">
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="h4" color="primary">
                     {getTotalAssigned()}/{getTotalRequired()}
@@ -255,7 +255,7 @@ const SerialNumberAssignment: React.FC<SerialNumberAssignmentProps> = ({
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={4} component="div">
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="h4" color="success.main">
                     {items.length}
@@ -265,7 +265,7 @@ const SerialNumberAssignment: React.FC<SerialNumberAssignmentProps> = ({
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={4} component="div">
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="h4" color="warning.main">
                     {getWarrantyCount()}
@@ -288,7 +288,7 @@ const SerialNumberAssignment: React.FC<SerialNumberAssignmentProps> = ({
           <Card key={item.product.id} sx={{ mb: 2 }}>
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} component="div">
                   <Typography variant="subtitle1" fontWeight="medium">
                     {item.product.name}
                   </Typography>
@@ -309,7 +309,7 @@ const SerialNumberAssignment: React.FC<SerialNumberAssignmentProps> = ({
                   </Box>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6} component="div">
                   <SerialNumberInput
                     value={item.serial_numbers || []}
                     onChange={(serials) => updateItemSerials(item.product.id, serials)}

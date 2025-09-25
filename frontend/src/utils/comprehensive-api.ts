@@ -3,7 +3,7 @@
  * Connects frontend to all 31 backend API modules
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://namhbcf-api.bangachieu2.workers.dev/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://namhbcf-api.bangachieu2.workers.dev/api';
 
 // Types
 interface APIResponse<T = any> {
@@ -51,7 +51,7 @@ class APIClient {
     const url = `${this.baseURL}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers
+      ...(options.headers as Record<string, string>)
     };
 
     if (this.token) {
@@ -89,14 +89,14 @@ class APIClient {
   async post<T = any>(endpoint: string, data?: any): Promise<APIResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined
+      body: data ? JSON.stringify(data) : null
     });
   }
 
   async put<T = any>(endpoint: string, data?: any): Promise<APIResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined
+      body: data ? JSON.stringify(data) : null
     });
   }
 

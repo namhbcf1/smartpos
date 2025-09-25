@@ -5,7 +5,7 @@ const app = new Hono();
 
 app.use('*', authenticate);
 
-// GET /api/v1/inventory/stock-check/active
+// GET /api/inventory/stock-check/active
 app.get('/active', async (c: any) => {
   try {
     // Check if table exists first
@@ -39,7 +39,7 @@ app.get('/active', async (c: any) => {
   }
 });
 
-// POST /api/v1/inventory/stock-check
+// POST /api/inventory/stock-check
 app.post('/', async (c: any) => {
   try {
     const body = await c.req.json();
@@ -59,7 +59,7 @@ app.post('/', async (c: any) => {
   }
 });
 
-// GET /api/v1/inventory/stock-check/:id/items
+// GET /api/inventory/stock-check/:id/items
 app.get('/:id/items', async (c: any) => {
   try {
     const sessionId = c.req.param('id');
@@ -88,7 +88,7 @@ app.get('/:id/items', async (c: any) => {
   }
 });
 
-// PUT /api/v1/inventory/stock-check/:id
+// PUT /api/inventory/stock-check/:id
 app.put('/:id', async (c: any) => {
   try {
     const id = c.req.param('id');

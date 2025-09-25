@@ -77,13 +77,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
       <Grid container spacing={3}>
         {/* Basic Information */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <Typography variant="h6" gutterBottom>
             Thông tin cơ bản
           </Typography>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <TextField
             fullWidth
             label="Họ và tên *"
@@ -93,7 +93,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <TextField
             fullWidth
             label="Số điện thoại"
@@ -102,7 +102,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <TextField
             fullWidth
             label="Email"
@@ -112,7 +112,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <FormControl fullWidth>
             <InputLabel>Loại khách hàng</InputLabel>
             <Select
@@ -126,7 +126,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           </FormControl>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <TextField
             fullWidth
             label="Địa chỉ"
@@ -140,14 +140,14 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         {/* Business Information */}
         {formData.customer_type === 'business' && (
           <>
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Divider sx={{ my: 2 }} />
               <Typography variant="h6" gutterBottom>
                 Thông tin doanh nghiệp
               </Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} component="div">
               <TextField
                 fullWidth
                 label="Tên công ty"
@@ -156,7 +156,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} component="div">
               <TextField
                 fullWidth
                 label="Mã số thuế"
@@ -168,14 +168,14 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         )}
 
         {/* VIP Information */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <Divider sx={{ my: 2 }} />
           <Typography variant="h6" gutterBottom>
             Thông tin VIP
           </Typography>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <FormControlLabel
             control={
               <Switch
@@ -188,7 +188,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         </Grid>
 
         {formData.is_vip && (
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} component="div">
             <FormControl fullWidth>
               <InputLabel>Cấp độ VIP</InputLabel>
               <Select
@@ -206,7 +206,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         )}
 
         {/* Additional Information */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <TextField
             fullWidth
             label="Ghi chú"
@@ -217,7 +217,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <FormControlLabel
             control={
               <Switch
@@ -230,7 +230,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         </Grid>
 
         {/* Submit Buttons */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             <Button
               type="submit"

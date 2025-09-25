@@ -40,7 +40,7 @@ export interface User {
   password_hash?: string; // For admin management only
   full_name: string;
   role: UserRole;
-  permissions?: Permission[]; // Optional - computed from role
+  permissions?: string[]; // Optional - computed from role
   is_active: boolean;
   last_login?: string; // ISO 8601 format
   created_at: string;

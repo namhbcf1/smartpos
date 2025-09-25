@@ -1,30 +1,34 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
 import { authenticate } from '../../middleware/auth';
+import { withValidation } from '../../middleware/validation';
+import { IdempotencyMiddleware } from '../../middleware/idempotency';
 
 const app = new Hono<{ Bindings: Env }>();
 
 // Apply authentication middleware to all routes
 app.use('*', authenticate);
 
-// GET /api/sales - List sales transactions from pos_orders
-app.get('/', async (c: any) => {
+// GET /api/sales - List sales transactions from orders
+app.get('/', withValidation.list, async (c: any) => {
   try {
+    // Tables should be created via migrations, not in routes
+
     const { page = '1', limit = '50', from, to, status } = c.req.query();
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    // Build where clause for filtering
+    // Build where clause for filtering (optimized for index usage)
     let whereClause = 'WHERE 1=1';
     const params: any[] = [];
 
     if (from) {
-      whereClause += ' AND DATE(created_at) >= ?';
-      params.push(from);
+      whereClause += ' AND created_at >= ?';
+      params.push(from + ' 00:00:00');
     }
 
     if (to) {
-      whereClause += ' AND DATE(created_at) <= ?';
-      params.push(to);
+      whereClause += ' AND created_at <= ?';
+      params.push(to + ' 23:59:59');
     }
 
     if (status) {
@@ -32,7 +36,7 @@ app.get('/', async (c: any) => {
       params.push(status);
     }
 
-    // Query pos_orders table for sales data
+    // Query orders table for sales data (unified schema)
     const query = `
       SELECT
         id,
@@ -40,18 +44,17 @@ app.get('/', async (c: any) => {
         customer_id,
         customer_name,
         customer_phone,
-        customer_email,
-        subtotal,
-        discount,
-        tax,
-        total as final_amount,
-        payment_method,
-        payment_status,
+        subtotal_cents / 100.0 as subtotal,
+        discount_cents / 100.0 as discount,
+        tax_cents / 100.0 as tax,
+        total_cents / 100.0 as final_amount,
+        'cash' as payment_method,
+        'completed' as payment_status,
         status,
         notes,
         created_at,
         updated_at
-      FROM pos_orders
+      FROM orders
       ${whereClause}
       ORDER BY created_at DESC
       LIMIT ? OFFSET ?
@@ -59,7 +62,7 @@ app.get('/', async (c: any) => {
 
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM pos_orders
+      FROM orders
       ${whereClause}
     `;
 
@@ -103,21 +106,21 @@ app.get('/summary', async (c: any) => {
     const todaySales = await c.env.DB.prepare(`
       SELECT
         COUNT(*) as order_count,
-        COALESCE(SUM(total), 0) as revenue,
-        COALESCE(AVG(total), 0) as avg_order_value
-      FROM pos_orders
-      WHERE DATE(created_at) = ? AND status = 'completed'
-    `).bind(today).first();
+        COALESCE(SUM(total_cents), 0) / 100.0 as revenue,
+        COALESCE(AVG(total_cents), 0) / 100.0 as avg_order_value
+      FROM orders
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'
+    `).bind(today + ' 00:00:00', today + ' 23:59:59').first();
 
     // This month's sales
     const monthSales = await c.env.DB.prepare(`
       SELECT
         COUNT(*) as order_count,
-        COALESCE(SUM(total), 0) as revenue,
-        COALESCE(AVG(total), 0) as avg_order_value
-      FROM pos_orders
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'
-    `).bind(thisMonth).first();
+        COALESCE(SUM(total_cents), 0) / 100.0 as revenue,
+        COALESCE(AVG(total_cents), 0) / 100.0 as avg_order_value
+      FROM orders
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'
+    `).bind(thisMonth + '-01 00:00:00', new Date(new Date(thisMonth + '-01').getFullYear(), new Date(thisMonth + '-01').getMonth() + 1, 1).toISOString().slice(0, 19)).first();
 
     // Yesterday's sales for comparison
     const yesterday = new Date();
@@ -127,23 +130,25 @@ app.get('/summary', async (c: any) => {
     const yesterdaySales = await c.env.DB.prepare(`
       SELECT
         COUNT(*) as order_count,
-        COALESCE(SUM(total), 0) as revenue
-      FROM pos_orders
-      WHERE DATE(created_at) = ? AND status = 'completed'
-    `).bind(yesterdayStr).first();
+        COALESCE(SUM(total_cents), 0) / 100.0 as revenue
+      FROM orders
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'
+    `).bind(yesterdayStr + ' 00:00:00', yesterdayStr + ' 23:59:59').first();
 
     // Last month for comparison
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     const lastMonthStr = lastMonth.toISOString().slice(0, 7);
 
+    const lastMonthStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1).toISOString().slice(0, 19);
+    const lastMonthEnd = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 1).toISOString().slice(0, 19);
     const lastMonthSales = await c.env.DB.prepare(`
       SELECT
         COUNT(*) as order_count,
-        COALESCE(SUM(total), 0) as revenue
-      FROM pos_orders
-      WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'
-    `).bind(lastMonthStr).first();
+        COALESCE(SUM(total_cents), 0) / 100.0 as revenue
+      FROM orders
+      WHERE created_at >= ? AND created_at < ? AND status = 'completed'
+    `).bind(lastMonthStart, lastMonthEnd).first();
 
     // Calculate growth rates
     const todayGrowth = yesterdaySales?.revenue > 0
@@ -188,27 +193,23 @@ app.get('/:id', async (c: any) => {
 
     const sale = await c.env.DB.prepare(`
       SELECT
-        p.id,
-        p.order_number as transaction_code,
-        p.customer_id,
-        p.customer_name,
-        p.customer_phone,
-        p.customer_email,
-        p.subtotal,
-        p.discount,
-        p.tax,
-        p.total as final_amount,
-        p.payment_method,
-        p.payment_status,
-        p.amount_paid,
-        p.change_given,
-        p.reference_number,
-        p.status,
-        p.notes,
-        p.created_at,
-        p.updated_at
-      FROM pos_orders p
-      WHERE p.id = ?
+        id,
+        order_number as transaction_code,
+        customer_id,
+        customer_name,
+        customer_phone,
+        subtotal_cents / 100.0 as subtotal,
+        discount_cents / 100.0 as discount,
+        tax_cents / 100.0 as tax,
+        total_cents / 100.0 as final_amount,
+        'cash' as payment_method,
+        'completed' as payment_status,
+        status,
+        notes,
+        created_at,
+        updated_at
+      FROM orders
+      WHERE id = ?
     `).bind(id).first();
 
     if (!sale) {
@@ -221,17 +222,16 @@ app.get('/:id', async (c: any) => {
     // Get order items
     const items = await c.env.DB.prepare(`
       SELECT
-        poi.id,
-        poi.product_id,
-        poi.product_name,
-        poi.product_sku,
-        poi.quantity,
-        poi.unit_price,
-        poi.total_price,
-        poi.discount_amount,
-        poi.tax_amount
-      FROM pos_order_items poi
-      WHERE poi.order_id = ?
+        id,
+        product_id,
+        product_name,
+        product_sku,
+        quantity,
+        unit_price_cents / 100.0 as unit_price,
+        total_price_cents / 100.0 as total_price,
+        discount_cents / 100.0 as discount_amount
+      FROM order_items
+      WHERE order_id = ?
     `).bind(id).all();
 
     return c.json({
@@ -251,9 +251,12 @@ app.get('/:id', async (c: any) => {
   }
 });
 
-// POST /api/sales - Create new sale (via pos_orders)
-app.post('/', async (c: any) => {
+// POST /api/sales - Create new sale (via unified orders table)
+app.post('/', IdempotencyMiddleware.orders, withValidation.createOrder, async (c: any) => {
   try {
+    // Tables should be created via migrations, not runtime DDL
+    // Migration 006 handles all table creation
+
     const data = await c.req.json();
     const {
       customer_id,
@@ -264,6 +267,13 @@ app.post('/', async (c: any) => {
       payment_method = 'cash',
       notes
     } = data;
+
+    // Ensure no undefined values for D1 compatibility
+    const cleanCustomerId = customer_id || null;
+    const cleanCustomerName = customer_name || null;
+    const cleanCustomerPhone = customer_phone || null;
+    const cleanCustomerEmail = customer_email || null;
+    const cleanNotes = notes || null;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return c.json({
@@ -278,39 +288,49 @@ app.post('/', async (c: any) => {
     let totalTax = 0;
 
     for (const item of items) {
-      subtotal += item.quantity * item.unit_price;
-      totalDiscount += item.discount_amount || 0;
-      totalTax += item.tax_amount || 0;
+      const itemPrice = item.unit_price_cents ? item.unit_price_cents / 100 : (item.unit_price || 0);
+      subtotal += item.quantity * itemPrice;
+      totalDiscount += (item.discount_amount || 0);
+      totalTax += (item.tax_amount || 0);
     }
 
     const total = subtotal - totalDiscount + totalTax;
-    const orderId = `pos_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
 
-    // Create pos_order
+    // Create order in unified orders table (only insert required columns)
     await c.env.DB.prepare(`
-      INSERT INTO pos_orders (
-        id, order_number, tenant_id, customer_id, customer_name, customer_phone, customer_email,
-        subtotal, discount, tax, total, payment_method, payment_status, status, notes,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO orders (
+        id, order_number, customer_id, customer_name, customer_phone, user_id, store_id,
+        subtotal_cents, discount_cents, tax_cents, total_cents, status, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      orderId, orderNumber, 'default', customer_id, customer_name, customer_phone, customer_email,
-      subtotal, totalDiscount, totalTax, total, payment_method, 'completed', 'completed', notes
+      orderId, orderNumber, cleanCustomerId, cleanCustomerName, cleanCustomerPhone, 'user-admin', 'store-1',
+      Math.round(subtotal * 100), Math.round(totalDiscount * 100), Math.round(totalTax * 100), Math.round(total * 100), 'completed', cleanNotes
     ).run();
 
     // Create order items
     for (const item of items) {
       const itemId = `item_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+      // Ensure no undefined values for D1 compatibility
+      const cleanProductId = item.product_id || null;
+      const cleanProductName = item.product_name || null;
+      const cleanProductSku = item.product_sku || null;
+      const cleanQuantity = item.quantity || 0;
+      const cleanUnitPrice = item.unit_price || 0;
+      const cleanDiscountAmount = item.discount_amount || 0;
+      const cleanTaxAmount = item.tax_amount || 0;
+
       await c.env.DB.prepare(`
-        INSERT INTO pos_order_items (
+        INSERT INTO order_items (
           id, order_id, product_id, product_name, product_sku, quantity,
-          unit_price, total_price, discount_amount, tax_amount
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          unit_price_cents, total_price_cents, discount_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
-        itemId, orderId, item.product_id, item.product_name, item.product_sku,
-        item.quantity, item.unit_price, item.quantity * item.unit_price,
-        item.discount_amount || 0, item.tax_amount || 0
+        itemId, orderId, cleanProductId, cleanProductName, cleanProductSku,
+        cleanQuantity, Math.round(cleanUnitPrice * 100), Math.round(cleanQuantity * cleanUnitPrice * 100),
+        Math.round(cleanDiscountAmount * 100)
       ).run();
     }
 
@@ -319,7 +339,7 @@ app.post('/', async (c: any) => {
       data: {
         id: orderId,
         order_number: orderNumber,
-        total,
+        total: Math.round(total),
         status: 'completed'
       },
       message: 'Sale created successfully'
@@ -344,35 +364,35 @@ app.get('/stats', async (c: any) => {
     const params = ['completed'];
 
     if (from) {
-      whereClause += ' AND DATE(created_at) >= ?';
-      params.push(from);
+      whereClause += ' AND created_at >= ?';
+      params.push(from + ' 00:00:00');
     }
 
     if (to) {
-      whereClause += ' AND DATE(created_at) <= ?';
-      params.push(to);
+      whereClause += ' AND created_at <= ?';
+      params.push(to + ' 23:59:59');
     }
 
     const stats = await c.env.DB.prepare(`
       SELECT
         COUNT(*) as total_orders,
-        SUM(total) as total_revenue,
-        AVG(total) as avg_order_value,
-        SUM(total - subtotal + discount) as total_profit
-      FROM pos_orders
+        SUM(total_cents) / 100.0 as total_revenue,
+        AVG(total_cents) / 100.0 as avg_order_value,
+        SUM(total_cents - subtotal_cents + discount_cents) / 100.0 as total_profit
+      FROM orders
       ${whereClause}
     `).bind(...params).first();
 
     const topProducts = await c.env.DB.prepare(`
       SELECT
-        poi.product_name,
-        poi.product_sku,
-        SUM(poi.quantity) as total_quantity,
-        SUM(poi.total_price) as total_revenue
-      FROM pos_order_items poi
-      JOIN pos_orders po ON poi.order_id = po.id
-      ${whereClause.replace('WHERE', 'WHERE po.')}
-      GROUP BY poi.product_id, poi.product_name, poi.product_sku
+        oi.product_name,
+        oi.product_sku,
+        SUM(oi.quantity) as total_quantity,
+        SUM(oi.total_price_cents) / 100.0 as total_revenue
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      ${whereClause.replace('WHERE', 'WHERE o.')}
+      GROUP BY oi.product_id, oi.product_name, oi.product_sku
       ORDER BY total_quantity DESC
       LIMIT 10
     `).bind(...params).all();

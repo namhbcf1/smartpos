@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
-  BarChart3, PieChart, TrendingUp, DollarSign, Package, Users, ShoppingCart, 
-  Calendar, Download, Filter, Eye, FileText, Activity, Target, Award,
-  TrendingDown, ArrowUpRight, ArrowDownRight, RefreshCw, Trash2
+  BarChart3, TrendingUp, DollarSign, Package, Users, ShoppingCart, 
+  Calendar, Download, Eye, FileText, Activity,
+  ArrowUpRight, ArrowDownRight, RefreshCw, Trash2
 } from 'lucide-react'
-import { Button } from '../../components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { Button } from '../../components/ui/Button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 
 interface ReportData {

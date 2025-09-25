@@ -411,7 +411,7 @@ const Categories: React.FC = () => {
         {/* Modern Stats Cards */}
         <Fade in timeout={800}>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <StatsCard className="primary" icon={<CategoryIcon />}>
                 <CardContent sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="h3" sx={{ fontWeight: 800, color: colors.primary[600] }}>
@@ -427,7 +427,7 @@ const Categories: React.FC = () => {
                 </CardContent>
               </StatsCard>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <StatsCard className="success" icon={<ActiveIcon />}>
                 <CardContent sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="h3" sx={{ fontWeight: 800, color: colors.success[600] }}>
@@ -443,7 +443,7 @@ const Categories: React.FC = () => {
                 </CardContent>
               </StatsCard>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <StatsCard icon={<InactiveIcon />}>
                 <CardContent sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="h3" sx={{ fontWeight: 800, color: colors.error[600] }}>
@@ -459,7 +459,7 @@ const Categories: React.FC = () => {
                 </CardContent>
               </StatsCard>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <StatsCard icon={<ProductsIcon />}>
                 <CardContent sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="h3" sx={{ fontWeight: 800, color: colors.secondary[600] }}>
@@ -784,7 +784,7 @@ const Categories: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <TextField
                 label="Tên danh mục *"
                 value={formData.name}
@@ -794,7 +794,7 @@ const Categories: React.FC = () => {
                 helperText={!formData.name.trim() ? 'Tên danh mục không được để trống' : ''}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <TextField
                 label="Mô tả"
                 value={formData.description}
@@ -805,7 +805,7 @@ const Categories: React.FC = () => {
                 placeholder="Nhập mô tả cho danh mục..."
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <FormControlLabel
                 control={
                   <Switch

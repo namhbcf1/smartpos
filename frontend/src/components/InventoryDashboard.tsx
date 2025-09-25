@@ -171,7 +171,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
   if (compact) {
     return (
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <InventoryIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
@@ -182,7 +182,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <MoneyIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
@@ -193,7 +193,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <WarningIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
@@ -204,7 +204,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <CartIcon color="info" sx={{ fontSize: 40, mb: 1 }} />
@@ -235,7 +235,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
 
       {/* Key Metrics */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <InventoryIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
@@ -248,7 +248,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <MoneyIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
@@ -261,7 +261,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Badge badgeContent={metrics.out_of_stock_items} color="error">
@@ -276,7 +276,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} component="div">
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <SpeedIcon color="info" sx={{ fontSize: 40, mb: 1 }} />
@@ -293,7 +293,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
 
       {/* Orders Overview */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={6} component="div">
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -314,7 +314,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={6} component="div">
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -341,7 +341,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
       {showDetailedView && (
         <Grid container spacing={3}>
           {/* Low Stock Alerts */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} component="div">
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
@@ -401,7 +401,7 @@ const InventoryDashboard: React.FC<InventoryDashboardProps> = ({
           </Grid>
 
           {/* Recent Activity */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} component="div">
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>

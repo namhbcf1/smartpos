@@ -19,7 +19,7 @@ export class UserService {
   }
 
   // Get all users with filtering and pagination
-  async getUsers(params: UserQueryParams): Promise<{ users: User[]; total: number; stats?: UserStats }> {
+  async getUsers(params: any): Promise<{ users: User[]; total: number; stats?: UserStats }> {
     try {
       const {
         page = 1,
@@ -224,7 +224,7 @@ export class UserService {
   }
 
   // Create new user
-  async createUser(data: UserCreateData, createdBy: number): Promise<User> {
+  async createUser(data: any, createdBy: number): Promise<User> {
     try {
       // Check if username already exists
       const existingUsername = await this.getUserByUsername(data.username);
@@ -295,7 +295,7 @@ export class UserService {
   }
 
   // Update user
-  async updateUser(id: number, data: UserUpdateData, updatedBy: number): Promise<User> {
+  async updateUser(id: number, data: any, updatedBy: number): Promise<User> {
     try {
       const existingUser = await this.getUserById(id);
       if (!existingUser) {

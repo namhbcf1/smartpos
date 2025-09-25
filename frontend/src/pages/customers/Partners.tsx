@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Users, UserCheck, Building2, Truck, Store, Plus, TrendingUp, DollarSign, Package, MapPin, Phone, Mail, Eye, Edit, Trash2, Search, Filter } from 'lucide-react'
-import { Button } from '../../components/ui/button'
+import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 import { useNavigate } from 'react-router-dom'
 

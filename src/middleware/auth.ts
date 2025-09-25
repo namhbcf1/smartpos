@@ -211,8 +211,8 @@ export const authorize = (roles: UserRole[]): MiddlewareHandler => {
 };
 
 // Middleware kiểm tra truy cập chỉ cho cửa hàng của user (hoặc admin/manager)
-export const storeAccess: MiddlewareHandler = async (c, next) => {
-  const user = c.get('user');
+export const storeAccess: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
+  const user = (c as any).get('user');
   
   if (!user) {
     return c.json<ApiResponse<null>>({
@@ -229,11 +229,11 @@ export const storeAccess: MiddlewareHandler = async (c, next) => {
   }
   
   // Lấy store_id từ request
-  const storeId = c.req.param('storeId') || c.req.query('store_id');
+  const storeId = ((c as any).req.param('storeId') as string) || ((c as any).req.query('store_id') as string);
   
   // Nếu không có storeId, sử dụng store của user
   if (!storeId) {
-    c.set('storeId', user.storeId);
+    (c as any).set('storeId', user.storeId);
     await next();
     return;
   }

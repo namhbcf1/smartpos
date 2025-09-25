@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
   Package, Plus, Search, Filter, Download, Eye, Edit, Trash2, 
@@ -165,6 +166,8 @@ const channelConfig = {
 }
 
 export const OrdersList: React.FC = () => {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [orders] = useState<Order[]>(mockOrders)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('all')
@@ -174,7 +177,21 @@ export const OrdersList: React.FC = () => {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
 
-  const filteredOrders = orders.filter(order => {
+  // Sync filter from path/query
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const qsStatus = params.get('status')
+    if (qsStatus && Object.keys(orderStatusConfig).includes(qsStatus)) {
+      setSelectedStatus(qsStatus)
+      return
+    }
+    // Path-based: /orders/shipping etc.
+    const path = location.pathname
+    const pathStatus = Object.keys(orderStatusConfig).find(s => path.endsWith(`/${s}`))
+    if (pathStatus) setSelectedStatus(pathStatus)
+  }, [location.pathname, location.search])
+
+  const filteredOrders = useMemo(() => orders.filter(order => {
     const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.customer.phone.includes(searchTerm)
@@ -182,7 +199,7 @@ export const OrdersList: React.FC = () => {
     const matchesPaymentStatus = selectedPaymentStatus === 'all' || order.paymentStatus === selectedPaymentStatus
     const matchesChannel = selectedChannel === 'all' || order.channel === selectedChannel
     return matchesSearch && matchesStatus && matchesPaymentStatus && matchesChannel
-  })
+  }), [orders, searchTerm, selectedStatus, selectedPaymentStatus, selectedChannel])
 
   const stats = {
     total: orders.length,
@@ -254,7 +271,20 @@ export const OrdersList: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => {
+            const header = 'orderNumber,customer,phone,finalAmount,status\n'
+            const rows = filteredOrders.map(o => `${o.orderNumber},${o.customer.name},${o.customer.phone},${o.finalAmount},${o.orderStatus}`).join('\n')
+            const csv = header + rows
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `orders_${new Date().toISOString().slice(0,10)}.csv`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+          }}>
             <Download className="w-4 h-4 mr-2" />
             Xuất Excel
           </Button>
@@ -262,7 +292,7 @@ export const OrdersList: React.FC = () => {
             <FileText className="w-4 h-4 mr-2" />
             Xuất PDF
           </Button>
-          <Button>
+          <Button onClick={() => navigate('/orders/new')}>
             <Plus className="w-4 h-4 mr-2" />
             Tạo đơn hàng mới
           </Button>
@@ -352,15 +382,21 @@ export const OrdersList: React.FC = () => {
                   placeholder="Tìm kiếm mã đơn, SĐT, tên khách hàng..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10">
+                  className="pl-10"
                 />
               </div>
             </div>
             <div className="flex gap-2">
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                onChange={(e) => {
+                  const v = e.target.value
+                  setSelectedStatus(v)
+                  const base = '/orders'
+                  if (v === 'all') navigate(base)
+                  else navigate(`${base}/${v}`)
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả trạng thái</option>
                 {Object.entries(orderStatusConfig).map(([key, config]) => (
@@ -370,7 +406,7 @@ export const OrdersList: React.FC = () => {
               <select
                 value={selectedPaymentStatus}
                 onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả thanh toán</option>
                 {Object.entries(paymentStatusConfig).map(([key, config]) => (
@@ -380,7 +416,7 @@ export const OrdersList: React.FC = () => {
               <select
                 value={selectedChannel}
                 onChange={(e) => setSelectedChannel(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả kênh</option>
                 {Object.entries(channelConfig).map(([key, config]) => (
@@ -390,7 +426,7 @@ export const OrdersList: React.FC = () => {
               <select
                 value={selectedDateRange}
                 onChange={(e) => setSelectedDateRange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả thời gian</option>
                 <option value="today">Hôm nay</option>
@@ -419,7 +455,7 @@ export const OrdersList: React.FC = () => {
                       type="checkbox"
                       checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
                       onChange={handleSelectAll}
-                      className="rounded border-gray-300">
+                      className="rounded border-gray-300"
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -465,7 +501,7 @@ export const OrdersList: React.FC = () => {
                           type="checkbox"
                           checked={selectedOrders.includes(order.id)}
                           onChange={() => handleSelectOrder(order.id)}
-                          className="rounded border-gray-300">
+                          className="rounded border-gray-300"
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -543,16 +579,16 @@ export const OrdersList: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => navigate(`/orders/detail/${order.id}`)}>
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => window.print()}>
                             <Printer className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => navigate(`/orders/${order.id}`)}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
+                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => alert(`Hủy đơn ${order.orderNumber}`)}>
                             <XCircle className="w-4 h-4" />
                           </Button>
                         </div>

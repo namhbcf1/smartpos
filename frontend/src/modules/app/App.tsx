@@ -2,9 +2,9 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import Dashboard from '../../pages/dashboard/Dashboard'
 import LoginPage from '../../pages/auth/LoginPage'
 import ModernProducts from '../../pages/products/ModernProducts'
-import SalesHistoryPage from '../../pages/sales/SalesHistoryPage'
+import Sales from '../../pages/sales/Sales'
 import Orders from '../../pages/orders/Orders'
-// import { OrdersList } from '../../pages/orders/OrdersList'
+import { OrdersList } from '../../pages/orders/OrdersList'
 import { NewOrders } from '../../pages/orders/NewOrders'
 import { CompletedOrders } from '../../pages/orders/CompletedOrders'
 import { CancelledOrders } from '../../pages/orders/CancelledOrders'
@@ -21,9 +21,9 @@ import { Partners } from '../../pages/customers/Partners'
 import { Reports } from '../../pages/reports/Reports'
 // import { TasksList } from '../../pages/tasks/TasksList'
 // import { MyTasks } from '../../pages/tasks/MyTasks'
-import { TasksKanban } from '../../pages/tasks/TasksKanban'
+// import { TasksKanban } from '../../pages/tasks/TasksKanban'
 // import { TaskDetail } from '../../pages/tasks/TaskDetail'
-import { TasksReports } from '../../pages/tasks/TasksReports'
+// import { TasksReports } from '../../pages/tasks/TasksReports'
 import { Settings } from '../../pages/settings/Settings'
 import SettingsNew from '../../pages/settings/SettingsNew'
 // import Inventory from '../../pages/inventory/Inventory'
@@ -34,9 +34,10 @@ const InventoryAlerts = lazy(() => import('../../pages/inventory/InventoryAlerts
 const InventoryReorder = lazy(() => import('../../pages/inventory/InventoryReorder.tsx'))
 // import UsersPage from '../../pages/users/Users'
 // import BusinessIntelligencePage from '../../pages/reports/BusinessIntelligencePage'
-import Sales from '../../pages/sales/Sales'
 import NewSaleFixed from '../../pages/sales/NewSaleFixed'
 import CategoriesNew from '../../pages/products/CategoriesNew'
+import BusinessIntelligencePage from '../../pages/reports/BusinessIntelligencePage'
+import InventoryLocations from '../../pages/inventory/InventoryLocations'
 // import TaskManagement from '../../pages/TaskManagement'
 // import HeldSales from '../../pages/pos/HeldSales'
 // import EndOfDay from '../../pages/pos/EndOfDay'
@@ -50,6 +51,7 @@ import PurchaseCreate from '../../pages/purchases/PurchaseCreate'
 import PurchaseReceive from '../../pages/purchases/PurchaseReceive'
 import PurchaseReturn from '../../pages/purchases/PurchaseReturn'
 import SerialNumberManagement from '../../pages/serials/SerialNumberManagement'
+import DeviceManagement from '../../pages/devices/DeviceManagement'
 import WarrantyServiceHub from '../../pages/warranty/WarrantyServiceHub'
 import WarrantyClaims from '../../pages/warranty/WarrantyClaims'
 import ServiceCenters from '../../pages/warranty/ServiceCenters'
@@ -127,9 +129,10 @@ export function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="reports/basic" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="sales" element={<SalesHistoryPage />} />
-          <Route path="sales/history" element={<SalesHistoryPage />} />
-          {/* <Route path="orders" element={<OrdersList />} /> */}
+          <Route path="sales" element={<Sales />} />
+          <Route path="sales/history" element={<Sales />} />
+          <Route path="orders" element={<OrdersList />} />
+          <Route path="orders/shipping" element={<OrdersList />} />
           <Route path="orders/new" element={<NewOrders />} />
           <Route path="orders/completed" element={<CompletedOrders />} />
           <Route path="orders/cancelled" element={<CancelledOrders />} />
@@ -137,7 +140,7 @@ export function App() {
           <Route path="orders/reports" element={<OrderReports />} />
           <Route path="orders/:orderId" element={<Orders />} />
           <Route path="customers" element={<Customers />} />
-          {/* <Route path="suppliers" element={<Suppliers />} /> */}
+          <Route path="suppliers" element={<Suppliers />} />
           <Route path="distributors" element={<Distributors />} />
           <Route path="partners" element={<Partners />} />
           <Route path="reports" element={<Reports />} />
@@ -149,15 +152,16 @@ export function App() {
           {/* <Route path="tasks/reports" element={<TasksReports />} /> */}
           <Route path="settings" element={<SettingsNew />} />
           <Route path="settings-old" element={<Settings />} />
-          {/* <Route path="business-intelligence" element={<BusinessIntelligencePage />} />
-          <Route path="analytics" element={<BusinessIntelligencePage />} /> */}
+          <Route path="business-intelligence" element={<BusinessIntelligencePage />} />
+          <Route path="analytics" element={<BusinessIntelligencePage />} />
           <Route path="sales-history" element={<Sales />} />
           {/* <Route path="inventory" element={<Inventory />} /> */}
+          <Route path="inventory" element={<InventoryOperations />} />
           <Route path="inventory/operations" element={<InventoryOperations />} />
           <Route path="inventory/stock-in" element={<EnhancedStockIn />} />
           <Route path="inventory/transfer" element={<StockTransfer />} />
           <Route path="inventory/check" element={<StockCheck />} />
-          {/* <Route path="inventory/locations" element={<Suspense fallback={<div />}> <InventoryLocations /> </Suspense>} /> */}
+          <Route path="inventory/locations" element={<InventoryLocations />} />
           {/* <Route path="inventory/batches" element={<Suspense fallback={<div />}> <InventoryBatches /> </Suspense>} /> */}
           <Route path="inventory/alerts" element={<Suspense fallback={<div />}> <InventoryAlerts /> </Suspense>} />
           <Route path="inventory/reorder" element={<Suspense fallback={<div />}> <InventoryReorder /> </Suspense>} />
@@ -179,6 +183,7 @@ export function App() {
           <Route path="invoices" element={<Invoices />} />
           <Route path="support/tickets" element={<SupportTickets />} />
           {/* <Route path="devices" element={<DeviceManagement />} /> */}
+          <Route path="devices" element={<DeviceManagement />} />
           <Route path="branches" element={<BranchManagement />} />
           {/* <Route path="purchases/orders" element={<PurchaseOrders />} /> */}
           {/* <Route path="purchases/receipts" element={<PurchaseReceipts />} /> */}
@@ -211,3 +216,5 @@ export function App() {
     )
   }
 }
+
+export default App;

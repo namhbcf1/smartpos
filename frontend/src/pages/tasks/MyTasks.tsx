@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
-  User, Plus, Search, Filter, Download, Eye, Edit, Trash2, 
-  Clock, AlertCircle, CheckCircle, XCircle, Calendar, Flag, 
-  MoreVertical, MessageSquare, Paperclip, Star, TrendingUp,
-  BarChart3, Grid, List, Kanban, Calendar as CalendarIcon,
+  User, Users, Plus, Search, Filter, Download, Eye, Edit, 
+  Clock, AlertCircle, CheckCircle, XCircle, 
+  MessageSquare, Paperclip,
+  Grid, List, Kanban, Calendar as CalendarIcon,
   Target, Zap, Award, Timer
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
@@ -248,7 +248,7 @@ export const MyTasks: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedPriority, setSelectedPriority] = useState('all')
-  const [selectedTimeRange, setSelectedTimeRange] = useState('all')
+  const [_selectedTimeRange] = useState('all')
   const [sortBy, setSortBy] = useState('deadline')
   const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban' | 'calendar'>('list')
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
@@ -752,7 +752,7 @@ export const MyTasks: React.FC = () => {
                           type="checkbox"
                           checked={selectedTasks.includes(task.id)}
                           onChange={() => handleSelectTask(task.id)}
-                          className="rounded border-gray-300">
+                          className="rounded border-gray-300"
                         />
                         <div>
                           <CardTitle className="text-lg">{task.title}</CardTitle>
@@ -797,8 +797,8 @@ export const MyTasks: React.FC = () => {
 
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-blue-600 h-2 rounded-full"> 
-                        style={{ width: `${completionPercentage}%` }}
+                        className="bg-blue-600 h-2 rounded-full"
+                  style={{ width: `${completionPercentage}%` }}
                       ></div>
                     </div>
 

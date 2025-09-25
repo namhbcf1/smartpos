@@ -1,7 +1,8 @@
 // Vietnamese Computer Hardware POS Serial Number Management
 // ComputerPOS Pro - Advanced Serial Number Management System
 
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Hash,
@@ -23,7 +24,8 @@ import {
   User,
   Store,
   Shield,
-  Printer
+  Printer,
+  Filter
 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/ButtonSimplified';
@@ -31,9 +33,9 @@ import { DataTable, Column } from '../../components/ui/DataTable';
 import { formatDate } from '../../lib/utils';
 import toast from 'react-hot-toast';
 import { comprehensiveAPI, productsAPI } from '../../services/business/comprehensiveApi';
-import { API_V1_BASE_URL } from '../../services/api';
+import { API_BASE_URL } from '../../services/api';
 import jsPDF from 'jspdf';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 
 // Enhanced Serial Number Types
 interface SerialNumber {
@@ -119,10 +121,7 @@ const SerialNumberManagement: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalSerials, setTotalSerials] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage] = useState(1); // reserved for future server-side pagination
 
   useEffect(() => {
     loadSerialData();
@@ -176,8 +175,7 @@ const SerialNumberManagement: React.FC = () => {
         // Ensure serialData is an array
         const safeSerialData = Array.isArray(serialData) ? serialData : [];
         setSerials(safeSerialData);
-        setTotalSerials(response.data.pagination?.total || response.pagination?.total || safeSerialData.length || 0);
-        setTotalPages(response.data.pagination?.pages || response.pagination?.pages || 1);
+        // totals handled in stats; client-side table paginates independently
 
         const stats: SerialStats = {
           total_serials: response.data.pagination?.total || response.pagination?.total || safeSerialData.length || 0,
@@ -206,8 +204,7 @@ const SerialNumberManagement: React.FC = () => {
           sold_value: 0,
           available_value: 0
         });
-        setTotalSerials(0);
-        setTotalPages(1);
+        // reset handled by stats fallback
       }
     } catch (error) {
       console.error('Serial numbers loading failed:', error);
@@ -224,8 +221,7 @@ const SerialNumberManagement: React.FC = () => {
         sold_value: 0,
         available_value: 0
       });
-      setTotalSerials(0);
-      setTotalPages(1);
+      // reset handled by stats fallback
     } finally {
       setLoading(false);
     }
@@ -281,7 +277,7 @@ const SerialNumberManagement: React.FC = () => {
   // Serial table columns
   const serialColumns: Column<SerialNumber>[] = [
     {
-      key: 'select',
+      key: 'id',
       title: '',
       render: (_, record) => (
         <input
@@ -471,7 +467,43 @@ const SerialNumberManagement: React.FC = () => {
   };
 
   const handleBulkImport = () => {
-    toast.success('Tính năng nhập hàng loạt đang phát triển');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,text/csv';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length <= 1) { toast.error('File CSV trống'); return; }
+        const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const idx = (k: string) => header.indexOf(k);
+        let ok = 0; let fail = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',');
+          const payload: any = {
+            product_id: cols[idx('product_id')] || undefined,
+            product_name: cols[idx('product_name')] || undefined,
+            serial_number: cols[idx('serial_number')] || undefined,
+            purchase_date: cols[idx('purchase_date')] || undefined,
+            status: cols[idx('status')] || 'available',
+            condition: cols[idx('condition')] || 'new',
+            location: cols[idx('location')] || '',
+            notes: cols[idx('notes')] || ''
+          };
+          try {
+            const res = await comprehensiveAPI.inventory.createSerialNumber(payload);
+            if (res?.success) ok++; else fail++;
+          } catch { fail++; }
+        }
+        toast.success(`Nhập CSV xong: ${ok} thành công, ${fail} lỗi`);
+        await loadSerialData();
+      } catch (e: any) {
+        toast.error(e?.message || 'Lỗi đọc CSV');
+      }
+    };
+    input.click();
   };
 
   const generateQRCode = async (text: string): Promise<string> => {
@@ -490,9 +522,7 @@ const SerialNumberManagement: React.FC = () => {
       const doc = new jsPDF();
       const qrData = await generateQRCode(serial.serial_number);
       
-      // Label dimensions (80mm x 50mm)
-      const labelWidth = 80;
-      const labelHeight = 50;
+      // Label dimensions (80mm x 50mm) - kept for future layout tweaks
       
       // Add QR code
       if (qrData) {
@@ -534,7 +564,7 @@ const SerialNumberManagement: React.FC = () => {
     try {
       const doc = new jsPDF();
       const labelsPerPage = 4;
-      let currentPage = 0;
+      // let currentPage = 0;
       let labelIndex = 0;
 
       for (const serialId of selectedSerials) {
@@ -639,7 +669,7 @@ const SerialNumberManagement: React.FC = () => {
             if (advancedFilters.saleDateFrom) params.append('sale_date_from', advancedFilters.saleDateFrom);
             if (advancedFilters.saleDateTo) params.append('sale_date_to', advancedFilters.saleDateTo);
             
-            const url = API_V1_BASE_URL + '/serial-numbers/export?format=csv&' + params.toString();
+            const url = API_BASE_URL + '/serial-numbers/export?format=csv&' + params.toString();
             window.open(url, '_blank');
           }}>
             <Download className="w-4 h-4 mr-2" />
@@ -659,7 +689,7 @@ const SerialNumberManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Tổng số serial</p>
-                <p className="text-3xl font-bold text-gray-900">{serialStats.total || 0}</p>
+                <p className="text-3xl font-bold text-gray-900">{serialStats.total_serials || 0}</p>
                 <p className="text-sm text-blue-600">{formatCurrency(serialStats.total_value)}</p>
               </div>
               <Hash className="w-12 h-12 text-blue-600" />
@@ -672,7 +702,7 @@ const SerialNumberManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Còn sẵn</p>
-                <p className="text-3xl font-bold text-gray-900">{serialStats.available || 0}</p>
+                <p className="text-3xl font-bold text-gray-900">{serialStats.available_serials || 0}</p>
                 <p className="text-sm text-green-600">
                   {formatCurrency(serialStats.available_value)}
                 </p>
@@ -687,7 +717,7 @@ const SerialNumberManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Đã bán</p>
-                <p className="text-3xl font-bold text-gray-900">{serialStats.sold || 0}</p>
+                <p className="text-3xl font-bold text-gray-900">{serialStats.sold_serials || 0}</p>
                 <p className="text-sm text-blue-600">{formatCurrency(serialStats.sold_value)}</p>
               </div>
               <Package className="w-12 h-12 text-blue-600" />
@@ -757,21 +787,20 @@ const SerialNumberManagement: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
+              <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="flex items-center space-x-2">
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2 text-sm font-medium text-gray-700">
                 <Filter className="w-4 h-4" />
                 <span>Bộ lọc nâng cao</span>
-              </Button>
+              </button>
               
               {selectedSerials.length > 0 && (
-                <Button
+                <button
                   onClick={handleBatchPrintLabels}
-                  className="bg-green-600 hover:bg-green-700 text-white">
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center text-sm font-medium">
                   <Printer className="w-4 h-4 mr-2" />
                   In {selectedSerials.length} nhãn
-                </Button>
+                </button>
               )}
               
               <select

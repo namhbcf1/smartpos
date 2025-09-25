@@ -222,8 +222,8 @@ export default function InventoryLocations() {
         <input
           name="q"
           placeholder="Tìm theo tên, mô tả, khu vực..."
-          className="input input-bordered w-full max-w-md">
-          value={search}
+          className="input input-bordered w-full max-w-md"
+                  value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <label className="flex items-center gap-2 text-sm">

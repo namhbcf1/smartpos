@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
 import { authenticate } from '../../middleware/auth';
+import { IdempotencyMiddleware } from '../../middleware/idempotency';
+import { withValidation } from '../../middleware/validation';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -8,53 +10,9 @@ const app = new Hono<{ Bindings: Env }>();
 app.use('*', authenticate);
 
 // GET /api/customers - List customers with search
-app.get('/', async (c: any) => {
+app.get('/', withValidation.list, async (c: any) => {
   try {
-    // Ensure customers table exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS customers (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT,
-        phone TEXT,
-        address TEXT,
-        date_of_birth TEXT,
-        gender TEXT CHECK (gender IN ('male', 'female', 'other')),
-        customer_type TEXT DEFAULT 'regular' CHECK (customer_type IN ('regular', 'vip', 'wholesale')),
-        loyalty_points INTEGER DEFAULT 0 CHECK (loyalty_points >= 0),
-        total_spent_cents INTEGER DEFAULT 0 CHECK (total_spent_cents >= 0),
-        visit_count INTEGER DEFAULT 0 CHECK (visit_count >= 0),
-        last_visit TEXT,
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
-
-    // Add missing columns to existing customers table if they don't exist
-    try {
-      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN loyalty_points INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN total_spent_cents INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN visit_count INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN customer_type TEXT DEFAULT 'regular'`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN last_visit TEXT`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE customers ADD COLUMN is_active INTEGER DEFAULT 1`).run();
-    } catch (e) { /* column already exists */ }
+    // Tables are created via migrations - no runtime DDL needed
 
     const { q, page = '1', limit = '50' } = c.req.query();
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -62,18 +20,29 @@ app.get('/', async (c: any) => {
     let query = `
       SELECT *
       FROM customers
-      WHERE 1=1
+      WHERE is_active = 1
     `;
     const params: any[] = [];
 
-    query += ` LIMIT ? OFFSET ?`;
+    // Add search functionality
+    if (q) {
+      query += ` AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)`;
+      params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    }
+
+    query += ` ORDER BY name ASC LIMIT ? OFFSET ?`;
     params.push(parseInt(limit), offset);
 
     const result = await c.env.DB.prepare(query).bind(...params).all();
 
     // Get total count
-    let countQuery = `SELECT COUNT(*) as total FROM customers`;
-    const countParams: any[] = [];
+    let countQuery = `SELECT COUNT(*) as total FROM customers WHERE is_active = 1`;
+    let countParams: any[] = [];
+
+    if (q) {
+      countQuery += ` AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)`;
+      countParams = [`%${q}%`, `%${q}%`, `%${q}%`];
+    }
 
     const countResult = await c.env.DB.prepare(countQuery).bind(...countParams).first();
 
@@ -398,7 +367,7 @@ app.get('/:id', async (c: any) => {
 });
 
 // POST /api/customers - Create customer
-app.post('/', async (c: any) => {
+app.post('/', IdempotencyMiddleware.customers, withValidation.createCustomer, async (c: any) => {
   try {
     const body = await c.req.json();
     console.log('Customer creation request:', JSON.stringify(body, null, 2));

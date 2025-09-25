@@ -151,7 +151,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       <DialogContent>
         <Grid container spacing={2}>
           {paymentMethods.map((method) => (
-            <Grid item xs={12} sm={6} key={method.id}>
+            <Grid item xs={12} sm={6} key={method.id} component="div">
               <Card 
                 variant={selectedMethod === method.id ? "outlined" : "elevation"}
                 sx={{ 
@@ -195,7 +195,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 
                     <Box mt={2}>
                       <Grid container spacing={1}>
-                        <Grid item xs={6}>
+                        <Grid item xs={6} component="div">
                           <Typography variant="caption" color="textSecondary">
                             Thời gian xử lý:
                           </Typography>
@@ -203,7 +203,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                             {method.processingTime}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid item xs={6} component="div">
                           <Typography variant="caption" color="textSecondary">
                             Phí giao dịch:
                           </Typography>
@@ -240,7 +240,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
               Thông tin thanh toán
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid item xs={6} component="div">
                 <Typography variant="body2" color="textSecondary">
                   Phương thức:
                 </Typography>
@@ -248,7 +248,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                   {paymentMethods.find(m => m.id === selectedMethod)?.name}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={6} component="div">
                 <Typography variant="body2" color="textSecondary">
                   Số tiền gốc:
                 </Typography>
@@ -258,7 +258,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
               </Grid>
               {paymentMethods.find(m => m.id === selectedMethod)?.fee && (
                 <>
-                  <Grid item xs={6}>
+                  <Grid item xs={6} component="div">
                     <Typography variant="body2" color="textSecondary">
                       Phí giao dịch:
                     </Typography>
@@ -266,7 +266,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                       {formatCurrency(paymentMethods.find(m => m.id === selectedMethod)?.fee || 0)}
                     </Typography>
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={6} component="div">
                     <Typography variant="body2" color="textSecondary">
                       Tổng cộng:
                     </Typography>

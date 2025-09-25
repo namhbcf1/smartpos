@@ -29,7 +29,7 @@ import {
   BarChart,
   Bar
 } from 'recharts';
-import api from '../services/api';
+import api from '../../services/api';
 
 interface ForecastData {
   date: string;

@@ -165,7 +165,7 @@ app.post('/products', async (c: any) => {
       SELECT id FROM categories WHERE tenant_id = ?
     `).bind(tenant_id).all();
     
-    const categoryIds = categoryRows.results.map(row => row.id);
+    const categoryIds = (categoryRows.results || []).map((row: any) => row.id);
     
     for (let i = 1; i <= count; i++) {
       const productId = `product-${Date.now()}-${i}`;

@@ -22,35 +22,35 @@ export interface ErrorDisplayProps {
 const severityConfig = {
   error: {
     icon: AlertCircle,
-    bgColor: 'bg-red-50 
-    borderColor: 'border-red-200 
-    textColor: 'text-red-800 
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-200',
+    textColor: 'text-red-800',
     iconColor: 'text-red-500',
-    titleColor: 'text-red-900 
+    titleColor: 'text-red-900'
   },
   warning: {
     icon: AlertTriangle,
-    bgColor: 'bg-yellow-50 
-    borderColor: 'border-yellow-200 
-    textColor: 'text-yellow-800 
+    bgColor: 'bg-yellow-50',
+    borderColor: 'border-yellow-200',
+    textColor: 'text-yellow-800',
     iconColor: 'text-yellow-500',
-    titleColor: 'text-yellow-900 
+    titleColor: 'text-yellow-900'
   },
   info: {
     icon: Info,
-    bgColor: 'bg-blue-50 
-    borderColor: 'border-blue-200 
-    textColor: 'text-blue-800 
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    textColor: 'text-blue-800',
     iconColor: 'text-blue-500',
-    titleColor: 'text-blue-900 
+    titleColor: 'text-blue-900'
   },
   critical: {
     icon: XCircle,
-    bgColor: 'bg-red-100 
-    borderColor: 'border-red-300 
-    textColor: 'text-red-900 
+    bgColor: 'bg-red-100',
+    borderColor: 'border-red-300',
+    textColor: 'text-red-900',
     iconColor: 'text-red-600',
-    titleColor: 'text-red-950 
+    titleColor: 'text-red-950'
   }
 }
 
@@ -148,7 +148,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
               className={cn(
                 'inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors',
                 config.textColor,
-                'hover:bg-black/5 
+                'hover:bg-black/5',
                 severity === 'error' && 'focus:ring-red-500',
                 severity === 'warning' && 'focus:ring-yellow-500',
                 severity === 'info' && 'focus:ring-blue-500',
@@ -252,7 +252,7 @@ export const InlineError: React.FC<InlineErrorProps> = ({
           aria-live="polite"
         >
           <AlertCircle className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
-          <span className="text-sm text-red-600">
+          <span className="text-sm text-red-600">{message}</span>
         </motion.div>
       )}
     </AnimatePresence>

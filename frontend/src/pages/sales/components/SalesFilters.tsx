@@ -12,10 +12,9 @@ import {
   useMediaQuery,
   Chip,
   Button,
-  Collapse,
-  IconButton,
-  Grid
+  Collapse
 } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Search as SearchIcon,
   FilterList as FilterIcon,
@@ -219,7 +218,7 @@ export const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
         <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 2, border: 1, borderColor: 'divider' }}>
           <Grid container spacing={2}>
             {/* Date Range */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <TextField
                 label="Từ ngày"
                 type="date"
@@ -231,7 +230,7 @@ export const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <TextField
                 label="Đến ngày"
                 type="date"
@@ -244,7 +243,7 @@ export const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
             </Grid>
 
             {/* Amount Range */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <TextField
                 label="Số tiền từ"
                 type="number"
@@ -258,7 +257,7 @@ export const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <TextField
                 label="Số tiền đến"
                 type="number"
@@ -273,7 +272,7 @@ export const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
             </Grid>
 
             {/* Status */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <FormControl size="small" fullWidth>
                 <InputLabel>Trạng thái đơn hàng</InputLabel>
                 <Select
@@ -311,7 +310,7 @@ export const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
             </Grid>
 
             {/* Store */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <FormControl size="small" fullWidth>
                 <InputLabel>Cửa hàng</InputLabel>
                 <Select

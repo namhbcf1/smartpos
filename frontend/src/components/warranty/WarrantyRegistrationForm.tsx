@@ -31,7 +31,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-import api from '../services/api';
+import api from '../../services/api';
 
 interface SerialNumber {
   id: number;
@@ -251,7 +251,7 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
 
         <Grid container spacing={3}>
           {/* Serial Number Selection */}
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Typography variant="h6" gutterBottom>
               1. Chọn Serial Number
             </Typography>
@@ -295,7 +295,7 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
 
           {/* Selected Serial Info */}
           {selectedSerial && (
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -303,25 +303,25 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
                     Thông tin sản phẩm
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Serial Number:</Typography>
                       <Typography variant="body1" fontWeight="medium">
                         {selectedSerial.serial_number}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Sản phẩm:</Typography>
                       <Typography variant="body1" fontWeight="medium">
                         {selectedSerial.product?.name}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">SKU:</Typography>
                       <Typography variant="body1">
                         {selectedSerial.product?.sku}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Khách hàng:</Typography>
                       <Typography variant="body1">
                         {selectedSerial.customer?.full_name || 'N/A'}
@@ -333,18 +333,18 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
             </Grid>
           )}
 
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Divider />
           </Grid>
 
           {/* Warranty Details */}
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Typography variant="h6" gutterBottom>
               2. Thông tin bảo hành
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} component="div">
             <FormControl fullWidth>
               <InputLabel>Loại bảo hành</InputLabel>
               <Select
@@ -363,7 +363,7 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} component="div">
             <TextField
               fullWidth
               label="Thời hạn bảo hành (tháng)"
@@ -375,18 +375,18 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Divider />
           </Grid>
 
           {/* Contact Information */}
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Typography variant="h6" gutterBottom>
               3. Thông tin liên hệ
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} component="div">
             <TextField
               fullWidth
               label="Số điện thoại"
@@ -396,7 +396,7 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
             />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} component="div">
             <TextField
               fullWidth
               label="Email"
@@ -407,7 +407,7 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <TextField
               fullWidth
               label="Địa chỉ"
@@ -420,7 +420,7 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
           </Grid>
 
           {/* Terms and Conditions */}
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <FormControlLabel
               control={
                 <Checkbox
@@ -442,7 +442,7 @@ const WarrantyRegistrationForm: React.FC<WarrantyRegistrationFormProps> = ({
 
           {/* Warranty Summary */}
           {selectedSerial && formData.terms_accepted && (
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Alert severity="info" icon={<WarrantyIcon />}>
                 <Typography variant="subtitle2" gutterBottom>
                   Tóm tắt bảo hành

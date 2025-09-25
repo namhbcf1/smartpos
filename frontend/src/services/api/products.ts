@@ -1,10 +1,10 @@
 // Products API Service - DB Schema Compliant
-import { apiClient } from './client';
-import { Product, ProductFormData, ProductFilters } from '../../pages/products/components/types';
+import apiClient from './client';
+// import { Product, ProductFormData, ProductFilters } from '../../pages/products/components/types';
 
 export const productsService = {
   // Get all products with filters
-  async getAll(filters?: Partial<ProductFilters>) {
+  async getAll(filters?: any) {
     const params = new URLSearchParams();
 
     if (filters?.search) params.append('search', filters.search);
@@ -31,7 +31,7 @@ export const productsService = {
   },
 
   // Create new product
-  async create(data: Partial<ProductFormData>) {
+  async create(data: any) {
     // Transform form data to match DB schema
     const productData = {
       name: data.name,
@@ -59,7 +59,7 @@ export const productsService = {
   },
 
   // Update product
-  async update(id: string, data: Partial<ProductFormData>) {
+  async update(id: string, data: any) {
     // Transform form data to match DB schema
     const productData: any = {};
 

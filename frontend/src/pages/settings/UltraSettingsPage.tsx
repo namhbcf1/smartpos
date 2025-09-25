@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react';    
 import { useNavigate } from 'react-router-dom';
 import {
-  Settings, User, Store, Palette, Shield, Bell, Database, Cloud,
-  Home, Package, BarChart3, ShoppingCart, Save, RefreshCw, Star, Check
+  Settings, Store, Palette, Shield, Bell, Database, Cloud,
+  Home, Package, BarChart3, ShoppingCart, Save, RefreshCw, Check
 } from 'lucide-react';
 
 const UltraSettingsPage: React.FC = () => {

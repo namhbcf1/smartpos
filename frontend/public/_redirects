@@ -1,5 +1,5 @@
 # API calls to backend worker
-/api/v1/* https://namhbcf-api.bangachieu2.workers.dev/api/v1/:splat 200
+/api/* https://namhbcf-api.bangachieu2.workers.dev/api/:splat 200
 
 # Redirect old simple page to main dashboard
 /simple / 301

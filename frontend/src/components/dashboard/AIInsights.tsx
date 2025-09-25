@@ -21,7 +21,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ aiInsights }) => {
   if (aiInsights.length === 0) return null;
 
   return (
-    <Grid item xs={12}>
+    <Grid item xs={12} component="div">
       <Grow in={true} timeout={1000}>
         <Paper
           sx={{
@@ -44,7 +44,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ aiInsights }) => {
           </Stack>
           <Grid container spacing={2}>
             {aiInsights.map((insight, index) => (
-              <Grid item xs={12} md={6} key={index}>
+              <Grid item xs={12} md={6} key={index} component="div">
                 <Fade in={true} timeout={1500 + index * 200}>
                   <Box
                     sx={{

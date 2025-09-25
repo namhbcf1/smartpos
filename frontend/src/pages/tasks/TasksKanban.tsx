@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
-  CheckSquare, Plus, Search, Filter, Download, Eye, Edit, Trash2, 
+  Plus, Search, Filter, Download, Eye, Edit, 
   Clock, AlertCircle, CheckCircle, XCircle, User, Users, Calendar,
-  Flag, MoreVertical, MessageSquare, Paperclip, Star, TrendingUp,
-  BarChart3, Grid, List, Kanban, Calendar as CalendarIcon, GripVertical
+  MoreVertical, MessageSquare, Paperclip,
+  Kanban
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Card, CardContent } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 
 interface Task {
@@ -349,10 +349,10 @@ export const TasksKanban: React.FC = () => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
         transition={{ duration: 0.2 }}
-        className="bg-white  rounded-lg shadow-sm border border-gray-200 p-4 mb-3 cursor-move hover:shadow-md transition-shadow">
+        className="bg-white  rounded-lg shadow-sm border border-gray-200 p-4 mb-3 cursor-move hover:shadow-md transition-shadow"
         draggable
         onDragStart={(e) => {
-          e.dataTransfer.setData('text/plain', task.id)
+          (e as any).dataTransfer.setData('text/plain', task.id)
         }}
       >
         <div className="flex items-start justify-between mb-3">
@@ -387,7 +387,7 @@ export const TasksKanban: React.FC = () => {
           </div>
           <div>
             <p className="text-xs font-medium text-gray-900">{task.assignee.name}</p>
-            <p className="text-xs text-gray-500">{task.assignee.role}</p>
+            <p className="text-xs text-gray-500">{task.assignee.department}</p>
           </div>
         </div>
 
@@ -399,8 +399,8 @@ export const TasksKanban: React.FC = () => {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div 
-                className="bg-blue-600 h-1.5 rounded-full"> 
-                style={{ width: `${completionPercentage}%` }}
+                className="bg-blue-600 h-1.5 rounded-full"
+                  style={{ width: `${completionPercentage}%` }}
               ></div>
             </div>
           </div>
@@ -469,8 +469,8 @@ export const TasksKanban: React.FC = () => {
           </div>
           
           <div 
-            className="space-y-3 min-h-[400px]">
-            onDragOver={(e) => e.preventDefault()}
+            className="space-y-3 min-h-[400px]"
+                  onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault()
               const taskId = e.dataTransfer.getData('text/plain')
@@ -581,7 +581,7 @@ export const TasksKanban: React.FC = () => {
               <select
                 value={selectedAssignee}
                 onChange={(e) => setSelectedAssignee(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả người phụ trách</option>
                 <option value="1">Nguyễn Văn A</option>
@@ -593,7 +593,7 @@ export const TasksKanban: React.FC = () => {
               <select
                 value={selectedProject}
                 onChange={(e) => setSelectedProject(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả dự án</option>
                 <option value="1">Website Redesign</option>
@@ -603,7 +603,7 @@ export const TasksKanban: React.FC = () => {
               <select
                 value={selectedPriority}
                 onChange={(e) => setSelectedPriority(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả độ ưu tiên</option>
                 {Object.entries(priorityConfig).map(([key, config]) => (

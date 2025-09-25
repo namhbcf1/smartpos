@@ -44,8 +44,11 @@ export const corsMiddleware: MiddlewareHandler = async (c, next) => {
   // Validate origin
   let allowOrigin = false;
   if (origin) {
-    // Temporary fix: Explicitly allow the preview URL while environment variable propagates
-    if (origin === 'https://9b82c250.namhbcf-uk.pages.dev') {
+    // Temporary fix: Explicitly allow preview URLs while environment variable propagates
+    if (origin === 'https://9b82c250.namhbcf-uk.pages.dev' ||
+        origin === 'https://37bc827e.namhbcf-uk.pages.dev' ||
+        origin === 'https://95cca7b9.namhbcf-uk.pages.dev' ||
+        origin.includes('.namhbcf-uk.pages.dev')) {
       allowOrigin = true;
     } else {
       allowOrigin = allowedOrigins.some(allowed => {

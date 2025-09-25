@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
-  CheckSquare, Plus, Search, Filter, Calendar, Clock, User, 
-  AlertCircle, CheckCircle, Edit, Trash2, Eye, MessageSquare, Paperclip
+  CheckSquare, Plus, Search, Calendar, User, 
+  Edit, Trash2, Eye, MessageSquare
 } from 'lucide-react'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 
 interface Task {
@@ -111,7 +111,7 @@ export const Tasks: React.FC = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-2xl font-bold text-gray-900">{tasks.length}</p>
               <p className="text-xs text-gray-500">Tổng công việc</p>
             </div>
           </CardContent>
@@ -161,7 +161,7 @@ export const Tasks: React.FC = () => {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 <option value="all">Tất cả trạng thái</option>
                 <option value="todo">Cần làm</option>

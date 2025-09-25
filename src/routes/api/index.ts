@@ -1,12 +1,16 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
 import { authenticate } from '../../middleware/auth';
+import { RateLimits } from '../../middleware/rateLimiting-unified';
 
 // Import all API route modules
 import authRouter from './auth';
 import productsRouter from './products';
 import ordersRouter from './orders';
 import analyticsRouter from './analytics';
+import dashboardRouter from './dashboard';
+import debugRouter from './debug';
+import healthRouter from './health';
 import customersRouter from './customers';
 import inventoryRouter from './inventory';
 import reportsRouter from './reports';
@@ -38,13 +42,17 @@ import promotionsRouter from './promotions';
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Apply rate limiting to all API routes
+app.use('*', RateLimits.api);
+
 // Note: Tenant ID is handled with fallback in each handler: c.req.header('X-Tenant-ID') || 'default'
 
-// Mount all API routes directly (no /api prefix since they're already under /api/v1)
+// Mount all API routes directly (app is mounted at /api in root index)
 app.route('/auth', authRouter);
 app.route('/products', productsRouter);
 app.route('/orders', ordersRouter);
 app.route('/analytics', analyticsRouter);
+app.route('/dashboard', dashboardRouter);
 app.route('/customers', customersRouter);
 app.route('/inventory', inventoryRouter);
 app.route('/reports', reportsRouter);
@@ -58,6 +66,8 @@ app.route('/warranties', warrantiesRouter);
 app.route('/categories', categoriesRouter);
 app.route('/brands', brandsRouter);
 app.route('/sales', salesRouter);
+app.route('/debug', debugRouter);
+app.route('/health', healthRouter);
 app.route('/users', usersRouter);
 app.route('/payments', paymentsRouter);
 app.route('/shipping', shippingRouter);
@@ -76,20 +86,20 @@ app.route('/payment-methods', paymentMethodsRouter);
 app.route('/promotions', promotionsRouter);
 
 
-// Health check endpoint
-app.get('/health', async (c: any) => {
+// API info endpoint (non-versioned)
+app.get('/info', async (c: any) => {
   return c.json({
     success: true,
-    message: 'SmartPOS API v1 is running',
+    message: 'SmartPOS API is running',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     timezone: 'UTC',
     endpoints: {
-      health: '/api/v1/health',
-      products: '/api/v1/products',
-      customers: '/api/v1/customers',
-      sales: '/api/v1/sales',
-      dashboard: '/api/v1/dashboard/stats'
+      health: '/api/health',
+      products: '/api/products',
+      customers: '/api/customers',
+      sales: '/api/sales',
+      dashboard: '/api/dashboard/stats'
     }
   });
 });

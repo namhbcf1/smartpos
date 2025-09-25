@@ -237,7 +237,7 @@ export const ProductsFilters: React.FC<ProductsFiltersProps> = ({
         <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 2, border: 1, borderColor: 'divider' }}>
           <Grid container spacing={2}>
             {/* Category Filter */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <FormControl size="small" fullWidth>
                 <InputLabel>Danh mục</InputLabel>
                 <Select
@@ -258,7 +258,7 @@ export const ProductsFilters: React.FC<ProductsFiltersProps> = ({
             </Grid>
 
             {/* Supplier Filter */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <FormControl size="small" fullWidth>
                 <InputLabel>Nhà cung cấp</InputLabel>
                 <Select
@@ -279,7 +279,7 @@ export const ProductsFilters: React.FC<ProductsFiltersProps> = ({
             </Grid>
 
             {/* Brand Filter */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <FormControl size="small" fullWidth>
                 <InputLabel>Thương hiệu</InputLabel>
                 <Select
@@ -298,7 +298,7 @@ export const ProductsFilters: React.FC<ProductsFiltersProps> = ({
             </Grid>
 
             {/* Price Range */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <TextField
                 label="Giá từ"
                 type="number"
@@ -312,7 +312,7 @@ export const ProductsFilters: React.FC<ProductsFiltersProps> = ({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3} component="div">
               <TextField
                 label="Giá đến"
                 type="number"

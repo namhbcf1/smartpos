@@ -31,7 +31,7 @@ import {
   Search as DiagnosticIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-import api from '../services/api';
+import api from '../../services/api';
 
 interface WarrantyRegistration {
   id: number;
@@ -284,7 +284,7 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
         <Grid container spacing={3}>
           {/* Warranty Selection */}
           {!warrantyRegistration && (
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Typography variant="h6" gutterBottom>
                 1. Chọn bảo hành
               </Typography>
@@ -331,7 +331,7 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
 
           {/* Selected Warranty Info */}
           {selectedWarranty && (
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -348,37 +348,37 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
                   )}
 
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Mã bảo hành:</Typography>
                       <Typography variant="body1" fontWeight="medium">
                         {selectedWarranty.warranty_number}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Sản phẩm:</Typography>
                       <Typography variant="body1" fontWeight="medium">
                         {selectedWarranty.product?.name}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Serial Number:</Typography>
                       <Typography variant="body1">
                         {selectedWarranty.serial_number?.serial_number}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Khách hàng:</Typography>
                       <Typography variant="body1">
                         {selectedWarranty.customer?.full_name}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Thời hạn bảo hành:</Typography>
                       <Typography variant="body1">
                         {formatDate(selectedWarranty.warranty_start_date)} - {formatDate(selectedWarranty.warranty_end_date)}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} component="div">
                       <Typography variant="body2" color="text.secondary">Trạng thái:</Typography>
                       <Chip
                         label={selectedWarranty.status}
@@ -392,18 +392,18 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
             </Grid>
           )}
 
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Divider />
           </Grid>
 
           {/* Claim Details */}
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Typography variant="h6" gutterBottom>
               2. Thông tin khiếu nại
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} component="div">
             <FormControl fullWidth>
               <InputLabel>Loại khiếu nại</InputLabel>
               <Select
@@ -442,7 +442,7 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
             </Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} component="div">
             <TextField
               fullWidth
               label="Chi phí ước tính"
@@ -454,7 +454,7 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <TextField
               fullWidth
               label="Mô tả vấn đề"
@@ -469,7 +469,7 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
             />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} component="div">
             <FormControl fullWidth>
               <InputLabel>Kỹ thuật viên phụ trách</InputLabel>
               <Select
@@ -487,7 +487,7 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} component="div">
             <TextField
               fullWidth
               label="Nhà cung cấp dịch vụ"
@@ -497,7 +497,7 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <TextField
               fullWidth
               label="Mã tham chiếu ngoài"
@@ -509,7 +509,7 @@ const WarrantyClaimForm: React.FC<WarrantyClaimFormProps> = ({
 
           {/* Claim Summary */}
           {selectedWarranty && formData.issue_description.length >= 10 && (
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Alert severity="info" icon={getClaimTypeIcon(formData.claim_type)}>
                 <Typography variant="subtitle2" gutterBottom>
                   Tóm tắt khiếu nại

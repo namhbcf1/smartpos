@@ -31,6 +31,8 @@ import NotificationCenter from '../NotificationCenter'
 // import RealtimeNotificationCenter from '../realtime/RealtimeNotificationCenter'
 import { cn } from '../../lib/utils'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
+import { useAuth } from '../../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 interface HeaderProps {
   title?: string
@@ -44,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   onMenuToggle
 }) => {
   const isOnline = useOnlineStatus()
+  const navigate = useNavigate()
+  const { logout } = useAuth()
   const [showUserMenu, setShowUserMenu] = React.useState(false)
   const [showNotifications, setShowNotifications] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -109,6 +113,32 @@ export const Header: React.FC<HeaderProps> = ({
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Menu actions
+  const handleProfileClick = () => {
+    navigate('/users/profile');
+    setShowUserMenu(false);
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+    setShowUserMenu(false);
+  };
+
+  const handleHelpClick = () => {
+    window.open('/help', '_blank');
+    setShowUserMenu(false);
+  };
+
+  const handleLogoutClick = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+    setShowUserMenu(false);
+  };
 
   return (
     <header className="sticky top-0 z-30 w-full border-b border-slate-200/30 bg-white/80 backdrop-blur-2xl shadow-xl shadow-slate-900/5">
@@ -415,6 +445,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {/* Menu Items */}
                   <div className="p-3">
                     <motion.button
+                      onClick={handleProfileClick}
                       className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700  hover:bg-gray-100 rounded-xl transition-all duration-200 group"
                       whileHover={{ x: 4 }}
                     >
@@ -425,6 +456,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </motion.button>
 
                     <motion.button
+                      onClick={handleSettingsClick}
                       className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700  hover:bg-gray-100 rounded-xl transition-all duration-200 group"
                       whileHover={{ x: 4 }}
                     >
@@ -435,6 +467,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </motion.button>
 
                     <motion.button
+                      onClick={handleHelpClick}
                       className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700  hover:bg-gray-100 rounded-xl transition-all duration-200 group"
                       whileHover={{ x: 4 }}
                     >
@@ -447,6 +480,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <hr className="my-3 border-gray-200/50" />
 
                     <motion.button
+                      onClick={handleLogoutClick}
                       className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-red-600  hover:bg-red-50 rounded-xl transition-all duration-200 group"
                       whileHover={{ x: 4 }}
                     >

@@ -7,6 +7,10 @@ import { posApi, type Order } from '../../services/api/posApi';
 import { formatCurrency } from '../../lib/utils';
 
 interface OrderDetail extends Order {
+  // Override Order properties with compatible types
+  code: string;
+  total: number;
+  subtotal: number;
   items?: Array<{
     id: string;
     product_name: string;
@@ -63,6 +67,14 @@ const SalesHistoryPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      console.log('📡 Loading orders with params:', {
+        page: currentPage,
+        limit: itemsPerPage,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        from: dateFrom || undefined,
+        to: dateTo || undefined
+      });
+
       const response = await posApi.getOrders(
         currentPage,
         itemsPerPage,
@@ -71,11 +83,25 @@ const SalesHistoryPage: React.FC = () => {
         dateTo || undefined
       );
 
+      console.log('📡 API Response:', response);
+
       if (response.success && response.data) {
         const ordersData = Array.isArray(response.data) ? response.data : [];
-        
+
+        // Transform API data to match our interface based on actual schema
+        const transformedOrders = ordersData.map((order: any) => ({
+          ...order,
+          code: order.order_number || `#${order.id?.slice(0, 8)}`,
+          total: order.total_cents ? order.total_cents / 100 : 0,
+          subtotal: order.subtotal_cents ? order.subtotal_cents / 100 : 0,
+          // Use denormalized customer data from orders table
+          customer_name: order.customer_name || 'Khách lẻ',
+          customer_phone: order.customer_phone || null,
+          items: [] // Will be fetched separately if needed
+        }));
+
         // Apply additional filters
-        let filteredOrders = ordersData.filter(order => {
+        let filteredOrders = transformedOrders.filter(order => {
           if (customerFilter && !order.customer_name?.toLowerCase().includes(customerFilter.toLowerCase())) {
             return false;
           }
@@ -115,19 +141,21 @@ const SalesHistoryPage: React.FC = () => {
       }
 
     } catch (error) {
-      setError('Failed to load sales history');
       console.error('Sales history loading failed:', error);
+      setError('Failed to load sales history');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = () => {
+    console.log('🔍 Search triggered');
     setCurrentPage(1);
     loadOrders();
   };
 
   const handleResetFilters = () => {
+    console.log('🔄 Reset filters triggered');
     setSearchQuery('');
     setStatusFilter('all');
     setDateFrom('');
@@ -163,6 +191,8 @@ const SalesHistoryPage: React.FC = () => {
   };
 
   const exportToExcel = () => {
+    console.log('📊 Export Excel triggered', { orderCount: filteredOrders.length });
+
     const csvContent = [
       ['Mã đơn', 'Khách hàng', 'SĐT', 'Thời gian', 'Tổng tiền', 'Trạng thái', 'Phương thức thanh toán'],
       ...filteredOrders.map(order => [
@@ -181,6 +211,100 @@ const SalesHistoryPage: React.FC = () => {
     link.href = URL.createObjectURL(blob);
     link.download = `lich-su-ban-hang-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+  };
+
+  const handlePrintOrder = (order: OrderDetail) => {
+    console.log('🖨️ Print order triggered', { orderId: order.id, orderCode: order.code });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('❌ Could not open print window - popup blocked?');
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Hóa đơn ${order.code}</title>
+          <style>
+            body { font-family: 'Segoe UI', sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .order-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
+            .customer-info { margin-bottom: 20px; }
+            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .items-table th { background-color: #f2f2f2; }
+            .total-section { text-align: right; font-weight: bold; }
+            .footer { text-align: center; margin-top: 30px; font-style: italic; }
+            @media print {
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>HÓA ĐƠN BÁN HÀNG</h1>
+            <p>SmartPOS - Hệ thống bán hàng thông minh</p>
+          </div>
+
+          <div class="order-info">
+            <div>
+              <strong>Mã đơn:</strong> ${order.code}<br>
+              <strong>Ngày tạo:</strong> ${new Date(order.created_at).toLocaleString('vi-VN')}
+            </div>
+            <div>
+              <strong>Trạng thái:</strong> ${order.status === 'completed' ? 'Hoàn thành' :
+                                           order.status === 'pending' ? 'Đang xử lý' :
+                                           order.status === 'cancelled' ? 'Đã hủy' : order.status}
+            </div>
+          </div>
+
+          <div class="customer-info">
+            <h3>Thông tin khách hàng</h3>
+            <strong>Tên:</strong> ${order.customer_name || 'Khách lẻ'}<br>
+            ${order.customer_phone ? `<strong>SĐT:</strong> ${order.customer_phone}<br>` : ''}
+          </div>
+
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Sản phẩm</th>
+                <th>Số lượng</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.items?.map((item, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${item.product_name}</td>
+                  <td>${item.qty}</td>
+                  <td>${formatCurrency(item.price)}</td>
+                  <td>${formatCurrency(item.total)}</td>
+                </tr>
+              `).join('') || '<tr><td colspan="5">Không có thông tin chi tiết</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="total-section">
+            <p>Tạm tính: ${formatCurrency(order.subtotal)}</p>
+            <p>Tổng cộng: <strong>${formatCurrency(order.total)}</strong></p>
+          </div>
+
+          <div class="footer">
+            <p>Cảm ơn quý khách đã mua hàng!</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const handleReturn = async () => {
@@ -517,12 +641,15 @@ const SalesHistoryPage: React.FC = () => {
                   </td>
                   <td>
                     <div className="flex gap-2">
-                      <button 
-                        className="btn btn-sm btn-outline" onClick={() => navigate(`/orders/${order.id}`)}
+                      <button
+                        className="btn btn-sm btn-outline" onClick={() => navigate(`/orders/detail/${order.id}`)}
                       >
                         👁️ Xem
                       </button>
-                      <button className="btn btn-sm btn-outline">
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => handlePrintOrder(order)}
+                      >
                         🖨️ In
                       </button>
                       {order.status === 'completed' && (

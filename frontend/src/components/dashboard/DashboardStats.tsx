@@ -118,7 +118,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, loading }) => {
     return (
       <Grid container spacing={3}>
         {[1, 2, 3, 4, 5, 6].map((item) => (
-          <Grid item xs={12} sm={6} md={4} lg={2} key={item}>
+          <Grid item xs={12} sm={6} md={4} lg={2} key={item} component="div">
             <Paper sx={{ p: 2, height: 120 }}>
               <LinearProgress />
               <Box sx={{ mt: 1 }}>
@@ -143,7 +143,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, loading }) => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} sm={6} md={4} lg={2}>
+      <Grid item xs={12} sm={6} md={4} lg={2} component="div">
         <StatCard
           title="Doanh thu hôm nay"
           value={formatCurrency(stats.todaySales)}
@@ -153,7 +153,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, loading }) => {
         />
       </Grid>
       
-      <Grid item xs={12} sm={6} md={4} lg={2}>
+      <Grid item xs={12} sm={6} md={4} lg={2} component="div">
         <StatCard
           title="Doanh thu tuần"
           value={formatCurrency(stats.weekSales)}
@@ -162,7 +162,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, loading }) => {
         />
       </Grid>
       
-      <Grid item xs={12} sm={6} md={4} lg={2}>
+      <Grid item xs={12} sm={6} md={4} lg={2} component="div">
         <StatCard
           title="Đơn hàng hôm nay"
           value={stats.todayOrders}
@@ -172,7 +172,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, loading }) => {
         />
       </Grid>
       
-      <Grid item xs={12} sm={6} md={4} lg={2}>
+      <Grid item xs={12} sm={6} md={4} lg={2} component="div">
         <StatCard
           title="Sản phẩm"
           value={stats.productCount}
@@ -182,7 +182,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, loading }) => {
         />
       </Grid>
       
-      <Grid item xs={12} sm={6} md={4} lg={2}>
+      <Grid item xs={12} sm={6} md={4} lg={2} component="div">
         <StatCard
           title="Khách hàng"
           value={stats.customerCount}
@@ -191,7 +191,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, loading }) => {
         />
       </Grid>
       
-      <Grid item xs={12} sm={6} md={4} lg={2}>
+      <Grid item xs={12} sm={6} md={4} lg={2} component="div">
         <StatCard
           title="Danh mục"
           value={stats.categoryCount}

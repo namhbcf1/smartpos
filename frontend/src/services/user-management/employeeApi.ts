@@ -1,5 +1,5 @@
-import apiClient from './api';
-import { ApiResponse } from '../types/api';
+import apiClient from '../api/client';
+import { ApiResponse, PaginatedResponse } from '../../types/api';
 
 // Employee Types
 export interface Employee {
@@ -129,7 +129,7 @@ class EmployeeApiService {
     const url = `${this.baseUrl}${params.toString() ? `?${params}` : ''}`;
     const response = await apiClient.get<ApiResponse<PaginatedEmployees>>(url);
     
-    if (!response.data.success) {
+    if (!response.data.success || response.data.data === undefined) {
       throw new Error(response.data.message || 'Không thể tải danh sách nhân viên');
     }
     
@@ -142,7 +142,7 @@ class EmployeeApiService {
   async getActiveEmployees(): Promise<Employee[]> {
     const response = await apiClient.get<ApiResponse<PaginatedResponse<Employee>>>(`${this.baseUrl}?status=active&limit=100`);
 
-    if (!response.data.success) {
+    if (!response.data.success || response.data.data === undefined) {
       throw new Error(response.data.message || 'Không thể tải danh sách nhân viên');
     }
 
@@ -155,7 +155,7 @@ class EmployeeApiService {
   async getEmployee(id: number): Promise<Employee> {
     const response = await apiClient.get<ApiResponse<Employee>>(`${this.baseUrl}/${id}`);
     
-    if (!response.data.success) {
+    if (!response.data.success || response.data.data === undefined) {
       throw new Error(response.data.message || 'Không thể tải thông tin nhân viên');
     }
     
@@ -174,7 +174,7 @@ class EmployeeApiService {
 
     const response = await apiClient.post<ApiResponse<Employee>>(this.baseUrl, data);
     
-    if (!response.data.success) {
+    if (!response.data.success || response.data.data === undefined) {
       throw new Error(response.data.message || 'Không thể tạo nhân viên');
     }
     
@@ -193,7 +193,7 @@ class EmployeeApiService {
 
     const response = await apiClient.put<ApiResponse<Employee>>(`${this.baseUrl}/${id}`, data);
     
-    if (!response.data.success) {
+    if (!response.data.success || response.data.data === undefined) {
       throw new Error(response.data.message || 'Không thể cập nhật nhân viên');
     }
     
@@ -217,7 +217,7 @@ class EmployeeApiService {
   async getEmployeeStats(): Promise<EmployeeStats> {
     const response = await apiClient.get<ApiResponse<EmployeeStats>>(`${this.baseUrl}/stats`);
     
-    if (!response.data.success) {
+    if (!response.data.success || response.data.data === undefined) {
       throw new Error(response.data.message || 'Không thể tải thống kê nhân viên');
     }
     
@@ -247,7 +247,7 @@ class EmployeeApiService {
     
     const response = await apiClient.get<ApiResponse<{ exists: boolean }>>(`${this.baseUrl}/check-email?${params}`);
     
-    if (!response.data.success) {
+    if (!response.data.success || response.data.data === undefined) {
       return false; // Assume doesn't exist on error
     }
     

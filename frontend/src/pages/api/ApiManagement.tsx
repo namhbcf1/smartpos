@@ -555,14 +555,12 @@ const ApiManagement: React.FC = () => {
               <button 
                 onClick={() => setRealTimeEnabled(!realTimeEnabled)}
                 className="btn btn-outline btn-sm">
-              >
                 {realTimeEnabled ? <FiWifiOff className="w-4 h-4" /> : <FiWifi className="w-4 h-4" />}
                 {realTimeEnabled ? 'Disable' : 'Enable'} Real-time
               </button>
               <button 
                 onClick={() => setShowSettingsModal(true)}
                 className="btn btn-outline btn-sm">
-              >
                 <FiSettings className="w-4 h-4" />
                 Settings
               </button>
@@ -572,8 +570,8 @@ const ApiManagement: React.FC = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <motion.div 
-            className="stat bg-base-100 shadow rounded-lg">
+          <motion.div
+            className="stat bg-base-100 shadow rounded-lg"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -586,8 +584,8 @@ const ApiManagement: React.FC = () => {
             <div className="stat-desc">API endpoints available</div>
           </motion.div>
 
-          <motion.div 
-            className="stat bg-base-100 shadow rounded-lg">
+          <motion.div
+            className="stat bg-base-100 shadow rounded-lg"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -600,8 +598,8 @@ const ApiManagement: React.FC = () => {
             <div className="stat-desc">Endpoints running</div>
           </motion.div>
 
-          <motion.div 
-            className="stat bg-base-100 shadow rounded-lg">
+          <motion.div
+            className="stat bg-base-100 shadow rounded-lg"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -614,8 +612,8 @@ const ApiManagement: React.FC = () => {
             <div className="stat-desc">Response time</div>
           </motion.div>
 
-          <motion.div 
-            className="stat bg-base-100 shadow rounded-lg">
+          <motion.div
+            className="stat bg-base-100 shadow rounded-lg"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
@@ -674,8 +672,8 @@ const ApiManagement: React.FC = () => {
                   <input 
                     type="text" 
                     placeholder="Tìm kiếm API..." 
-                    className="input input-bordered"> 
-                    value={searchTerm} 
+                    className="input input-bordered"
+                    value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)} 
                   />
                   <button className="btn btn-square">
@@ -685,8 +683,8 @@ const ApiManagement: React.FC = () => {
               </div>
               
               <select 
-                className="select select-bordered"> 
-                value={categoryFilter} 
+                className="select select-bordered"
+                value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value as any)}
               >
                 <option value="all">Tất cả danh mục</option>
@@ -699,8 +697,8 @@ const ApiManagement: React.FC = () => {
               </select>
               
               <select 
-                className="select select-bordered"> 
-                value={statusFilter} 
+                className="select select-bordered"
+                value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
               >
                 <option value="all">Tất cả trạng thái</option>
@@ -711,8 +709,8 @@ const ApiManagement: React.FC = () => {
               </select>
               
               <select 
-                className="select select-bordered"> 
-                value={methodFilter} 
+                className="select select-bordered"
+                value={methodFilter}
                 onChange={(e) => setMethodFilter(e.target.value as any)}
               >
                 <option value="all">Tất cả methods</option>
@@ -751,7 +749,6 @@ const ApiManagement: React.FC = () => {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
                 className="p-6">
-              >
                 <h3 className="text-lg font-semibold mb-4">API Endpoints ({filteredEndpoints.length})</h3>
                 <div className="overflow-x-auto">
                   <table className="table table-zebra w-full">
@@ -801,9 +798,9 @@ const ApiManagement: React.FC = () => {
                           <td>{endpoint.successRate}%</td>
                           <td>
                             <div className="flex items-center space-x-2">
-                              <button 
+                              <button
                                 onClick={() => testEndpoint(endpoint)}
-                                className="btn btn-ghost btn-xs">
+                                className="btn btn-ghost btn-xs"
                                 disabled={isTesting}
                               >
                                 <FiPlay className="w-3 h-3" />
@@ -838,7 +835,6 @@ const ApiManagement: React.FC = () => {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
                 className="p-6">
-              >
                 <h3 className="text-lg font-semibold mb-4">API Testing Playground</h3>
                 {testingEndpoint ? (
                   <div className="space-y-4">
@@ -874,7 +870,7 @@ const ApiManagement: React.FC = () => {
                         <div className="card-actions justify-end">
                           <button 
                             onClick={() => testEndpoint(testingEndpoint)}
-                            className="btn btn-primary">
+                            className="btn btn-primary"
                             disabled={isTesting}
                           >
                             {isTesting ? (
@@ -892,7 +888,6 @@ const ApiManagement: React.FC = () => {
                           <button 
                             onClick={() => setTestingEndpoint(null)}
                             className="btn btn-ghost">
-                          >
                             Close
                           </button>
                         </div>
@@ -917,7 +912,6 @@ const ApiManagement: React.FC = () => {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
                 className="p-6">
-              >
                 <h3 className="text-lg font-semibold mb-4">Test Results ({testResults.length})</h3>
                 {testResults.length > 0 ? (
                   <div className="overflow-x-auto">
@@ -975,7 +969,6 @@ const ApiManagement: React.FC = () => {
                               <button 
                                 onClick={() => copyToClipboard(JSON.stringify(result.response, null, 2))}
                                 className="btn btn-ghost btn-xs">
-                              >
                                 <FiCopy className="w-3 h-3" />
                               </button>
                             </td>
@@ -1002,7 +995,6 @@ const ApiManagement: React.FC = () => {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
                 className="p-6">
-              >
                 <h3 className="text-lg font-semibold mb-4">API Documentation</h3>
                 <div className="space-y-6">
                   {filteredEndpoints.map((endpoint) => (
@@ -1078,7 +1070,7 @@ const ApiManagement: React.FC = () => {
                         <div className="card-actions justify-end">
                           <button 
                             onClick={() => testEndpoint(endpoint)}
-                            className="btn btn-primary btn-sm">
+                            className="btn btn-primary btn-sm"
                             disabled={isTesting}
                           >
                             <FiPlay className="w-4 h-4 mr-2" />
@@ -1087,7 +1079,6 @@ const ApiManagement: React.FC = () => {
                           <button 
                             onClick={() => copyToClipboard(endpoint.path)}
                             className="btn btn-ghost btn-sm">
-                          >
                             <FiCopy className="w-4 h-4 mr-2" />
                             Copy Path
                           </button>

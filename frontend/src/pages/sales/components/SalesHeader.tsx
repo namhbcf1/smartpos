@@ -8,9 +8,9 @@ import {
   useMediaQuery,
   Card,
   CardContent,
-  Grid,
   Chip
 } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Add as AddIcon,
   FileDownload as ExportIcon,
@@ -140,10 +140,10 @@ export const SalesHeader: React.FC<SalesHeaderProps> = ({
       {/* Stats Cards */}
       <Grid container spacing={2}>
         {statsCards.map((card, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
+          <Grid xs={12} sm={6} md={4} key={index}>
             <Card 
               sx={{ 
-                background: `linear-gradient(135deg, ${theme.palette[card.color as keyof typeof theme.palette].light}, ${theme.palette[card.color as keyof typeof theme.palette].main})`,
+                background: `linear-gradient(135deg, ${(theme.palette[card.color as keyof typeof theme.palette] as any)?.light || '#1976d2'}, ${(theme.palette[card.color as keyof typeof theme.palette] as any)?.main || '#1976d2'})`,
                 color: 'white',
                 height: '100%'
               }}

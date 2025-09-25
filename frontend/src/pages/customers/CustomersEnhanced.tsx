@@ -6,9 +6,9 @@ import {
   CheckCircle, XCircle, MoreVertical, Download, Upload, Star, Tag,
   TrendingUp, DollarSign, Calendar, Clock, Shield, Award
 } from 'lucide-react'
-import { Button } from '../../components/ui/button'
+import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
 
 interface Customer {

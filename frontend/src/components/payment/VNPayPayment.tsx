@@ -220,7 +220,7 @@ export const VNPayPayment: React.FC<VNPayPaymentProps> = ({
                   Thông tin thanh toán
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={6}>
+                  <Grid item xs={6} component="div">
                     <Typography variant="body2" color="textSecondary">
                       Số tiền:
                     </Typography>
@@ -228,7 +228,7 @@ export const VNPayPayment: React.FC<VNPayPaymentProps> = ({
                       {formatCurrency(amount)}
                     </Typography>
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={6} component="div">
                     <Typography variant="body2" color="textSecondary">
                       Mã giao dịch:
                     </Typography>

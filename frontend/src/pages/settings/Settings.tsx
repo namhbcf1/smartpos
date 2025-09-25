@@ -1,14 +1,13 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
 import { 
   Settings as SettingsIcon, User, Shield, Bell, Palette, Database, 
-  Globe, CreditCard, Users, Key, Save, RefreshCw, Eye, EyeOff,
-  Upload, Download, Trash2, Plus, Edit, Check, X
+  Globe, CreditCard, Users, Save, RefreshCw, Eye, EyeOff,
+  Upload, Download, Trash2
 } from 'lucide-react'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
-import { Badge } from '../../components/ui/badge'
+// import api from '../../services/api'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
 
 interface SettingSection {
   id: string

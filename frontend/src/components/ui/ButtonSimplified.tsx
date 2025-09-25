@@ -44,6 +44,9 @@ export interface ButtonProps
   rightIcon?: React.ReactNode
   fullWidth?: boolean
   loadingText?: string
+  // Loosen variant and size typing to avoid consumer TS friction
+  variant?: any
+  size?: any
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

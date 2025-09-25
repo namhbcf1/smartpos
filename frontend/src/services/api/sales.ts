@@ -1,10 +1,10 @@
 // Sales API Service - DB Schema Compliant
-import { apiClient } from './client';
-import { Sale, SalesFilters } from '../../pages/sales/components/types';
+import apiClient from './client';
+// import { Sale, SalesFilters } from '../../pages/sales/components/types';
 
 export const salesService = {
   // Get all sales/orders with filters
-  async getAll(filters?: Partial<SalesFilters>) {
+  async getAll(filters?: any) {
     const params = new URLSearchParams();
 
     if (filters?.search) params.append('q', filters.search);
@@ -23,7 +23,7 @@ export const salesService = {
   },
 
   // Create new sale/order
-  async create(data: Partial<Sale>) {
+  async create(data: any) {
     // Transform sale data to match DB schema
     const orderData = {
       customer_id: data.customer_id,
@@ -44,7 +44,7 @@ export const salesService = {
   },
 
   // Update sale/order
-  async update(id: string, data: Partial<Sale>) {
+  async update(id: string, data: any) {
     const orderData: any = {};
 
     if (data.status) orderData.status = data.status;

@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
 import { authenticate, getUser } from '../../middleware/auth';
+import { IdempotencyMiddleware } from '../../middleware/idempotency';
+import { withValidation } from '../../middleware/validation';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -8,102 +10,8 @@ const app = new Hono<{ Bindings: Env }>();
 app.use('*', authenticate);
 
 // GET /api/products - List products with search, filter, pagination
-app.get('/', async (c: any) => {
-  try {
-    // Ensure products table exists - COMPLETE SCHEMA
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS products (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        sku TEXT UNIQUE NOT NULL,
-        barcode TEXT UNIQUE,
-        description TEXT,
-        price_cents INTEGER NOT NULL CHECK (price_cents >= 0),
-        cost_price_cents INTEGER NOT NULL CHECK (cost_price_cents >= 0),
-        stock INTEGER DEFAULT 0 CHECK (stock >= 0),
-        min_stock INTEGER DEFAULT 0 CHECK (min_stock >= 0),
-        max_stock INTEGER DEFAULT 1000 CHECK (max_stock >= min_stock),
-        unit TEXT DEFAULT 'piece',
-        weight_grams INTEGER CHECK (weight_grams >= 0),
-        dimensions TEXT,
-        category_id TEXT,
-        brand_id TEXT,
-        supplier_id TEXT,
-        store_id TEXT DEFAULT 'store-1',
-        image_url TEXT,
-        images TEXT,
-        category_name TEXT,
-        brand_name TEXT,
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        is_serialized INTEGER DEFAULT 0 CHECK (is_serialized IN (0, 1)),
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
-
-    // Ensure categories table exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        parent_id TEXT,
-        image_url TEXT,
-        sort_order INTEGER DEFAULT 0,
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
-
-    // Ensure brands table exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS brands (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        website TEXT,
-        logo_url TEXT,
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
-
-    // Ensure suppliers table exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS suppliers (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        contact_person TEXT,
-        email TEXT,
-        phone TEXT,
-        address TEXT,
-        tax_number TEXT,
-        payment_terms TEXT,
-        credit_limit_cents INTEGER DEFAULT 0,
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
-
-    // Add missing columns to existing products table if they don't exist
-    try {
-      await c.env.DB.prepare(`ALTER TABLE products ADD COLUMN min_stock INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE products ADD COLUMN max_stock INTEGER DEFAULT 1000`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE products ADD COLUMN price_cents INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
-
-    try {
-      await c.env.DB.prepare(`ALTER TABLE products ADD COLUMN cost_price_cents INTEGER DEFAULT 0`).run();
-    } catch (e) { /* column already exists */ }
+app.get('/', withValidation.list, async (c: any) => {
+  try {    // Tables are created via migrations - no runtime DDL needed
 
     const {
       page = '1',
@@ -121,7 +29,7 @@ app.get('/', async (c: any) => {
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    let whereClause = 'WHERE p.is_active = 1';
+    let whereClause = 'WHERE (p.is_active = 1 OR (p.is_active IS NULL AND p.isActive = 1))';
     const params: any[] = [];
 
     if (search) {
@@ -145,7 +53,7 @@ app.get('/', async (c: any) => {
     }
 
     if (status === 'inactive') {
-      whereClause = 'WHERE p.is_active = 0';
+      whereClause = 'WHERE (p.is_active = 0 OR (p.is_active IS NULL AND p.isActive = 0))';
     }
 
     if (low_stock === 'true') {
@@ -157,13 +65,22 @@ app.get('/', async (c: any) => {
     const sortDirection = sort_order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
     // Use simplified query to avoid JOIN errors with missing tables
+    // Handle both schema versions: isActive vs is_active, price vs price_cents
     const query = `
       SELECT
         p.*,
         CASE
+          WHEN p.price_cents IS NOT NULL AND p.price_cents > 0 THEN CAST(p.price_cents / 100.0 AS REAL)
+          ELSE COALESCE(p.price, 0)
+        END as price,
+        CASE
+          WHEN p.cost_price_cents IS NOT NULL AND p.cost_price_cents > 0 THEN CAST(p.cost_price_cents / 100.0 AS REAL)
+          ELSE COALESCE(p.cost, p.cost_price, 0)
+        END as cost_price,
+        CASE
           WHEN p.stock <= 0 THEN 'out_of_stock'
-          WHEN p.stock <= COALESCE(p.min_stock, 0) THEN 'low_stock'
-          WHEN p.stock >= COALESCE(p.max_stock, 999999) THEN 'overstock'
+          WHEN p.stock <= COALESCE(p.min_stock, p.minStock, 0) THEN 'low_stock'
+          WHEN p.stock >= COALESCE(p.max_stock, p.maxStock, 999999) THEN 'overstock'
           ELSE 'in_stock'
         END as stock_status
       FROM products p
@@ -199,6 +116,111 @@ app.get('/', async (c: any) => {
       success: false,
       message: 'Failed to fetch products',
       error: error instanceof Error ? error.message : String(error)
+    }, 500);
+  }
+});
+
+// GET /api/products/categories - Get all categories (compatibility route)
+app.get('/categories', async (c: any) => {
+  try {
+    // Tables are created via migrations - no runtime DDL needed
+
+    const { page = '1', limit = '50' } = c.req.query();
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get categories with basic info - simplified to avoid schema conflicts
+    const query = `
+      SELECT
+        id, name, description, is_active
+      FROM categories
+      WHERE is_active = 1
+      ORDER BY name ASC
+      LIMIT ? OFFSET ?
+    `;
+
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM categories
+      WHERE is_active = 1
+    `;
+
+    const [categoriesResult, countResult] = await Promise.all([
+      c.env.DB.prepare(query).bind(parseInt(limit), offset).all(),
+      c.env.DB.prepare(countQuery).first()
+    ]);
+
+    return c.json({
+      success: true,
+      data: categoriesResult.results || [],
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: countResult?.total || 0,
+        pages: Math.ceil((countResult?.total || 0) / parseInt(limit))
+      },
+      message: 'Categories retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Products categories error:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to fetch categories',
+      error: error instanceof Error ? error.message : String(error)
+    }, 500);
+  }
+});
+
+// GET /api/products/search - Search products (must come before /:id)
+app.get('/search', async (c: any) => {
+  try {
+    const { q, limit = '20' } = c.req.query();
+
+    if (!q) {
+      return c.json({
+        success: false,
+        message: 'Search query is required'
+      }, 400);
+    }
+
+    const products = await c.env.DB.prepare(`
+      SELECT
+        p.*,
+        c.name as category_name,
+        CASE
+          WHEN p.price_cents IS NOT NULL AND p.price_cents > 0 THEN CAST(p.price_cents / 100.0 AS REAL)
+          ELSE COALESCE(p.price, 0)
+        END as price,
+        CASE
+          WHEN p.cost_price_cents IS NOT NULL AND p.cost_price_cents > 0 THEN CAST(p.cost_price_cents / 100.0 AS REAL)
+          ELSE COALESCE(p.cost, p.cost_price, 0)
+        END as cost_price,
+        CASE
+          WHEN p.stock <= 0 THEN 'out_of_stock'
+          WHEN p.stock <= COALESCE(p.min_stock, p.minStock, 0) THEN 'low_stock'
+          ELSE 'in_stock'
+        END as stock_status
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE (p.is_active = 1 OR (p.is_active IS NULL AND p.isActive = 1))
+        AND (p.name LIKE ? OR p.sku LIKE ? OR p.barcode LIKE ?)
+      ORDER BY p.name ASC
+      LIMIT ?
+    `).bind(`%${q}%`, `%${q}%`, `%${q}%`, parseInt(limit)).all();
+
+    return c.json({
+      success: true,
+      data: products.results || [],
+      pagination: {
+        page: 1,
+        limit: parseInt(limit),
+        total: (products.results || []).length
+      }
+    });
+  } catch (error) {
+    console.error('Product search error:', error);
+    return c.json({
+      success: false,
+      message: 'Product search failed'
     }, 500);
   }
 });
@@ -280,24 +302,27 @@ app.get('/:id', async (c: any) => {
   try {
     const id = c.req.param('id');
 
+    // Simplified query - only join with categories table that exists
     const product = await c.env.DB.prepare(`
       SELECT
         p.*,
         c.name as category_name,
-        b.name as brand_name,
-        s.name as supplier_name,
-        s.contact_person as supplier_contact,
-        s.phone as supplier_phone,
         CASE
           WHEN p.stock <= 0 THEN 'out_of_stock'
-          WHEN p.stock <= p.min_stock THEN 'low_stock'
-          WHEN p.stock >= p.max_stock THEN 'overstock'
+          WHEN p.stock <= COALESCE(p.min_stock, p.minStock, 0) THEN 'low_stock'
+          WHEN p.stock >= COALESCE(p.max_stock, p.maxStock, 999999) THEN 'overstock'
           ELSE 'in_stock'
-        END as stock_status
+        END as stock_status,
+        CASE
+          WHEN p.price_cents IS NOT NULL AND p.price_cents > 0 THEN CAST(p.price_cents / 100.0 AS REAL)
+          ELSE COALESCE(p.price, 0)
+        END as price,
+        CASE
+          WHEN p.cost_price_cents IS NOT NULL AND p.cost_price_cents > 0 THEN CAST(p.cost_price_cents / 100.0 AS REAL)
+          ELSE COALESCE(p.cost, p.cost_price, 0)
+        END as cost_price
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN brands b ON p.brand_id = b.id
-      LEFT JOIN suppliers s ON p.supplier_id = s.id
       WHERE p.id = ?
     `).bind(id).first();
 
@@ -308,34 +333,9 @@ app.get('/:id', async (c: any) => {
       }, 404);
     }
 
-    // Get product variants if any
-    const variants = await c.env.DB.prepare(`
-      SELECT id, variant_name, variant_value, sku, barcode, price_adjustment, cost_adjustment, stock, is_active
-      FROM product_variants
-      WHERE product_id = ? AND is_active = 1
-      ORDER BY variant_name
-    `).bind(id).all();
-
-    // Get recent inventory movements
-    const movements = await c.env.DB.prepare(`
-      SELECT
-        im.id, im.transaction_type, im.quantity, im.reference_type,
-        im.reference_id, im.notes, im.created_at,
-        u.username as user_id_name
-      FROM inventory_movements im
-      LEFT JOIN users u ON im.user_id = u.id
-      WHERE im.product_id = ?
-      ORDER BY im.created_at DESC
-      LIMIT 10
-    `).bind(id).all();
-
     return c.json({
       success: true,
-      data: {
-        ...product,
-        variants: variants.results || [],
-        recent_movements: movements.results || []
-      }
+      data: product
     });
   } catch (error) {
     console.error('Product detail error:', error);
@@ -346,22 +346,179 @@ app.get('/:id', async (c: any) => {
   }
 });
 
-// POST /api/products - Create new product
-app.post('/', async (c: any) => {
+// POST /api/products/sample - Create sample products for testing
+app.post('/sample', async (c: any) => {
+  try {
+    const user = getUser(c);
+    
+    // Sample products data
+    const sampleProducts = [
+      {
+        id: 'prod_sample_001',
+        name: 'iPhone 15 Pro Max',
+        sku: 'IPH15PM-256GB',
+        barcode: '1234567890123',
+        description: 'iPhone 15 Pro Max 256GB Titanium',
+        price_cents: 35000000, // 350,000 VND
+        cost_price_cents: 30000000, // 300,000 VND
+        stock: 10,
+        min_stock: 2,
+        max_stock: 50,
+        unit: 'piece',
+        category_id: 'cat-electronics',
+        brand_id: 'brand-apple',
+        supplier_id: 'supplier-apple'
+      },
+      {
+        id: 'prod_sample_002',
+        name: 'Samsung Galaxy S24 Ultra',
+        sku: 'SGS24U-512GB',
+        barcode: '1234567890124',
+        description: 'Samsung Galaxy S24 Ultra 512GB',
+        price_cents: 28000000, // 280,000 VND
+        cost_price_cents: 25000000, // 250,000 VND
+        stock: 15,
+        min_stock: 3,
+        max_stock: 40,
+        unit: 'piece',
+        category_id: 'cat-electronics',
+        brand_id: 'brand-samsung',
+        supplier_id: 'supplier-samsung'
+      },
+      {
+        id: 'prod_sample_003',
+        name: 'MacBook Pro M3',
+        sku: 'MBP-M3-14',
+        barcode: '1234567890125',
+        description: 'MacBook Pro 14-inch M3 Chip',
+        price_cents: 45000000, // 450,000 VND
+        cost_price_cents: 40000000, // 400,000 VND
+        stock: 5,
+        min_stock: 1,
+        max_stock: 20,
+        unit: 'piece',
+        category_id: 'cat-electronics',
+        brand_id: 'brand-apple',
+        supplier_id: 'supplier-apple'
+      },
+      {
+        id: 'prod_sample_004',
+        name: 'AirPods Pro 2',
+        sku: 'APP2-GEN2',
+        barcode: '1234567890126',
+        description: 'AirPods Pro 2nd Generation',
+        price_cents: 6500000, // 6,500,000 VND
+        cost_price_cents: 5500000, // 5,500,000 VND
+        stock: 25,
+        min_stock: 5,
+        max_stock: 100,
+        unit: 'piece',
+        category_id: 'cat-electronics',
+        brand_id: 'brand-apple',
+        supplier_id: 'supplier-apple'
+      },
+      {
+        id: 'prod_sample_005',
+        name: 'Sony WH-1000XM5',
+        sku: 'SONY-WH1000XM5',
+        barcode: '1234567890127',
+        description: 'Sony WH-1000XM5 Noise Cancelling Headphones',
+        price_cents: 8500000, // 8,500,000 VND
+        cost_price_cents: 7000000, // 7,000,000 VND
+        stock: 12,
+        min_stock: 3,
+        max_stock: 30,
+        unit: 'piece',
+        category_id: 'cat-electronics',
+        brand_id: 'brand-sony',
+        supplier_id: 'supplier-sony'
+      }
+    ];
+
+    // Create sample categories if they don't exist
+    await c.env.DB.prepare(`
+      INSERT OR IGNORE INTO categories (id, name, description) VALUES
+      ('cat-electronics', 'Điện tử', 'Thiết bị điện tử và phụ kiện'),
+      ('cat-clothing', 'Thời trang', 'Quần áo và phụ kiện thời trang'),
+      ('cat-food', 'Thực phẩm', 'Thực phẩm và đồ uống')
+    `).run();
+
+    // Create sample brands if they don't exist
+    await c.env.DB.prepare(`
+      INSERT OR IGNORE INTO brands (id, name, description) VALUES
+      ('brand-apple', 'Apple', 'Apple Inc.'),
+      ('brand-samsung', 'Samsung', 'Samsung Electronics'),
+      ('brand-sony', 'Sony', 'Sony Corporation')
+    `).run();
+
+    // Create sample suppliers if they don't exist
+    await c.env.DB.prepare(`
+      INSERT OR IGNORE INTO suppliers (id, name) VALUES
+      ('supplier-apple', 'Apple Vietnam'),
+      ('supplier-samsung', 'Samsung Vietnam'),
+      ('supplier-sony', 'Sony Vietnam')
+    `).run();
+
+    const createdProducts = [];
+
+    // Insert sample products
+    for (const product of sampleProducts) {
+      try {
+        await c.env.DB.prepare(`
+          INSERT OR REPLACE INTO products (
+            id, name, description, sku, barcode, category_id, brand_id, supplier_id,
+            price_cents, cost_price_cents, stock, min_stock, max_stock, unit, is_active
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          product.id, product.name, product.description, product.sku, product.barcode,
+          product.category_id, product.brand_id, product.supplier_id,
+          product.price_cents, product.cost_price_cents, product.stock,
+          product.min_stock, product.max_stock, product.unit, 1
+        ).run();
+
+        createdProducts.push(product);
+      } catch (error) {
+        console.error(`Failed to create product ${product.name}:`, error);
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        created_count: createdProducts.length,
+        products: createdProducts
+      },
+      message: `Successfully created ${createdProducts.length} sample products`
+    }, 201);
+  } catch (error) {
+    console.error('Sample products creation error:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to create sample products',
+      error: error instanceof Error ? error.message : String(error)
+    }, 500);
+  }
+});
+app.post('/', IdempotencyMiddleware.api, withValidation.createProduct, async (c: any) => {
   try {
     const user = getUser(c);
     const data = await c.req.json();
 
     const {
       name, description, sku, barcode, category_id, brand_id, supplier_id,
-      price_cents, cost_price_cents, stock = 0, min_stock = 0, max_stock = 100, unit = 'piece',
+      price_cents, cost_price_cents, price, cost_price, cost,
+      stock = 0, min_stock = 0, max_stock = 100, unit = 'piece',
       weight_grams, dimensions, image_url, images, is_serialized = 0
     } = data;
 
-    if (!name || !sku || price_cents === undefined) {
+    // Support both price formats: price_cents or price
+    const finalPriceCents = price_cents || (price ? Math.round(price * 100) : 0);
+    const finalCostPriceCents = cost_price_cents || (cost_price ? Math.round(cost_price * 100) : 0) || (cost ? Math.round(cost * 100) : 0);
+
+    if (!name || !sku || (finalPriceCents === undefined && price === undefined && price_cents === undefined)) {
       return c.json({
         success: false,
-        message: 'Name, SKU, and price_cents are required'
+        message: 'Name, SKU, and price are required'
       }, 400);
     }
 
@@ -394,16 +551,17 @@ app.post('/', async (c: any) => {
     // Generate product ID
     const productId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-    // Insert product using actual database schema columns
+    // Insert product using dual schema support
     await c.env.DB.prepare(`
       INSERT INTO products (
         id, name, description, sku, barcode, category_id, supplier_id,
-        selling_price, cost_price, stock, min_stock, max_stock, unit_type, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        price, price_cents, cost, cost_price, cost_price_cents, stock, min_stock, max_stock, unit, is_active,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
     `).bind(
       productId, name, description || null, sku, barcode || null, category_id || null, supplier_id || null,
-      (price_cents || 0) / 100, // Convert cents to VND for selling_price
-      (cost_price_cents || 0) / 100, // Convert cents to VND for cost_price
+      Math.round(finalPriceCents / 100), finalPriceCents,
+      Math.round(finalCostPriceCents / 100), Math.round(finalCostPriceCents / 100), finalCostPriceCents,
       stock || 0, min_stock || 0, max_stock || 100, unit || 'piece', 1
     ).run();
 
@@ -449,9 +607,13 @@ app.put('/:id', async (c: any) => {
 
     const {
       name, description, sku, barcode, category_id, brand_id, supplier_id,
-      price_cents, cost_price_cents, min_stock, max_stock, unit,
+      price_cents, cost_price_cents, price, cost_price, cost, min_stock, max_stock, unit,
       weight_grams, dimensions, image_url, images
     } = data;
+
+    // Support both price formats
+    const finalPriceCents = price_cents || (price ? Math.round(price * 100) : undefined);
+    const finalCostPriceCents = cost_price_cents || (cost_price ? Math.round(cost_price * 100) : undefined) || (cost ? Math.round(cost * 100) : undefined);
 
     // Check SKU uniqueness if changed
     if (sku && sku !== existingProduct.sku) {
@@ -509,13 +671,13 @@ app.put('/:id', async (c: any) => {
       updateFields.push('supplier_id = ?');
       updateValues.push(supplier_id);
     }
-    if (price_cents !== undefined) {
-      updateFields.push('selling_price = ?');
-      updateValues.push(price_cents / 100); // Convert to VND for selling_price
+    if (finalPriceCents !== undefined) {
+      updateFields.push('price_cents = ?');
+      updateValues.push(finalPriceCents);
     }
-    if (cost_price_cents !== undefined) {
-      updateFields.push('cost_price = ?');
-      updateValues.push(cost_price_cents / 100); // Convert to VND for cost_price
+    if (finalCostPriceCents !== undefined) {
+      updateFields.push('cost_price_cents = ?');
+      updateValues.push(finalCostPriceCents);
     }
     if (min_stock !== undefined) {
       updateFields.push('min_stock = ?');
@@ -526,7 +688,7 @@ app.put('/:id', async (c: any) => {
       updateValues.push(max_stock);
     }
     if (unit !== undefined) {
-      updateFields.push('unit_type = ?');
+      updateFields.push('unit = ?');
       updateValues.push(unit);
     }
 
@@ -544,17 +706,13 @@ app.put('/:id', async (c: any) => {
       UPDATE products SET ${updateFields.join(', ')} WHERE id = ?
     `).bind(...updateValues).run();
 
-    // Get updated product
+    // Get updated product - simplified query without non-existent tables
     const updatedProduct = await c.env.DB.prepare(`
       SELECT
         p.*,
-        c.name as category_name,
-        b.name as brand_name,
-        s.name as supplier_name
+        c.name as category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      LEFT JOIN brands b ON p.brand_id = b.id
-      LEFT JOIN suppliers s ON p.supplier_id = s.id
       WHERE p.id = ?
     `).bind(id).first();
 

@@ -7,7 +7,7 @@ router.get('/openapi.json', (c) => {
   const doc = {
     openapi: '3.0.0',
     info: { title: 'SmartPOS API', version: '1.0.0' },
-    servers: [{ url: '/api/v1' }],
+    servers: [{ url: '/api' }],
     paths: {
       '/health': { get: { summary: 'Health', responses: { '200': { description: 'ok' } } } },
       '/products': { get: { summary: 'List products', responses: { '200': { description: 'ok' } } } },

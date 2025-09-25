@@ -1,30 +1,105 @@
+/**
+ * Standardized Error Handling Middleware
+ *
+ * Provides consistent error responses and logging across all API endpoints
+ * with proper status codes and secure error messages.
+ */
+
 import { Context, Next } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { ZodError } from 'zod';
+import { createValidationError, ErrorResponse } from '../types/api';
 
-export interface ErrorResponse {
+// Standard error codes
+export const ErrorCodes = {
+  // Authentication & Authorization
+  NO_TOKEN: 'NO_TOKEN',
+  INVALID_TOKEN: 'INVALID_TOKEN',
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  INSUFFICIENT_PERMISSIONS: 'INSUFFICIENT_PERMISSIONS',
+
+  // Validation
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  INVALID_INPUT: 'INVALID_INPUT',
+
+  // Business Logic
+  RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+  RESOURCE_CONFLICT: 'RESOURCE_CONFLICT',
+  BUSINESS_RULE_VIOLATION: 'BUSINESS_RULE_VIOLATION',
+
+  // System
+  DATABASE_ERROR: 'DATABASE_ERROR',
+  EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+
+  // Generic
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  BAD_REQUEST: 'BAD_REQUEST',
+} as const;
+
+export interface StandardErrorResponse {
+  success: false;
   error: string;
-  message: string;
   code?: string;
   details?: any;
   timestamp: string;
   path: string;
+  request_id?: string;
 }
 
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly code?: string;
   public readonly isOperational: boolean;
+  public readonly details?: any;
 
-  constructor(message: string, statusCode: number = 500, code?: string) {
+  constructor(
+    message: string,
+    statusCode: number = 500,
+    code?: string,
+    details?: any
+  ) {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
+    this.details = details;
     this.isOperational = true;
 
     Error.captureStackTrace(this, this.constructor);
   }
 }
 
+// Predefined error creators
+export const createError = {
+  badRequest: (message: string, details?: any) =>
+    new AppError(message, 400, ErrorCodes.BAD_REQUEST, details),
+
+  unauthorized: (message = 'Authentication required') =>
+    new AppError(message, 401, ErrorCodes.NO_TOKEN),
+
+  forbidden: (message = 'Insufficient permissions') =>
+    new AppError(message, 403, ErrorCodes.INSUFFICIENT_PERMISSIONS),
+
+  notFound: (resource = 'Resource') =>
+    new AppError(`${resource} not found`, 404, ErrorCodes.RESOURCE_NOT_FOUND),
+
+  conflict: (message: string) =>
+    new AppError(message, 409, ErrorCodes.RESOURCE_CONFLICT),
+
+  validation: (message: string, details?: any) =>
+    new AppError(message, 422, ErrorCodes.VALIDATION_ERROR, details),
+
+  tooManyRequests: (message = 'Rate limit exceeded') =>
+    new AppError(message, 429, ErrorCodes.RATE_LIMIT_EXCEEDED),
+
+  internal: (message = 'Internal server error') =>
+    new AppError(message, 500, ErrorCodes.INTERNAL_ERROR),
+
+  database: (message = 'Database operation failed') =>
+    new AppError(message, 500, ErrorCodes.DATABASE_ERROR),
+};
+
+// Main error handling middleware
 export const errorHandler = async (c: Context, next: Next) => {
   try {
     await next();
@@ -33,61 +108,96 @@ export const errorHandler = async (c: Context, next: Next) => {
   }
 };
 
+// Central error handling function
 export const handleError = (error: any, c: Context): Response => {
-  console.error('Error occurred:', error);
+  const requestId = c.get('requestId') || generateRequestId();
+  const isProduction = c.env?.NODE_ENV === 'production';
+
+  // Log error with context
+  logError(error, {
+    requestId,
+    path: c.req.url,
+    method: c.req.method,
+    userAgent: c.req.header('user-agent'),
+    ip: c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for'),
+  });
 
   let statusCode = 500;
   let message = 'Internal Server Error';
   let code: string | undefined;
   let details: any = undefined;
 
-  // Handle different types of errors
-  if (error instanceof HTTPException) {
-    statusCode = error.status;
-    message = error.message;
-  } else if (error instanceof AppError) {
+  // Handle different error types
+  if (error instanceof AppError) {
     statusCode = error.statusCode;
     message = error.message;
     code = error.code;
-  } else if (error.name === 'ValidationError') {
-    statusCode = 400;
-    message = 'Validation Error';
-    details = error.details || error.message;
-  } else if (error.name === 'UnauthorizedError') {
-    statusCode = 401;
-    message = 'Unauthorized';
-  } else if (error.name === 'ForbiddenError') {
-    statusCode = 403;
-    message = 'Forbidden';
-  } else if (error.name === 'NotFoundError') {
-    statusCode = 404;
-    message = 'Not Found';
+    details = error.details;
+  } else if (error instanceof HTTPException) {
+    statusCode = error.status;
+    message = error.message;
+  } else if (error instanceof ZodError) {
+    return c.json(createValidationError(error), 422);
+  } else if (error.name === 'ValidationError' || error.name === 'ZodError') {
+    statusCode = 422;
+    message = 'Validation failed';
+    code = ErrorCodes.VALIDATION_ERROR;
+    details = error.details || error.issues;
   } else if (error.code === 'SQLITE_CONSTRAINT') {
     statusCode = 409;
-    message = 'Data conflict';
-    code = 'CONSTRAINT_VIOLATION';
+    message = 'Data constraint violation';
+    code = ErrorCodes.DATABASE_ERROR;
   } else if (error.code === 'SQLITE_BUSY') {
     statusCode = 503;
-    message = 'Service temporarily unavailable';
-    code = 'DATABASE_BUSY';
+    message = 'Database is busy, please try again';
+    code = ErrorCodes.DATABASE_ERROR;
+  } else if (error.code === 'D1_ERROR') {
+    statusCode = 500;
+    message = isProduction ? 'Database error' : error.message;
+    code = ErrorCodes.DATABASE_ERROR;
   }
 
-  // Don't expose internal errors in production
-  if (process.env.NODE_ENV === 'production' && statusCode === 500) {
-    message = 'Internal Server Error';
+  // Security: Don't expose internal details in production
+  if (isProduction && statusCode === 500) {
+    message = 'Internal server error';
     details = undefined;
   }
 
-  const errorResponse: ErrorResponse = {
-    error: getErrorName(statusCode),
-    message,
+  const errorResponse: StandardErrorResponse = {
+    success: false,
+    error: message,
     code,
     details,
     timestamp: new Date().toISOString(),
-    path: c?.req?.url || 'unknown',
+    path: c.req.url,
+    request_id: requestId,
   };
 
   return c.json(errorResponse, statusCode as any);
+};
+
+// Utility functions
+const generateRequestId = (): string => {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+};
+
+const logError = (error: any, context: any) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const logLevel = process.env.LOG_LEVEL || 'info';
+
+  if (logLevel === 'error' || !isProduction) {
+    console.error('API Error:', {
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: isProduction ? undefined : error.stack,
+        code: error.code,
+        statusCode: error.statusCode,
+      },
+      context,
+      timestamp: new Date().toISOString(),
+    });
+  }
 };
 
 const getErrorName = (statusCode: number): string => {

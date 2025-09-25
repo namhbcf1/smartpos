@@ -3,6 +3,76 @@ import { Env } from '../../types';
 
 const app = new Hono<{ Bindings: Env }>();
 
+// GET /api/reports - List all available reports
+app.get('/', async (c: any) => {
+  try {
+    const reportsList = {
+      reports: [
+        {
+          id: 'basic',
+          name: 'Báo cáo cơ bản',
+          description: 'Tổng quan bán hàng và sản phẩm',
+          endpoint: '/api/reports/basic'
+        },
+        {
+          id: 'sales-summary',
+          name: 'Tổng hợp bán hàng',
+          description: 'Báo cáo chi tiết doanh thu theo thời gian',
+          endpoint: '/api/reports/sales-summary'
+        },
+        {
+          id: 'sales',
+          name: 'Báo cáo bán hàng',
+          description: 'Chi tiết các giao dịch bán hàng',
+          endpoint: '/api/reports/sales'
+        },
+        {
+          id: 'top-products',
+          name: 'Sản phẩm bán chạy',
+          description: 'Danh sách sản phẩm bán chạy nhất',
+          endpoint: '/api/reports/top-products'
+        },
+        {
+          id: 'inventory',
+          name: 'Báo cáo tồn kho',
+          description: 'Tình trạng tồn kho và cảnh báo',
+          endpoint: '/api/reports/inventory'
+        },
+        {
+          id: 'customers',
+          name: 'Báo cáo khách hàng',
+          description: 'Phân tích khách hàng và doanh thu',
+          endpoint: '/api/reports/customers'
+        },
+        {
+          id: 'financial',
+          name: 'Báo cáo tài chính',
+          description: 'Doanh thu, chi phí và lợi nhuận',
+          endpoint: '/api/reports/financial'
+        },
+        {
+          id: 'performance',
+          name: 'Báo cáo hiệu suất',
+          description: 'Hiệu suất bán hàng và nhân viên',
+          endpoint: '/api/reports/performance'
+        }
+      ]
+    };
+
+    return c.json({
+      success: true,
+      data: reportsList,
+      message: 'Available reports retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Reports list error:', error);
+    return c.json({
+      success: false,
+      message: 'Failed to get reports list'
+    }, 500);
+  }
+});
+
 // GET /api/reports/basic - Basic public reports
 app.get('/basic', async (c: any) => {
   try {

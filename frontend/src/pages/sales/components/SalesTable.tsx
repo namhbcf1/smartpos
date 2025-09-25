@@ -8,7 +8,6 @@ import {
   TableRow,
   Paper,
   IconButton,
-  Tooltip,
   Chip,
   Box,
   Typography,
@@ -52,7 +51,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
   onViewDetails,
   onPrintReceipt,
   onRefund,
-  loading
+  loading: _loading
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -137,10 +136,10 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box>
                     <Typography variant="subtitle1" fontWeight="bold">
-                      #{sale.receipt_number}
+                      #{sale.order_number}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {formatDate(sale.sale_date)}
+                      {formatDate(sale.created_at)}
                     </Typography>
                   </Box>
                   
@@ -163,7 +162,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                         {sale.customer_name || 'Khách lẻ'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Thu ngân: {sale.cashier_name || 'Chưa có thông tin'}
+                        Thu ngân: {sale.user_id || 'Chưa có thông tin'}
                       </Typography>
                     </Box>
                   </Box>
@@ -176,7 +175,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                       Tổng tiền
                     </Typography>
                     <Typography variant="h6" fontWeight="bold" color="primary">
-                      {formatCurrency(sale.total_amount)}
+                      {formatCurrency(sale.total_cents / 100)}
                     </Typography>
                   </Box>
                   <Box>
@@ -184,7 +183,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                       Số sản phẩm
                     </Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      {sale.items_count} sản phẩm
+                      {sale.items?.length || 0} sản phẩm
                     </Typography>
                   </Box>
                 </Box>
@@ -192,15 +191,15 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                 {/* Payment Status & Method */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Chip
-                    icon={getPaymentStatusIcon(sale.payment_status)}
-                    label={getPaymentStatusLabel(sale.payment_status)}
-                    color={getPaymentStatusColor(sale.payment_status) as any}
+                    icon={getPaymentStatusIcon(sale.status)}
+                    label={getPaymentStatusLabel(sale.status)}
+                    color={getPaymentStatusColor(sale.status) as any}
                     size="small"
                   />
                   
                   <Chip
-                    icon={getPaymentMethodIcon(sale.payment_method)}
-                    label={getPaymentMethodLabel(sale.payment_method)}
+                    icon={getPaymentMethodIcon(sale.payments?.[0]?.payment_method_id || 'cash')}
+                    label={getPaymentMethodLabel(sale.payments?.[0]?.payment_method_id || 'cash')}
                     variant="outlined"
                     size="small"
                   />
@@ -264,7 +263,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
               <TableRow key={sale.id} hover>
                 <TableCell>
                   <Typography variant="body2" fontWeight="medium">
-                    #{sale.receipt_number}
+                    #{sale.order_number}
                   </Typography>
                 </TableCell>
                 
@@ -283,40 +282,40 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                 
                 <TableCell>
                   <Typography variant="body2" color="text.secondary">
-                    {sale.cashier_name || 'Chưa có thông tin'}
+                    {sale.user_id || 'Chưa có thông tin'}
                   </Typography>
                 </TableCell>
                 
                 <TableCell align="right">
                   <Typography variant="body2" fontWeight="bold" color="primary">
-                    {formatCurrency(sale.total_amount)}
+                    {formatCurrency(sale.total_cents / 100)}
                   </Typography>
-                  {sale.discount_amount > 0 && (
+                  {(sale.discount_cents / 100) > 0 && (
                     <Typography variant="caption" color="secondary">
-                      Giảm: {formatCurrency(sale.discount_amount)}
+                      Giảm: {formatCurrency(sale.discount_cents / 100)}
                     </Typography>
                   )}
                 </TableCell>
                 
                 <TableCell align="center">
                   <Typography variant="body2">
-                    {sale.items_count}
+                    {sale.items?.length || 0}
                   </Typography>
                 </TableCell>
                 
                 <TableCell align="center">
                   <Chip
-                    icon={getPaymentStatusIcon(sale.payment_status)}
-                    label={getPaymentStatusLabel(sale.payment_status)}
-                    color={getPaymentStatusColor(sale.payment_status) as any}
+                    icon={getPaymentStatusIcon(sale.status)}
+                    label={getPaymentStatusLabel(sale.status)}
+                    color={getPaymentStatusColor(sale.status) as any}
                     size="small"
                   />
                 </TableCell>
                 
                 <TableCell align="center">
                   <Chip
-                    icon={getPaymentMethodIcon(sale.payment_method)}
-                    label={getPaymentMethodLabel(sale.payment_method)}
+                    icon={getPaymentMethodIcon(sale.payments?.[0]?.payment_method_id || 'cash')}
+                    label={getPaymentMethodLabel(sale.payments?.[0]?.payment_method_id || 'cash')}
                     variant="outlined"
                     size="small"
                   />
@@ -325,10 +324,10 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                 <TableCell>
                   <Box>
                     <Typography variant="body2">
-                      {formatDateShort(sale.sale_date)}
+                      {formatDateShort(sale.created_at)}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {formatDate(sale.sale_date).split(' ').slice(-1)[0]} {/* Extract time part */}
+                      {formatDate(sale.created_at).split(' ').slice(-1)[0]} {/* Extract time part */}
                     </Typography>
                   </Box>
                 </TableCell>
@@ -375,7 +374,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
           <ReceiptIcon sx={{ mr: 1 }} />
           In hóa đơn
         </MenuItem>
-        {selectedSale?.payment_status === 'paid' && (
+        {selectedSale?.status === 'completed' && (
           <MenuItem 
             onClick={() => {
               if (selectedSale) onRefund(selectedSale);

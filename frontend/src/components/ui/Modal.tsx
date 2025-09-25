@@ -139,16 +139,16 @@ const DialogContent = React.forwardRef<
               <div>
                 {title && (
                   <h2 
-                    className="text-lg font-semibold text-gray-900">
-                    id={titleId}
+                    className="text-lg font-semibold text-gray-900"
+                  id={titleId}
                   >
                     {title}
                   </h2>
                 )}
                 {description && (
                   <p 
-                    className="text-sm text-gray-600 mt-1">
-                    id={descriptionId}
+                    className="text-sm text-gray-600 mt-1"
+                  id={descriptionId}
                   >
                     {description}
                   </p>

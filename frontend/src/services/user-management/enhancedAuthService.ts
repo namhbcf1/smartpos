@@ -4,9 +4,15 @@
  * Rules.md compliant - uses only real Cloudflare D1 data
  */
 
-import apiService from './api';
-import { API_ENDPOINTS } from '../config/constants';
-import { User, Permission, Role } from '../types/api';
+import apiService from '../api';
+import { User } from '../../types/api';
+
+const API_ENDPOINTS = {
+  LOGIN: '/auth/login',
+  LOGOUT: '/auth/logout',
+  REFRESH_TOKEN: '/auth/refresh',
+  USER: '/auth/me'
+} as const;
 
 export interface LoginRequest {
   username: string;
@@ -18,13 +24,13 @@ export interface LoginResponse {
   user: User;
   token: string;
   expires_at: string;
-  permissions: Permission[];
+  permissions: Array<{ resource: string; action: string }>;
 }
 
 export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
-  permissions: Permission[];
+  permissions: Array<{ resource: string; action: string }>;
   token: string | null;
   expiresAt: Date | null;
 }
@@ -189,7 +195,7 @@ class EnhancedAuthService {
    * Check if user has specific role
    */
   hasRole(roleName: string): boolean {
-    return this.authState.user?.role_name === roleName || this.authState.user?.role === roleName;
+    return this.authState.user?.role === roleName;
   }
 
   /**
@@ -197,7 +203,7 @@ class EnhancedAuthService {
    */
   hasAnyRole(roleNames: string[]): boolean {
     if (!this.authState.user) return false;
-    const userRole = this.authState.user.role_name || this.authState.user.role;
+    const userRole = this.authState.user.role;
     return roleNames.includes(userRole);
   }
 
@@ -328,7 +334,7 @@ class EnhancedAuthService {
   /**
    * Get user permissions for a specific resource
    */
-  getResourcePermissions(resource: string): Permission[] {
+  getResourcePermissions(resource: string): Array<{ resource: string; action: string }> {
     if (!this.authState.permissions) return [];
     
     return this.authState.permissions.filter(permission => 
@@ -339,7 +345,7 @@ class EnhancedAuthService {
   /**
    * Get all user permissions grouped by resource
    */
-  getPermissionsByResource(): Record<string, Permission[]> {
+  getPermissionsByResource(): Record<string, Array<{ resource: string; action: string }>> {
     if (!this.authState.permissions) return {};
     
     return this.authState.permissions.reduce((acc, permission) => {
@@ -348,7 +354,7 @@ class EnhancedAuthService {
       }
       acc[permission.resource].push(permission);
       return acc;
-    }, {} as Record<string, Permission[]>);
+    }, {} as Record<string, Array<{ resource: string; action: string }>>);
   }
 }
 

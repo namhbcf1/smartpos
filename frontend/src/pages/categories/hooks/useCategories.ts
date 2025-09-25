@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import api from '../../../services/api';
+import { categoriesService, Category as ServiceCategory } from '../../../services/categoriesService';
 
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
-  is_active: boolean;
+  is_active?: number;
   product_count?: number;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface UseCategoriesParams {
@@ -50,39 +50,26 @@ export const useCategories = (params: UseCategoriesParams = {}): UseCategoriesRe
       setLoading(true);
       setError(null);
 
-      // Clean params - remove undefined values
-      const cleanParams = Object.entries(params).reduce((acc, [key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as Record<string, any>);
+      console.log('🔍 UseCategories: Starting fetch with params:', params);
 
-      console.log('Fetching categories with params:', cleanParams);
+      // Use the robust categories service
+      const response = await categoriesService.getCategories();
 
-      const response = await api.get('/categories', {
-        params: cleanParams,
-        withCredentials: true,
-      });
+      console.log('✅ UseCategories: Service response:', response);
 
-      console.log('Categories API response:', response.data);
-
-      if (response.data.success) {
-        // Categories API uses new format: { success: true, data: { data: [...], pagination: {...} } }
-        if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
-          setData(response.data.data.data);
-          setPagination(response.data.data.pagination || null);
-        } else {
-          // Fallback for unexpected format
-          setData([]);
-          setPagination(null);
-        }
+      if (response.success && Array.isArray(response.data)) {
+        console.log('✅ UseCategories: Setting', response.data.length, 'categories');
+        setData(response.data);
+        setPagination(response.pagination || null);
       } else {
-        throw new Error(response.data.message || 'Failed to fetch categories');
+        console.error('❌ UseCategories: Invalid response format');
+        setData([]);
+        setPagination(null);
+        setError('Invalid response format from server');
       }
-    } catch (err) {
-      console.error('Error fetching categories:', err);
-      setError('Không thể tải danh sách danh mục');
+    } catch (err: any) {
+      console.error('💥 UseCategories: Error:', err);
+      setError(`Không thể tải danh sách danh mục: ${err.message || err}`);
       setData([]);
       setPagination(null);
     } finally {

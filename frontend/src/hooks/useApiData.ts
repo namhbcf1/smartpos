@@ -270,8 +270,8 @@ export const useMutation = <T, R = any>() => {
       setLoading(true);
       setError(null);
 
-      const { API_V1_BASE_URL } = await import('../services/api');
-      const fullUrl = `${API_V1_BASE_URL}${endpoint || ''}`;
+      const { API_BASE_URL } = await import('../services/api');
+      const fullUrl = `${API_BASE_URL}${endpoint || ''}`;
 
       let response: any;
       switch (method) {

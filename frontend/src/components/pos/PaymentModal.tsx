@@ -48,13 +48,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       <DialogContent>
         <Box sx={{ mt: 2 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <Typography variant="h6">
                 Total: ${total.toFixed(2)}
               </Typography>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <FormControl fullWidth>
                 <InputLabel>Payment Method</InputLabel>
                 <Select
@@ -69,7 +69,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               </FormControl>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item xs={12} component="div">
               <TextField
                 fullWidth
                 type="number"
@@ -81,7 +81,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </Grid>
 
             {receivedAmount > total && (
-              <Grid item xs={12}>
+              <Grid item xs={12} component="div">
                 <Typography variant="body1" color="success.main">
                   Change: ${(receivedAmount - total).toFixed(2)}
                 </Typography>

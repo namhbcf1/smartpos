@@ -253,7 +253,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
 
           {activeTab === 0 && (
             <Grid container spacing={3} sx={{ mt: 2 }}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <Autocomplete
                   options={products}
                   getOptionLabel={(option) => `${option.name} (${option.sku})`}
@@ -264,7 +264,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <Autocomplete
                   options={customers}
                   getOptionLabel={(option) => `${option.full_name} (${option.phone})`}
@@ -275,7 +275,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <TextField
                   fullWidth
                   label="Serial Number *"
@@ -290,7 +290,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <DatePicker
                   label="Ngày mua"
                   value={new Date(formData.purchase_date)}
@@ -298,7 +298,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <TextField
                   fullWidth
                   label="Ngày bắt đầu bảo hành"
@@ -306,7 +306,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
                   disabled
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} component="div">
                 <TextField
                   fullWidth
                   label="Ngày kết thúc bảo hành"
@@ -314,7 +314,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
                   disabled
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} component="div">
                 <TextField
                   fullWidth
                   label="Ghi chú"
@@ -329,7 +329,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
 
           {activeTab === 1 && (
             <Grid container spacing={3} sx={{ mt: 2 }}>
-              <Grid item xs={12}>
+              <Grid item xs={12} component="div">
                 <Box display="flex" gap={2} alignItems="center">
                   <TextField
                     fullWidth
@@ -353,7 +353,7 @@ const SerialNumberModal: React.FC<SerialNumberModalProps> = ({
                   </Button>
                 </Box>
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} component="div">
                 {searchResults.length === 0 ? (
                   <Alert severity="info">
                     {searchTerm ? 'Không tìm thấy kết quả nào' : 'Nhập serial number để tìm kiếm'}

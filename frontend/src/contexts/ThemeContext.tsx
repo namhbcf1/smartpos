@@ -116,13 +116,13 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
         primary: {
           main: primaryColor,
           light: alpha(primaryColor, 0.7),
-           alpha(primaryColor, 1.2),
+          dark: alpha(primaryColor, 0.9),
           contrastText: '#ffffff'
         },
         secondary: {
           main: '#f50057',
           light: '#ff5983',
-           '#bb002f',
+          dark: '#bb002f',
           contrastText: '#ffffff'
         },
         background: {
@@ -136,22 +136,22 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
         success: {
           main: '#10b981',
           light: '#34d399',
-           '#059669'
+          dark: '#059669'
         },
         warning: {
           main: '#f59e0b',
           light: '#fbbf24',
-           '#d97706'
+          dark: '#d97706'
         },
         error: {
           main: '#ef4444',
           light: '#f87171',
-           '#dc2626'
+          dark: '#dc2626'
         },
         info: {
           main: '#3b82f6',
           light: '#60a5fa',
-           '#2563eb'
+          dark: '#2563eb'
         }
       },
       typography: {

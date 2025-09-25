@@ -2,9 +2,9 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   CheckSquare, Plus, Search, Filter, Download, Eye, Edit, Trash2, 
-  Clock, AlertCircle, CheckCircle, XCircle, User, Users, Calendar,
-  Flag, MoreVertical, MessageSquare, Paperclip, Star, TrendingUp,
-  BarChart3, Grid, List, Kanban, Calendar as CalendarIcon
+  Clock, AlertCircle, CheckCircle, XCircle, User, Users,
+  MessageSquare, Paperclip, Calendar,
+  Grid, List, Kanban
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -234,9 +234,8 @@ export const TasksList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedPriority, setSelectedPriority] = useState('all')
-  const [selectedAssignee, setSelectedAssignee] = useState('all')
+  const [selectedAssignee] = useState('all')
   const [selectedDepartment, setSelectedDepartment] = useState('all')
-  const [selectedTimeRange, setSelectedTimeRange] = useState('all')
   const [sortBy, setSortBy] = useState('deadline')
   const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban' | 'calendar'>('list')
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
@@ -440,7 +439,7 @@ export const TasksList: React.FC = () => {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả trạng thái</option>
                 {Object.entries(statusConfig).map(([key, config]) => (
@@ -450,7 +449,7 @@ export const TasksList: React.FC = () => {
               <select
                 value={selectedPriority}
                 onChange={(e) => setSelectedPriority(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả độ ưu tiên</option>
                 {Object.entries(priorityConfig).map(([key, config]) => (
@@ -460,7 +459,7 @@ export const TasksList: React.FC = () => {
               <select
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả phòng ban</option>
                 <option value="Design">Design</option>
@@ -471,7 +470,7 @@ export const TasksList: React.FC = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="deadline">Sắp xếp theo deadline</option>
                 <option value="priority">Sắp xếp theo độ ưu tiên</option>
@@ -511,7 +510,7 @@ export const TasksList: React.FC = () => {
                 onClick={() => setViewMode('calendar')}
                 className={`px-3 py-2 text-sm ${viewMode === 'calendar' ? 'bg-blue-500 text-white' : 'text-gray-600'}`}
               >
-                <CalendarIcon className="w-4 h-4" />
+                <Calendar className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -531,7 +530,7 @@ export const TasksList: React.FC = () => {
                         type="checkbox"
                         checked={selectedTasks.length === sortedTasks.length && sortedTasks.length > 0}
                         onChange={handleSelectAll}
-                        className="rounded border-gray-300">
+                        className="rounded border-gray-300"
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -572,7 +571,7 @@ export const TasksList: React.FC = () => {
                             type="checkbox"
                             checked={selectedTasks.includes(task.id)}
                             onChange={() => handleSelectTask(task.id)}
-                            className="rounded border-gray-300">
+                            className="rounded border-gray-300"
                           />
                         </td>
                         <td className="px-6 py-4">
@@ -635,8 +634,8 @@ export const TasksList: React.FC = () => {
                           <div className="flex items-center">
                             <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                               <div 
-                                className="bg-blue-600 h-2 rounded-full"> 
-                                style={{ width: `${completionPercentage}%` }}
+                                className="bg-blue-600 h-2 rounded-full"
+                  style={{ width: `${completionPercentage}%` }}
                               ></div>
                             </div>
                             <span className="text-sm text-gray-500">{completionPercentage}%</span>
@@ -690,7 +689,7 @@ export const TasksList: React.FC = () => {
                           type="checkbox"
                           checked={selectedTasks.includes(task.id)}
                           onChange={() => handleSelectTask(task.id)}
-                          className="rounded border-gray-300">
+                          className="rounded border-gray-300"
                         />
                         <div>
                           <CardTitle className="text-lg">{task.title}</CardTitle>
@@ -738,8 +737,8 @@ export const TasksList: React.FC = () => {
 
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-blue-600 h-2 rounded-full"> 
-                        style={{ width: `${completionPercentage}%` }}
+                        className="bg-blue-600 h-2 rounded-full"
+                  style={{ width: `${completionPercentage}%` }}
                       ></div>
                     </div>
 

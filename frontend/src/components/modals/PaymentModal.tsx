@@ -121,7 +121,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       <DialogContent>
         <Grid container spacing={3}>
           {/* Payment Summary */}
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Box p={2} bgcolor="grey.50" borderRadius={1}>
               <Typography variant="h6" gutterBottom sx={{ color: 'text.primary' }}>
                 Tổng tiền: {formatCurrency(totalAmount)}
@@ -139,7 +139,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           </Grid>
 
           {/* Payment Methods */}
-          <Grid item xs={12}>
+          <Grid item xs={12} component="div">
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6" sx={{ color: 'text.primary' }}>Phương thức thanh toán</Typography>
               <Button
@@ -155,7 +155,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             {payments.map((payment, index) => (
               <Box key={payment.id} mb={2} p={2} border={1} borderColor="grey.300" borderRadius={1}>
                 <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={3} component="div">
                     <FormControl fullWidth size="small">
                       <InputLabel>Phương thức</InputLabel>
                       <Select
@@ -171,7 +171,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     </FormControl>
                   </Grid>
 
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={3} component="div">
                     <TextField
                       fullWidth
                       size="small"
@@ -185,7 +185,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     />
                   </Grid>
 
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={3} component="div">
                     <TextField
                       fullWidth
                       size="small"
@@ -195,7 +195,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     />
                   </Grid>
 
-                  <Grid item xs={12} sm={2}>
+                  <Grid item xs={12} sm={2} component="div">
                     <IconButton
                       onClick={() => removePayment(payment.id)}
                       color="error"
@@ -205,7 +205,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     </IconButton>
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid item xs={12} component="div">
                     <TextField
                       fullWidth
                       size="small"

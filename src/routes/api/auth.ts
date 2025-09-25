@@ -1,47 +1,17 @@
 import { Hono } from 'hono';
 import { Env, ApiResponse } from '../../types';
 import { authenticate, getUser } from '../../middleware/auth';
+import { withValidation } from '../../middleware/validation';
+import { RateLimits } from '../../middleware/rateLimiting-unified';
 
 const app = new Hono<{ Bindings: Env }>();
 
 // Health check endpoint
 app.get('/health', async (c: any) => {
   try {
-    // Ensure users table exists - COMPLETE SCHEMA
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        full_name TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'manager', 'cashier', 'employee')),
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        last_login TEXT,
-        store_id TEXT DEFAULT 'store-1',
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
+    // Ensure users table exists - COMPLETE SCHEMA    // Tables should be created via migrations, not in routes
 
-    // Ensure stores table exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS stores (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        address TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        email TEXT NOT NULL,
-        tax_number TEXT,
-        business_license TEXT,
-        logo_url TEXT,
-        timezone TEXT DEFAULT 'Asia/Ho_Chi_Minh',
-        currency TEXT DEFAULT 'VND',
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
+    // Migration 006 handles all table creation
 
     // Check if users table exists and has admin user
     const userCount = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM users`).first();
@@ -64,7 +34,7 @@ app.get('/health', async (c: any) => {
 });
 
 // Login endpoint
-app.post('/login', async (c: any) => {
+app.post('/login', RateLimits.auth, withValidation.login, async (c: any) => {
   try {
     const body = await c.req.json();
     const { username, password } = body;
@@ -244,28 +214,16 @@ app.post('/logout', authenticate, async (c: any) => {
 app.get('/me', authenticate, async (c: any) => {
   try {
     // Ensure users table exists
-    await c.env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        full_name TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'manager', 'cashier', 'employee')),
-        is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
-        last_login TEXT,
-        store_id TEXT DEFAULT 'store-1',
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run();
+    // Tables should be created via migrations, not in routes
+
+    // Migration 006 handles all table creation
 
     const user = getUser(c);
 
     const userData = await c.env.DB.prepare(`
       SELECT
         id, username, email, full_name, role, store_id, is_active,
-        last_login, created_at
+        last_login_at, created_at
       FROM users
       WHERE id = ?
     `).bind(user.id).first();

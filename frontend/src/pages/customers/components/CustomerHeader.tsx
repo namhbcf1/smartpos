@@ -137,7 +137,7 @@ export const CustomerHeader: React.FC<CustomerHeaderProps> = ({
       {/* Stats Cards */}
       <Grid container spacing={2}>
         {statsCards.map((card, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <Grid item xs={12} sm={6} md={3} key={index} component="div">
             <Card 
               sx={{ 
                 background: `linear-gradient(135deg, ${theme.palette[card.color as keyof typeof theme.palette].light}, ${theme.palette[card.color as keyof typeof theme.palette].main})`,

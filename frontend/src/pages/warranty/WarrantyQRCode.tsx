@@ -1,7 +1,7 @@
 // QR Code Warranty Lookup System
 // Generate, manage QR codes for products and allow customer warranty lookup
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   QrCode,
@@ -10,25 +10,15 @@ import {
   Download,
   Printer,
   Eye,
-  Edit,
   Copy,
-  ExternalLink,
-  Package,
-  Calendar,
-  Shield,
   User,
   Phone,
-  Mail,
   CheckCircle,
-  AlertTriangle,
+  XCircle,
   RefreshCw,
   Smartphone,
-  FileText,
-  Settings,
-  Filter,
   Grid,
-  List,
-  Upload
+  List
 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/ButtonSimplified';
@@ -77,16 +67,15 @@ const WarrantyQRCode: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedQR, setSelectedQR] = useState<WarrantyQR | null>(null);
-  const [showQRModal, setShowQRModal] = useState(false);
+  const [_selectedQR, setSelectedQR] = useState<WarrantyQR | null>(null);
+  const [_showQRModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showLookupModal, setShowLookupModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('generate');
+  const [_activeTab] = useState('generate');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [generatedQRCode, setGeneratedQRCode] = useState<string>('');
   const [lookupCode, setLookupCode] = useState('');
   const [lookupResult, setLookupResult] = useState<any>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     loadQRCodes();
@@ -529,11 +518,11 @@ const WarrantyQRCode: React.FC = () => {
                   {/* Quick Stats */}
                   <div className="grid grid-cols-2 gap-2 mb-4 text-center">
                     <div className="p-2 bg-gray-50 rounded">
-                      <p className="text-lg font-bold text-gray-900">{qrCode.scans || 0}</p>
+                      <p className="text-lg font-bold text-gray-900">{qr.scan_count || 0}</p>
                       <p className="text-xs text-gray-600">Lượt quét</p>
                     </div>
                     <div className="p-2 bg-gray-50 rounded">
-                      <p className="text-lg font-bold text-gray-900">{formatDate(qrCode.created_at)}</p>
+                      <p className="text-lg font-bold text-gray-900">{formatDate(qr.generated_date)}</p>
                       <p className="text-xs text-gray-600">Ngày tạo</p>
                     </div>
                   </div>

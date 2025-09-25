@@ -29,29 +29,24 @@ const RAW_API_URL = import.meta.env.VITE_API_BASE_URL ||
                     import.meta.env.VITE_API_URL ||
                     'https://namhbcf-api.bangachieu2.workers.dev';
 
-// Strip any accidental /api/v{n} suffix from env to avoid double-prefix issues
-const stripped = (RAW_API_URL || '').replace(/\/api\/v\d+\/?$/, '');
-const sanitizedBase = stripped.replace(/\/$/, '');
+// Strip any trailing slashes for clean URL building
+const sanitizedBase = (RAW_API_URL || '').replace(/\/$/, '');
 
-// Do NOT append /api/v1 here. Keep pure base. Some clients add the versioned path.
-export const API_BASE_URL = sanitizedBase;
-export const API_VERSION = import.meta.env.VITE_API_VERSION || 'v1';
-// Back to correct API versioning 
-export const API_V1_BASE_URL = `${sanitizedBase}/api/${API_VERSION}`;
+// Use non-versioned API endpoints only
+export const API_BASE_URL = `${sanitizedBase}/api`;
 
 // Always use production mode (online only)
 const isProduction = true;
 
 console.log('🌐 API Configuration:', {
   RAW_API_URL,
-  resolvedBaseURL: API_BASE_URL,
-  finalBaseUrl: API_V1_BASE_URL,
+  finalBaseUrl: API_BASE_URL,
   environment: isProduction ? 'production' : 'development'
 });
 
 // Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
-  baseURL: API_V1_BASE_URL,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -74,13 +69,14 @@ const getUserFromStorage = (): User | null => {
 const clearUserFromStorage = (): void => {
   // Clear auth token
   authToken = null;
+  localStorage.removeItem('auth_token');
   sessionStorage.removeItem('auth_token');
 };
 
 // Initialize token from sessionStorage
 const initializeToken = (): void => {
-  // Try to get JWT token from sessionStorage or cookie
-  let storedToken = sessionStorage.getItem('auth_token');
+  // Try to get JWT token from localStorage, then sessionStorage or cookie
+  let storedToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
   if (!storedToken) {
     try {
       storedToken = document.cookie
@@ -104,8 +100,8 @@ initializeToken();
 // Enhanced request interceptor with proper error handling
 api.interceptors.request.use(
   (config) => {
-    // Always try to get fresh JWT from sessionStorage; enforce JWT shape
-    const freshToken = sessionStorage.getItem('auth_token');
+    // Always try to get fresh JWT from localStorage first; enforce JWT shape
+    const freshToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
     const tokenToUse = freshToken && freshToken.split('.').length === 3
       ? freshToken
       : (authToken && authToken.split('.').length === 3 ? authToken : null);
@@ -147,11 +143,11 @@ api.interceptors.response.use(
       });
     }
 
-    // Handle successful responses
-    if (response.data.success) {
+    // Handle successful responses - be more lenient
+    if (response.data.success !== false && response.status >= 200 && response.status < 300) {
       return response;
-    } else {
-      // Handle API-level errors - check both message and error fields
+    } else if (response.data.success === false) {
+      // Only reject if explicitly marked as failed
       const error = new Error(response.data.message || response.data.error || 'API request failed') as Error & {
         response: AxiosResponse<ApiResponse>;
         apiError: ApiResponse;
@@ -159,6 +155,9 @@ api.interceptors.response.use(
       error.response = response;
       error.apiError = response.data;
       return Promise.reject(error);
+    } else {
+      // For other cases, let it through
+      return response;
     }
   },
   (error: AxiosError<ApiResponse>) => {
@@ -182,7 +181,7 @@ api.interceptors.response.use(
           // Only redirect if not already on login page
           if (!window.location.pathname.includes('/login')) {
             // Try to refresh token first
-            const freshToken = sessionStorage.getItem('auth_token');
+            const freshToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
             if (freshToken) {
               authToken = freshToken;
               // Retry the request with fresh token
@@ -491,7 +490,7 @@ export const analyticsAPI = {
 export const setAuthToken = (token: string): void => {
   console.log('🔐 Setting auth token:', token.substring(0, 20) + '...');
   authToken = token;
-  sessionStorage.setItem('auth_token', token);
+  localStorage.setItem('auth_token', token);
   console.log('✅ Auth token set successfully');
 };
 
@@ -512,7 +511,8 @@ const apiWrapper = {
   get: async <T = any>(url: string, config?: any): Promise<T> => {
     try {
       const response = await api.get<ApiResponse<T>>(url, config);
-      return response.data.success ? response.data.data : response.data;
+      const payload = response.data as ApiResponse<T>;
+      return (payload.success && payload.data !== undefined ? payload.data : (payload as unknown as T));
     } catch (error: any) {
       console.error('API GET Error:', error);
       throw error;
@@ -522,7 +522,8 @@ const apiWrapper = {
   post: async <T = any>(url: string, data?: any, config?: any): Promise<T> => {
     try {
       const response = await api.post<ApiResponse<T>>(url, data, config);
-      return response.data.success ? response.data.data : response.data;
+      const payload = response.data as ApiResponse<T>;
+      return (payload.success && payload.data !== undefined ? payload.data : (payload as unknown as T));
     } catch (error: any) {
       console.error('API POST Error:', error);
       throw error;
@@ -532,7 +533,8 @@ const apiWrapper = {
   put: async <T = any>(url: string, data?: any, config?: any): Promise<T> => {
     try {
       const response = await api.put<ApiResponse<T>>(url, data, config);
-      return response.data.success ? response.data.data : response.data;
+      const payload = response.data as ApiResponse<T>;
+      return (payload.success && payload.data !== undefined ? payload.data : (payload as unknown as T));
     } catch (error: any) {
       console.error('API PUT Error:', error);
       throw error;
@@ -542,7 +544,8 @@ const apiWrapper = {
   delete: async <T = any>(url: string, config?: any): Promise<T> => {
     try {
       const response = await api.delete<ApiResponse<T>>(url, config);
-      return response.data.success ? response.data.data : response.data;
+      const payload = response.data as ApiResponse<T>;
+      return (payload.success && payload.data !== undefined ? payload.data : (payload as unknown as T));
     } catch (error: any) {
       console.error('API DELETE Error:', error);
       throw error;

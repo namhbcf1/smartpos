@@ -1,5 +1,5 @@
 // Main types export file for SmartPOS API
-export * from './api';
+export type { Category, Customer, Order, Product, User, Pagination, ApiResponse } from './api';
 export * from './database';
 export * from './warranty';
 
@@ -23,7 +23,6 @@ export interface Env {
   // Environment variables
   JWT_SECRET: string;
   ENCRYPTION_KEY: string;
-  API_VERSION: string;
   ENVIRONMENT: string;
   RATE_LIMIT_ENABLED: string;
   ENABLE_REAL_TIME: string;

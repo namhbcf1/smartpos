@@ -1,20 +1,69 @@
-name = "namhbcf-api"
+name = "smartpos-api"
 main = "src/index.ts"
-compatibility_date = "2024-09-10"
-compatibility_flags = ["nodejs_compat"]
-minify = true
+compatibility_date = "2024-01-01"
 
-# Default environment (now production)
+[env.production]
+name = "smartpos-api"
+route = "namhbcf-api.bangachieu2.workers.dev/*"
+
+[env.staging]
+name = "smartpos-api-staging"
+route = "smartpos-api-staging.bangachieu2.workers.dev/*"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "Smart POS Free"
+database_id = "1f6dec6f-f953-4f00-9408-afd28a7f6650"
+
+# KV Storage
+[[kv_namespaces]]
+binding = "CACHE"
+id = "1aefb75bb01146b480b7d73fa4189724"
+preview_id = "1aefb75bb01146b480b7d73fa4189724"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
+preview_id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
+
+[[kv_namespaces]]
+binding = "CONFIG"
+id = "3e4b6c72d12d40929b73df05c7c93450"
+preview_id = "3e4b6c72d12d40929b73df05c7c93450"
+
+[[kv_namespaces]]
+binding = "ANALYTICS"
+id = "eb7da0cbf6e349f39a9c229975daa9b4"
+preview_id = "eb7da0cbf6e349f39a9c229975daa9b4"
+
+# R2 Storage
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "smartpos-uploads"
+
+# Durable Objects
+[[durable_objects.bindings]]
+name = "NOTIFICATION_OBJECT"
+class_name = "NotificationBroadcaster"
+
+# Migrations
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = [ "NotificationBroadcaster" ]
+
+# Environment Variables
 [vars]
+NODE_ENV = "production"
 ENVIRONMENT = "production"
+JWT_SECRET = "smartpos-production-jwt-secret-key-2025-secure-random-string-32-chars-minimum"
 JWT_ISSUER = "smartpos-production"
 JWT_AUDIENCE = "smartpos-clients"
-CORS_ORIGINS = "https://namhbcf.uk,https://namhbcf-uk.pages.dev"
+ENCRYPTION_KEY = "production-encryption-key-32-chars"
 API_VERSION = "v1"
 API_BASE_URL = "https://namhbcf-api.bangachieu2.workers.dev"
 FRONTEND_URL = "https://namhbcf-uk.pages.dev"
-CLOUDFLARE_ACCOUNT_ID = "5b62d10947844251d23e0eac532531dd"
-CLOUDFLARE_ZONE_ID = "41f515be48bb6e5a499460e9a5063e72"
+CORS_ORIGINS = "https://namhbcf.uk,https://namhbcf-uk.pages.dev"
 RATE_LIMIT_ENABLED = "true"
 RATE_LIMIT_WINDOW_MS = "60000"
 RATE_LIMIT_MAX_REQUESTS = "100"
@@ -33,49 +82,3 @@ ENABLE_REAL_TIME = "true"
 ENABLE_NOTIFICATIONS = "true"
 ENABLE_ANALYTICS = "true"
 ENABLE_BACKUP = "true"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "smartpos-free"
-database_id = "1f6dec6f-f953-4f00-9408-afd28a7f6650"
-migrations_dir = "./migrations"
-
-[[kv_namespaces]]
-binding = "CACHE"
-id = "1aefb75bb01146b480b7d73fa4189724"
-
-[[kv_namespaces]]
-binding = "SESSIONS_KV"
-id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
-
-[[kv_namespaces]]
-binding = "CONFIG"
-id = "3e4b6c72d12d40929b73df05c7c93450"
-
-[[kv_namespaces]]
-binding = "ANALYTICS"
-id = "eb7da0cbf6e349f39a9c229975daa9b4"
-
-[durable_objects]
-bindings = [
-  { name = "INVENTORY", class_name = "InventoryState" },
-  { name = "SESSIONS", class_name = "SessionManager" },
-  { name = "NOTIFICATIONS", class_name = "NotificationObject" },
-  { name = "INVENTORY_SYNC", class_name = "InventorySyncObject" },
-  { name = "POS_SYNC", class_name = "POSSyncObject" },
-  { name = "WARRANTY_SYNC", class_name = "WarrantySyncObject" }
-]
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = [
-  "InventoryState",
-  "SessionManager", 
-  "NotificationObject",
-  "InventorySyncObject",
-  "POSSyncObject",
-  "WarrantySyncObject"
-]
-
-[observability]
-enabled = true

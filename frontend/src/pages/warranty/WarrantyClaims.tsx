@@ -7,27 +7,20 @@ import {
   Download,
   Eye,
   Edit,
-  Trash2,
   MoreHorizontal,
-  Calendar,
   Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
-  User,
   Phone,
   Mail,
-  MapPin,
-  Package,
-  FileText,
-  MessageSquare,
-  Camera,
-  Upload
+  MessageSquare
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/badge'
+import { posApi } from '../../services/api/posApi'
 
 interface WarrantyClaim {
   id: string
@@ -51,71 +44,42 @@ interface WarrantyClaim {
 
 const WarrantyClaims: React.FC = () => {
   const [claims, setClaims] = useState<WarrantyClaim[]>([])
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
 
-  // Mock data
+  // Load real warranty claims
   useEffect(() => {
-    const mockClaims: WarrantyClaim[] = [
-      {
-        id: '1',
-        claimNumber: 'WC-2024-001',
-        customerName: 'Nguyễn Văn A',
-        customerPhone: '0901234567',
-        customerEmail: 'nguyenvana@email.com',
-        productName: 'Laptop Dell Inspiron 15',
-        productSerial: 'DL123456789',
-        purchaseDate: '2024-01-15',
-        issueDescription: 'Màn hình bị sọc dọc, không hiển thị đúng màu sắc',
-        status: 'pending',
-        priority: 'high',
-        assignedTo: 'Kỹ thuật viên A',
-        createdAt: '2024-01-20T10:00:00Z',
-        updatedAt: '2024-01-20T10:00:00Z',
-        attachments: ['image1.jpg', 'video1.mp4'],
-        estimatedResolutionDate: '2024-01-25'
-      },
-      {
-        id: '2',
-        claimNumber: 'WC-2024-002',
-        customerName: 'Trần Thị B',
-        customerPhone: '0907654321',
-        customerEmail: 'tranthib@email.com',
-        productName: 'Điện thoại iPhone 14',
-        productSerial: 'IP987654321',
-        purchaseDate: '2024-01-10',
-        issueDescription: 'Pin sụt nhanh, chỉ dùng được 4-5 tiếng',
-        status: 'in_progress',
-        priority: 'medium',
-        assignedTo: 'Kỹ thuật viên B',
-        createdAt: '2024-01-18T14:30:00Z',
-        updatedAt: '2024-01-22T09:15:00Z',
-        attachments: ['battery_report.pdf'],
-        estimatedResolutionDate: '2024-01-28'
-      },
-      {
-        id: '3',
-        claimNumber: 'WC-2024-003',
-        customerName: 'Lê Văn C',
-        customerPhone: '0905555555',
-        customerEmail: 'levanc@email.com',
-        productName: 'Máy tính bảng iPad Air',
-        productSerial: 'IP555666777',
-        purchaseDate: '2024-01-05',
-        issueDescription: 'Không kết nối được WiFi, báo lỗi kết nối',
-        status: 'resolved',
-        priority: 'low',
-        assignedTo: 'Kỹ thuật viên C',
-        createdAt: '2024-01-12T16:45:00Z',
-        updatedAt: '2024-01-19T11:20:00Z',
-        resolution: 'Đã thay thế module WiFi, thiết bị hoạt động bình thường',
-        attachments: ['wifi_test.pdf', 'repair_report.pdf']
+    (async () => {
+      try {
+        setLoading(true)
+        const res = await posApi.getWarranties(1, 50)
+        const list = (res as any)?.data?.data || (res as any)?.data || []
+        const normalized: WarrantyClaim[] = list.map((w: any, i: number) => ({
+          id: w.id || String(i + 1),
+          claimNumber: w.claim_number || w.id || `WC-${i + 1}`,
+          customerName: w.customer_name || '',
+          customerPhone: w.customer_phone || '',
+          customerEmail: w.customer_email || '',
+          productName: w.product_name || '',
+          productSerial: w.product_serial || '',
+          purchaseDate: w.purchase_date || new Date().toISOString(),
+          issueDescription: w.issue || w.issue_description || w.notes || '',
+          status: (w.status || 'pending'),
+          priority: (w.priority || 'medium'),
+          assignedTo: w.assigned_to || 'N/A',
+          createdAt: w.created_at || new Date().toISOString(),
+          updatedAt: w.updated_at || new Date().toISOString(),
+          resolution: w.resolution || undefined,
+          attachments: Array.isArray(w.attachments) ? w.attachments : [],
+          estimatedResolutionDate: w.estimated_resolution_date
+        }))
+        setClaims(normalized)
+      } finally {
+        setLoading(false)
       }
-    ]
-    setClaims(mockClaims)
-    setLoading(false)
+    })()
   }, [])
 
   const formatDate = (dateString: string) => {

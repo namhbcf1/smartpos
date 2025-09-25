@@ -707,7 +707,7 @@ app.get('/widget.js', async (c: any) => {
           container.innerHTML = '<div style="text-align: center; padding: 20px;">Đang tải...</div>';
 
           // Fetch tracking data
-          fetch('/api/v1/shipping/track', {
+          fetch('/api/shipping/track', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ trackingNumber, provider })

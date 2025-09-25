@@ -64,14 +64,14 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
   if (loading) {
     return (
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <Paper sx={{ p: 3, height: 400 }}>
             <Typography variant="h6" gutterBottom>
               Giao dịch gần đây (Đang tải...)
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <Paper sx={{ p: 3, height: 400 }}>
             <Typography variant="h6" gutterBottom>
               Sản phẩm sắp hết hàng (Đang tải...)
@@ -85,7 +85,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
   return (
     <Grid container spacing={3}>
       {/* Recent Sales */}
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={6} component="div">
         <Card elevation={2} sx={{ height: '100%' }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -159,7 +159,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
       </Grid>
 
       {/* Low Stock Products */}
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={6} component="div">
         <Card elevation={2} sx={{ height: '100%' }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -230,7 +230,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
       {/* AI Insights */}
       {aiInsights.length > 0 && (
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <Card elevation={2}>
             <CardContent>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
