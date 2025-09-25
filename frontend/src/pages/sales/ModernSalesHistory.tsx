@@ -199,9 +199,15 @@ const ModernSalesHistory: React.FC = () => {
   const fetchSummary = async () => {
     try {
       const summaryData = await api.get<SalesSummary>('/sales/summary');
-      setSummary(summaryData as SalesSummary);
+      if (summaryData && typeof summaryData === 'object') {
+        setSummary(summaryData as SalesSummary);
+      } else {
+        console.warn('Invalid summary data received:', summaryData);
+        setSummary(defaultSummary);
+      }
     } catch (err) {
-      // Summary fetch error - silently fail
+      console.warn('Failed to fetch sales summary:', err);
+      setSummary(defaultSummary);
     }
   };
 
@@ -412,35 +418,35 @@ const ModernSalesHistory: React.FC = () => {
         <Grid cols={4} gap="md" className="mb-8">
           <StatsCard
             title="Hôm nay"
-            value={formatCurrency((summary || defaultSummary).today.total_amount)}
+            value={formatCurrency((summary?.today?.total_amount || 0))}
             change={{
-              value: (summary || defaultSummary).growth_rates.daily,
-              type: (summary || defaultSummary).growth_rates.daily > 0 ? 'increase' :
-                    (summary || defaultSummary).growth_rates.daily < 0 ? 'decrease' : 'neutral'
+              value: (summary?.growth_rates?.daily || 0),
+              type: (summary?.growth_rates?.daily || 0) > 0 ? 'increase' :
+                    (summary?.growth_rates?.daily || 0) < 0 ? 'decrease' : 'neutral'
             }}
             icon={<DollarSign className="w-6 h-6" />}
             loading={!summary}
           />
           <StatsCard
             title="Số đơn hôm nay"
-            value={(summary || defaultSummary).today.sales_count}
+            value={(summary?.today?.sales_count || 0)}
             icon={<ShoppingBag className="w-6 h-6" />}
             loading={!summary}
           />
           <StatsCard
             title="Tuần này"
-            value={formatCurrency((summary || defaultSummary).this_week.total_amount)}
+            value={formatCurrency((summary?.this_week?.total_amount || 0))}
             change={{
-              value: (summary || defaultSummary).growth_rates.weekly,
-              type: (summary || defaultSummary).growth_rates.weekly > 0 ? 'increase' :
-                    (summary || defaultSummary).growth_rates.weekly < 0 ? 'decrease' : 'neutral'
+              value: (summary?.growth_rates?.weekly || 0),
+              type: (summary?.growth_rates?.weekly || 0) > 0 ? 'increase' :
+                    (summary?.growth_rates?.weekly || 0) < 0 ? 'decrease' : 'neutral'
             }}
             icon={<TrendingUp className="w-6 h-6" />}
             loading={!summary}
           />
           <StatsCard
             title="Giá trị TB/đơn"
-            value={formatCurrency((summary || defaultSummary).today.average_sale)}
+            value={formatCurrency((summary?.today?.average_sale || 0))}
             icon={<Activity className="w-6 h-6" />}
             loading={!summary}
           />
