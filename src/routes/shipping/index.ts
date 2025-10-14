@@ -5,19 +5,16 @@
 
 import { Hono } from 'hono'
 import { Env } from '../../types'
-import { authenticate } from '../../middleware/auth'
+// import { authenticate } from '../../middleware/auth' // Bỏ authentication cho shipping routes
 import { ShippingService_ShippingManagementtsx as ShippingService } from '../../services/ShippingService-ShippingManagementtsx'
 import ghtk from './ghtk'
 import geo from './geo'
 
 const app = new Hono<{ Bindings: Env }>()
 
-// Mount public geo routes FIRST (without authentication)
+// ALL SHIPPING ROUTES ARE PUBLIC (no authentication required)
+// Sub-route: geo lookup
 app.route('/geo', geo)
-
-// Apply authentication middleware to all OTHER shipping routes
-app.use('*', authenticate)
-
 // Sub-route: GHTK integration
 app.route('/ghtk', ghtk)
 
