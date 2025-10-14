@@ -1,7 +1,0 @@
-# Minimal headers for Cloudflare Pages - Fix MIME issues
-/*
-  X-Frame-Options: DENY
-  Referrer-Policy: strict-origin-when-cross-origin
-
-# Let browser auto-detect MIME types for assets
-# No explicit Content-Type headers to avoid conflicts
