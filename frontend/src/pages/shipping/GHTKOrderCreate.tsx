@@ -139,7 +139,7 @@ const GHTKOrderCreate: React.FC = () => {
           pick_province: data.sender.province,
           pick_district: data.sender.district,
           value: data.cod_amount,
-          weight: data.products.reduce((sum, p) => sum + (p.weight * p.quantity), 0),
+          weight: data.products.reduce((sum, p) => sum + (p.weight * p.quantity), 0) * 1000, // Convert kg to grams
           transport: data.transport,
           service: data.service,
           note: data.note,
@@ -168,7 +168,7 @@ const GHTKOrderCreate: React.FC = () => {
         pick_district: data.sender.district,
         province: data.receiver.province?.name || '',
         district: data.receiver.district?.name || '',
-        weight: data.products.reduce((sum, p) => sum + (p.weight * p.quantity), 0),
+        weight: data.products.reduce((sum, p) => sum + (p.weight * p.quantity), 0) * 1000, // Convert kg to grams
         value: data.cod_amount,
         transport: data.transport
       };
