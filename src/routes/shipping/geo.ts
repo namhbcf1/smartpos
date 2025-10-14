@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { Env } from '../../types';
 // import { authenticate } from '../../middleware/auth'; // Geo data is public, no auth needed
-import { ShippingGHTKService } from '../../services/ShippingGHTKService';
+// import { ShippingGHTKService } from '../../services/ShippingGHTKService'; // Không cần GHTK service cho geo data
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -404,53 +404,27 @@ const WARDS = [
 
 // GET /api/shipping/geo/provinces - Lấy danh sách tỉnh/thành phố
 app.get('/provinces', async (c) => {
-  try {
-    const svc = new ShippingGHTKService(c.env);
-    const provinces = await svc.getProvinces();
-    return c.json({
-      success: true,
-      data: provinces,
-      total: provinces.length
-    });
-  } catch (e: any) {
-    console.error('Error fetching provinces from GHTK:', e);
-    // Fallback to hardcoded data if GHTK API fails
-    return c.json({
-      success: true,
-      data: PROVINCES,
-      total: PROVINCES.length
-    });
-  }
+  // Sử dụng dữ liệu hardcoded thay vì gọi GHTK API
+  // vì GHTK không có API public để lấy provinces
+  return c.json({
+    success: true,
+    data: PROVINCES,
+    total: PROVINCES.length
+  });
 });
 
 // GET /api/shipping/geo/districts/:province_id - Lấy danh sách quận/huyện theo tỉnh
 app.get('/districts/:province_id', async (c) => {
-  try {
-    const provinceId = c.req.param('province_id');
-    console.log('Fetching districts for province:', provinceId);
-    
-    const svc = new ShippingGHTKService(c.env);
-    const districts = await svc.getDistricts(provinceId);
-    console.log('GHTK districts response:', districts);
-    
-    return c.json({
-      success: true,
-      data: districts,
-      total: districts.length,
-      province_id: provinceId
-    });
-  } catch (e: any) {
-    console.error('Error fetching districts from GHTK:', e);
-    // Fallback to hardcoded data if GHTK API fails
-    const provinceId = c.req.param('province_id');
-    const districts = DISTRICTS.filter(d => d.province_id === provinceId);
-    return c.json({
-      success: true,
-      data: districts,
-      total: districts.length,
-      province_id: provinceId
-    });
-  }
+  const provinceId = c.req.param('province_id');
+  // Sử dụng dữ liệu hardcoded thay vì gọi GHTK API
+  const districts = DISTRICTS.filter(d => d.province_id === provinceId);
+
+  return c.json({
+    success: true,
+    data: districts,
+    total: districts.length,
+    province_id: provinceId
+  });
 });
 
 // GET /api/shipping/geo/wards/:district_id - Lấy danh sách phường/xã theo quận/huyện
