@@ -53,7 +53,7 @@ export interface PaginationInfo {
   hasPrev: boolean;
 }
 
-export interface PaginatedResponse<T> {
+export interface PaginatedResponse<T = any> {
   data: T[];
   pagination: PaginationInfo;
   filters?: Record<string, any>;
@@ -136,7 +136,7 @@ export interface LoginResponse {
 // CRUD OPERATION TYPES
 // =============================================================================
 
-export interface CreateRequest<T> {
+export interface CreateRequest<T = any> {
   data: Omit<T, 'id' | 'created_at' | 'updated_at'>;
   options?: {
     return_created?: boolean;
@@ -144,7 +144,7 @@ export interface CreateRequest<T> {
   };
 }
 
-export interface UpdateRequest<T> {
+export interface UpdateRequest<T = any> {
   data: Partial<Omit<T, 'id' | 'created_at'>>;
   options?: {
     return_updated?: boolean;
@@ -152,7 +152,7 @@ export interface UpdateRequest<T> {
   };
 }
 
-export interface BulkOperation<T> {
+export interface BulkOperation<T = any> {
   items: T[];
   options?: {
     continue_on_error?: boolean;

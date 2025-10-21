@@ -27,6 +27,9 @@ export {
   businessMetricsTracking
 } from './monitoring';
 
+// Backward compatible aliases expected by some routes
+export const resolveTenant = async (c: Context, next: Next) => { await next() };
+
 // Authorization middleware
 export const authorize = (roles: string[] = []) => {
   return async (c: Context, next: Next) => {
@@ -68,7 +71,6 @@ export const auditLogger = async (c: Context, next: Next) => {
     const duration = Date.now() - start;
     
     // Log audit information
-    console.log(`[AUDIT] ${c.req.method} ${c.req.url} - ${duration}ms`);
   } catch (error) {
     console.error(`[AUDIT ERROR] ${c.req.method} ${c.req.url} - ${error}`);
     throw error;
@@ -78,7 +80,6 @@ export const auditLogger = async (c: Context, next: Next) => {
 // CORS middleware
 export const cors = async (c: Context, next: Next) => {
   await next();
-  
   c.header('Access-Control-Allow-Origin', '*');
   c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');

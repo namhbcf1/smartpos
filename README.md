@@ -1,254 +1,211 @@
-# SmartPOS - Smart Point of Sale System
+# SmartPOS - Hệ thống quản lý bán hàng thông minh
 
-A production-ready Point of Sale system built with React, TypeScript, and Cloudflare Workers.
+## 📋 Tổng quan
 
-## 🚀 Quick Start
+SmartPOS là một hệ thống quản lý bán hàng toàn diện được xây dựng với công nghệ hiện đại, hỗ trợ quản lý cửa hàng, kho hàng, khách hàng và báo cáo kinh doanh.
 
-### Prerequisites
-- Node.js 18+ 
-- npm 9+
-- Cloudflare account with Workers, D1, KV, and R2 access
+## 🚀 Tính năng chính
 
-### Installation
+### 🛒 Quản lý bán hàng (POS)
+- Giao diện POS trực quan và dễ sử dụng
+- Hỗ trợ nhiều phương thức thanh toán (Tiền mặt, Thẻ, VNPay, MoMo)
+- Quản lý giỏ hàng và hóa đơn
+- In hóa đơn tự động
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd smart
-   ```
+### 📦 Quản lý kho hàng
+- Theo dõi tồn kho real-time
+- Quản lý nhập/xuất hàng
+- Cảnh báo hết hàng
+- Quản lý serial number và bảo hành
 
-2. **Install dependencies**
-   ```bash
-   # Backend dependencies
-   npm install
-   
-   # Frontend dependencies
-   cd frontend
-   npm install
-   cd ..
-   ```
+### 👥 Quản lý khách hàng
+- Thông tin khách hàng chi tiết
+- Lịch sử mua hàng
+- Chương trình khách hàng thân thiết
+- Phân khúc khách hàng
 
-3. **Configure environment**
-   ```bash
-   # Copy environment template
-   cp .env.example .env
-   
-   # Edit with your Cloudflare credentials
-   nano .env
-   ```
+### 📊 Báo cáo và phân tích
+- Dashboard tổng quan
+- Báo cáo doanh thu
+- Phân tích xu hướng bán hàng
+- Báo cáo tồn kho
 
-4. **Setup database**
-   ```bash
-   # Create D1 database
-   npm run db:create
-   
-   # Run migrations
-   npm run db:migrate
-   
-   # Seed initial data
-   npm run db:seed
-   ```
+### 🚚 Vận chuyển
+- Tích hợp GHTK (Giao hàng tiết kiệm)
+- Quản lý đơn vận chuyển
+- Theo dõi trạng thái giao hàng
 
-5. **Start development**
-   ```bash
-   # Backend (Terminal 1)
-   npm run dev
-   
-   # Frontend (Terminal 2)
-   cd frontend
-   npm run dev
-   ```
+## 🛠️ Công nghệ sử dụng
 
-## 📁 Project Structure
+### Backend
+- **Cloudflare Workers** - Serverless runtime
+- **D1 Database** - SQLite database
+- **KV Storage** - Key-value storage
+- **R2 Storage** - Object storage
+- **Durable Objects** - Stateful objects
+- **TypeScript** - Type-safe development
+
+### Frontend
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool
+- **Ant Design** - UI components
+- **React Router** - Routing
+
+### Mobile
+- **React Native** - Cross-platform mobile
+
+## 📁 Cấu trúc dự án
 
 ```
 smart/
 ├── src/                    # Backend source code
-│   ├── index.ts           # Main entry point
 │   ├── routes/            # API routes
-│   ├── middleware/        # Custom middleware
 │   ├── services/          # Business logic
-│   └── types/             # TypeScript types
+│   ├── middleware/        # Middleware functions
+│   ├── durable_objects/  # Durable Objects
+│   └── utils/            # Utility functions
 ├── frontend/              # Frontend React app
 │   ├── src/
-│   │   ├── components/    # Reusable components
-│   │   ├── pages/         # Page components
-│   │   ├── services/      # API services
-│   │   ├── hooks/         # Custom hooks
-│   │   └── lib/           # Utilities
-│   ├── package.json
-│   └── vite.config.ts
-├── database/              # Database migrations & seeds
-├── .cursorrules          # Cursor AI rules
-├── wrangler.toml         # Cloudflare Workers config
-└── package.json          # Backend dependencies
+│   │   ├── components/    # React components
+│   │   ├── pages/        # Page components
+│   │   ├── services/     # API services
+│   │   └── utils/        # Frontend utilities
+│   └── public/           # Static assets
+├── mobile/                # React Native app
+├── database/              # Database schemas and migrations
+├── migrations/            # Database migrations
+└── docs/                  # Documentation
 ```
 
-## 🛠️ Development Rules
+## 🚀 Cài đặt và chạy
 
-### Production Standards
-- ❌ **NO MOCK/DEMO DATA** - All data must come from real APIs
-- ❌ **NO TESTING MODES** - All features must work in production
-- ❌ **NO CONSOLE.LOG** - Use proper logging instead
-- ✅ **REAL API CALLS** - Use comprehensiveAPI, posApi, or apiClient
-- ✅ **ERROR HANDLING** - Wrap all API calls in try-catch
-- ✅ **TYPE SAFETY** - Use TypeScript strict mode
+### Yêu cầu hệ thống
+- Node.js 18+
+- npm hoặc yarn
+- Cloudflare account (cho deployment)
 
-### Code Quality
-- Run `npm run type-check` before committing
-- Run `npm run lint` to check code style
-- Use proper import paths: `'../../services/api'`
-- Handle loading states and error states
-- Provide user feedback with toast notifications
+### Cài đặt dependencies
 
-### API Standards
-- Use RESTful endpoints
-- Implement proper error handling
-- Add rate limiting and CORS
-- Validate input with Zod schemas
-- Return consistent response formats
-
-## 🔧 Available Scripts
-
-### Backend
 ```bash
-npm run dev              # Start development server
-npm run deploy           # Deploy to production
-npm run deploy:staging   # Deploy to staging
-npm run build            # Type check
-npm run lint             # Lint code
-npm run db:migrate       # Run database migrations
-npm run db:seed          # Seed database
+# Cài đặt backend dependencies
+npm install
+
+# Cài đặt frontend dependencies
+cd frontend
+npm install
+
+# Cài đặt mobile dependencies
+cd ../mobile
+npm install
 ```
 
-### Frontend
+### Chạy development
+
 ```bash
-npm run dev              # Start development server
-npm run build            # Build for production
-npm run preview          # Preview production build
-npm run lint             # Lint code
-npm run type-check       # Type check
-npm run format           # Format code
+# Backend (Cloudflare Workers)
+npm run dev
+
+# Frontend
+cd frontend
+npm run dev
+
+# Mobile
+cd mobile
+npm start
 ```
 
 ## 🌐 Deployment
 
-### Backend (Cloudflare Workers)
+### Cloudflare Workers
 ```bash
+# Deploy backend
 npm run deploy
-```
 
-### Frontend (Cloudflare Pages)
-```bash
+# Deploy frontend (Cloudflare Pages)
 cd frontend
-npm run deploy
+npm run build
+# Upload dist/ folder to Cloudflare Pages
 ```
 
-## 📊 Environment Variables
+### Environment Variables
+Tạo file `.env` với các biến môi trường cần thiết:
 
-### Backend (.env)
 ```env
-# Cloudflare Credentials
-CLOUDFLARE_ACCOUNT_ID=your_account_id
-CLOUDFLARE_API_TOKEN=your_api_token
-
 # Database
-CLOUDFLARE_D1_DATABASE_ID=your_database_id
+DATABASE_URL=your_database_url
 
-# Storage
-CLOUDFLARE_KV_CACHE_ID=your_kv_id
-CLOUDFLARE_R2_BUCKET_NAME=your_bucket_name
-
-# Security
+# Authentication
 JWT_SECRET=your_jwt_secret
-ENCRYPTION_KEY=your_encryption_key
+JWT_ISSUER=smartpos
+JWT_AUDIENCE=smartpos-clients
+
+# Payment Gateways
+VNPAY_TMN_CODE=your_tmn_code
+VNPAY_HASH_SECRET=your_hash_secret
+
+# Shipping
+GHTK_TOKEN=your_ghtk_token
 ```
 
-### Frontend (.env)
-```env
-VITE_API_BASE_URL=https://your-api.workers.dev
-VITE_FRONTEND_URL=https://your-app.pages.dev
-VITE_CLOUDFLARE_WS_URL=wss://your-api.workers.dev/realtime
+## 📚 API Documentation
+
+API được document chi tiết tại `/docs/api` endpoint khi chạy server.
+
+### Endpoints chính:
+- `GET /api/health` - Health check
+- `POST /api/auth/login` - Đăng nhập
+- `GET /api/products` - Danh sách sản phẩm
+- `POST /api/orders` - Tạo đơn hàng
+- `GET /api/reports/sales` - Báo cáo doanh thu
+
+## 🧪 Testing
+
+```bash
+# Chạy tests
+npm test
+
+# Frontend tests
+cd frontend
+npm test
+
+# E2E tests
+cd frontend
+npm run test:e2e
 ```
 
-## 🗄️ Database Schema
+## 📖 Documentation
 
-The system uses Cloudflare D1 with the following main tables:
-- `users` - User accounts and authentication
-- `products` - Product catalog
-- `orders` - Sales transactions
-- `customers` - Customer information
-- `inventory` - Stock management
-- `settings` - System configuration
+- [API Documentation](docs/API_DOCUMENTATION.md)
+- [Database Schema](docs/D1_DATABASE_SCHEMA.md)
+- [Frontend Pages](docs/FRONTEND_PAGES_OVERVIEW.md)
+- [VNPay Integration](docs/VNPAY_INTEGRATION.md)
 
-## 🔐 Authentication
+## 🤝 Contributing
 
-- JWT-based authentication
-- Role-based access control (ADMIN, MANAGER, STAFF, CASHIER)
-- Permission-based feature access
-- Session management with KV storage
-
-## 📱 Features
-
-### Core POS Features
-- Product catalog management
-- Sales transactions
-- Customer management
-- Inventory tracking
-- Payment processing
-- Receipt printing
-
-### Advanced Features
-- Real-time updates
-- Analytics and reporting
-- Multi-location support
-- User management
-- Settings configuration
-- Backup and restore
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Import Errors**
-   ```bash
-   # Check import paths
-   npm run type-check
-   ```
-
-2. **API Connection Issues**
-   ```bash
-   # Verify environment variables
-   echo $VITE_API_BASE_URL
-   ```
-
-3. **Database Issues**
-   ```bash
-   # Reset database
-   npm run db:migrate
-   npm run db:seed
-   ```
-
-4. **Build Errors**
-   ```bash
-   # Clean and rebuild
-   npm run clean
-   npm install
-   npm run build
-   ```
-
-## 📞 Support
-
-For issues and questions:
-1. Check the troubleshooting section
-2. Review the development rules
-3. Ensure all environment variables are set
-4. Verify Cloudflare services are properly configured
+1. Fork repository
+2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Tạo Pull Request
 
 ## 📄 License
 
-MIT License - see LICENSE file for details.
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## 📞 Liên hệ
+
+- **Developer**: SmartPOS Team
+- **Email**: support@smartpos.com
+- **Website**: https://smartpos.com
+
+## 🙏 Acknowledgments
+
+- Cloudflare Workers platform
+- React community
+- Ant Design team
+- All contributors
 
 ---
 
-**Remember**: This is a production system. Every line of code must be production-ready!
+**SmartPOS** - Giải pháp quản lý bán hàng thông minh cho tương lai 🚀

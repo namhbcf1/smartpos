@@ -105,13 +105,11 @@ export function sanitizeForLogging(data: any): any {
  */
 export class RateLimiter {
   private attempts: Map<string, { count: number; lastAttempt: number; backoffUntil: number }> = new Map();
-  
   constructor(
     private maxAttempts: number = 5,
     private windowMs: number = 15 * 60 * 1000, // 15 minutes
     private backoffMultiplier: number = 2
-  ) {}
-  
+  ) { /* No operation */ }
   isAllowed(identifier: string): boolean {
     const now = Date.now();
     const record = this.attempts.get(identifier);
@@ -165,7 +163,6 @@ export class InputValidator {
     
     // Trim whitespace
     sanitized = sanitized.trim();
-    
     // Limit length
     if (sanitized.length > maxLength) {
       sanitized = sanitized.substring(0, maxLength);

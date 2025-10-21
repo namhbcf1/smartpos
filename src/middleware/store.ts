@@ -37,7 +37,6 @@ interface StoreAccessResult {
  */
 export const storeAccess = async (c: Context<HonoEnv>, next: Next) => {
   const startTime = Date.now();
-
   try {
     // Get user from authentication context
     const user = c.get('user');
@@ -150,7 +149,6 @@ async function validateStoreAccess(env: any, userId: number, storeId: number): P
     const user = await env.DB.prepare(
       'SELECT id, is_active, store_id, role FROM users WHERE id = ?'
     ).bind(userId).first();
-
     if (!user || !user.is_active) {
       return { hasAccess: false, reason: 'User not found or inactive' };
     }
@@ -167,7 +165,6 @@ async function validateStoreAccess(env: any, userId: number, storeId: number): P
       UNION
       SELECT 1 FROM users WHERE id = ? AND store_id = ?
     `).bind(userId, storeId, userId, storeId).first();
-
     return { hasAccess: !!storeAccess };
   } catch (error) {
     console.error('Store access validation error:', error);
@@ -185,7 +182,6 @@ async function getStoreInformation(env: any, storeId: number) {
              business_hours_start, business_hours_end, timezone
       FROM stores WHERE id = ? AND is_active = 1
     `).bind(storeId).first();
-
     return store;
   } catch (error) {
     console.error('Get store information error:', error);
@@ -201,7 +197,6 @@ async function checkBusinessHours(env: any, storeId: number) {
     const store = await env.DB.prepare(
       'SELECT business_hours_start, business_hours_end, timezone FROM stores WHERE id = ?'
     ).bind(storeId).first();
-
     if (!store) {
       return { start: '08:00', end: '18:00', is_open: true };
     }
@@ -236,7 +231,6 @@ async function getUserStorePermissions(env: any, userId: number, storeId: number
       SELECT permission FROM user_permissions
       WHERE user_id = ? AND store_id = ? AND is_active = 1
     `).bind(userId, storeId).all();
-
     const dbPermissions = additionalPerms.results.map((p: any) => p.permission);
 
     return [...new Set([...basePermissions, ...dbPermissions])];
@@ -310,7 +304,6 @@ async function getStoreFeatures(env: any, storeId: number): Promise<string[]> {
       SELECT feature_name FROM store_features
       WHERE store_id = ? AND is_enabled = 1
     `).bind(storeId).all();
-
     const enabledFeatures = features.results.map((f: any) => f.feature_name);
 
     // Default features if none configured
@@ -340,7 +333,6 @@ async function getStoreRestrictions(env: any, storeId: number, userId: number): 
       SELECT restriction_type FROM user_restrictions
       WHERE user_id = ? AND store_id = ? AND is_active = 1
     `).bind(userId, storeId).all();
-
     return restrictions.results.map((r: any) => r.restriction_type);
   } catch (error) {
     console.error('Get store restrictions error:', error);
@@ -351,15 +343,14 @@ async function getStoreRestrictions(env: any, storeId: number, userId: number): 
 /**
  * Get store-specific settings
  */
-async function getStoreSettings(env: any, storeId: number): Promise<Record<string, any>> {
+async function getStoreSettings(env: any, storeId: number): Promise {
   try {
     const settings = await env.DB.prepare(`
       SELECT setting_key, setting_value FROM store_settings
       WHERE store_id = ? OR store_id IS NULL
       ORDER BY store_id DESC
     `).bind(storeId).all();
-
-    const settingsMap: Record<string, any> = {};
+    const settingsMap: Record<string, any> = { /* No operation */ }
     settings.results.forEach((setting: any) => {
       settingsMap[setting.setting_key] = setting.setting_value;
     });
@@ -456,8 +447,7 @@ export const requirePermission = (permission: string) => {
  */
 export const requireFeature = (feature: string) => {
   return async (c: Context<HonoEnv>, next: Next) => {
-    const features = c.get('features') || {};
-
+    const features = c.get('features') || { /* No operation */ }
     if (!features[feature]) {
       return c.json<ApiResponse<null>>({
         success: false,

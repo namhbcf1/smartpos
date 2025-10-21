@@ -1,0 +1,16 @@
+-- Create notification_service_notify_sale_completed table for sale completion notifications
+CREATE TABLE IF NOT EXISTS notification_service_notify_sale_completed (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT DEFAULT 'default',
+  invoice_id TEXT NOT NULL,
+  invoice_number TEXT NOT NULL,
+  total_amount REAL NOT NULL,
+  customer_name TEXT,
+  cashier TEXT,
+  created_at TEXT DEFAULT datetime('now')
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_notification_service_notify_sale_completed_tenant ON notification_service_notify_sale_completed(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_notification_service_notify_sale_completed_invoice ON notification_service_notify_sale_completed(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_notification_service_notify_sale_completed_cashier ON notification_service_notify_sale_completed(cashier);

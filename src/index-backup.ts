@@ -31,7 +31,7 @@ import warrantyRouter from './routes/warranty/warranty';
 import adminDataValidationRouter from './routes/admin/data-validation';
 
 // Legacy placeholders to satisfy remaining unused legacy references (not mounted)
-const api: any = { get: () => {}, post: () => {}, route: () => {}, use: () => {} };
+const api: any = { get: () => { /* No operation */ }, post: () => { /* No operation */ }, route: () => { /* No operation */ }, use: () => { /* No operation */ } };
 const authRouter: any = undefined;
 const customersRouter: any = undefined;
 const productsRouter: any = undefined;
@@ -70,7 +70,6 @@ const storesRouter: any = undefined;
 // Removed legacy per-route imports; using centralized routes hub
 
 const app = new Hono<{ Bindings: Env }>();
-
 // ===== MIDDLEWARE SETUP =====
 // Error handling middleware (must be first)
 app.use('*', errorHandler);
@@ -99,8 +98,7 @@ const metrics = {
 };
 
 // Simple in-memory cache for analytics
-const cacheStore: { [key: string]: { value: any; expiresAt: number } } = {};
-
+const cacheStore: { [key: string]: { value: any; expiresAt: number } } = { /* No operation */ }
 // Simple slow query ring buffer (Phase 6)
 type SlowQuery = { sql: string; params?: any[]; duration_ms: number; timestamp: number };
 const slowQueries: SlowQuery[] = [];
@@ -138,7 +136,6 @@ app.use('*', async (c, next) => {
     metrics.request_durations_ms.push(duration);
     if (metrics.request_durations_ms.length > 1000) metrics.request_durations_ms.shift();
     try {
-      console.log(JSON.stringify({
         level: 'info',
         type: 'request_log',
         requestId,
@@ -146,9 +143,9 @@ app.use('*', async (c, next) => {
         path: c.req.path,
         status: c.res?.status || 200,
         duration_ms: duration,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString();
       }));
-    } catch {}
+    } catch { /* No operation */ }
   }
 });
 
@@ -172,8 +169,6 @@ app.get('/ws', async (c: any) => {
   }
 
   try {
-    console.log('🔗 WebSocket upgrade request received at /ws');
-    console.log('Headers:', {
       upgrade: upgradeHeader,
       connection: c.req.header('Connection'),
       'sec-websocket-key': c.req.header('Sec-WebSocket-Key'),
@@ -212,8 +207,6 @@ app.get('/ws', async (c: any) => {
     const id = (c.env.NOTIFICATIONS as any).idFromName('global-notifications');
     const obj = c.env.NOTIFICATIONS.get(id);
 
-    console.log('📡 Forwarding WebSocket request to Durable Object');
-
     // Create a new request with the /connect path that the Durable Object expects
     const connectUrl = new URL(c.req.url);
     connectUrl.pathname = '/connect';
@@ -228,7 +221,6 @@ app.get('/ws', async (c: any) => {
     // Add headers for FE fallback detection
     const newHeaders = new Headers(response.headers);
     newHeaders.set('X-Realtime-Channel', 'websocket');
-    console.log('✅ Durable Object response status:', response.status);
     return new Response(response.body, { status: response.status, headers: newHeaders });
   } catch (error) {
     console.error('❌ WebSocket connection error:', error);
@@ -271,7 +263,7 @@ app.get('/metrics', (c) => {
       db_queries_slow: metrics.db_queries_slow,
       latency_ms: { p50, p95 }
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -280,7 +272,7 @@ app.get('/test-route', (c) => {
   return c.json({
     success: true,
     message: 'Basic routing is working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -289,7 +281,7 @@ app.get('/simple-ws-test', (c) => {
   return c.json({
     success: true,
     message: 'Simple WebSocket test route working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -306,7 +298,7 @@ app.get('/api/realtime/events', (c) => {
           activeUsers: 1,
           systemLoad: 'low'
         },
-        timestamp: Date.now()
+        timestamp: Date.now();
       },
       {
         type: 'dashboard_updated',
@@ -314,12 +306,12 @@ app.get('/api/realtime/events', (c) => {
           todaySales: 0,
           totalCustomers: 6,
           totalProducts: 8,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString();
         },
-        timestamp: Date.now()
+        timestamp: Date.now();
       }
     ],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -335,10 +327,8 @@ app.use('*', async (c, next) => {
     const initialized = await c.env.CACHE.get(workerInitKey);
 
     if (!initialized) {
-      console.log('Initializing worker and checking migrations');
       await checkAndRunMigrations(c.env);
       await c.env.CACHE.put(workerInitKey, 'true');
-      console.log('Worker initialization complete');
     }
   } catch (error) {
     console.error('Worker initialization error:', error);
@@ -358,15 +348,10 @@ app.get('/test-product/:id', async (c: any) => {
       }, 400);
     }
 
-    console.log('🔍 Test endpoint - Getting product ID:', id);
-
     // Simple database query
     const product = await c.env.DB.prepare(`
       SELECT * FROM products WHERE id = ? LIMIT 1
     `).bind(id).first();
-
-    console.log('📦 Test query result:', product);
-
     if (!product) {
       return c.json({
         success: false,
@@ -399,59 +384,40 @@ app.use('*', accessLogger);
 // Add missing columns to tables
 api.post('/update-table-schema', async (c: any) => {
   try {
-    console.log('🔧 Updating table schema...');
     
     // Add missing columns to users table
     try {
       await c.env.DB.prepare('ALTER TABLE users ADD COLUMN password_hash TEXT').run();
-    } catch (error) {
-      console.log('password_hash column already exists or other error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
     
     try {
       await c.env.DB.prepare('ALTER TABLE users ADD COLUMN tenant_id TEXT DEFAULT "default"').run();
-    } catch (error) {
-      console.log('tenant_id column already exists or other error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
     
     try {
       await c.env.DB.prepare('ALTER TABLE users ADD COLUMN phone TEXT').run();
-    } catch (error) {
-      console.log('phone column already exists or other error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
     
     try {
       await c.env.DB.prepare('ALTER TABLE users ADD COLUMN avatar_url TEXT').run();
-    } catch (error) {
-      console.log('avatar_url column already exists or other error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
     
     try {
       await c.env.DB.prepare('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0').run();
-    } catch (error) {
-      console.log('email_verified column already exists or other error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
     
     try {
       await c.env.DB.prepare('ALTER TABLE users ADD COLUMN last_login_at DATETIME').run();
-    } catch (error) {
-      console.log('last_login_at column already exists or other error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
     
     // Add missing columns to roles table
     try {
       await c.env.DB.prepare('ALTER TABLE roles ADD COLUMN tenant_id TEXT DEFAULT "default"').run();
-    } catch (error) {
-      console.log('tenant_id column already exists or other error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
     
     try {
       await c.env.DB.prepare('ALTER TABLE roles ADD COLUMN description TEXT').run();
-    } catch (error) {
-      console.log('description column already exists or other error:', error);
-    }
-    
-    console.log('✅ Table schema updated successfully');
+    } catch (error) { /* Error handled silently */ }
 
     return c.json({
       success: true,
@@ -482,8 +448,6 @@ api.post('/simple-login', async (c: any) => {
       }, 400);
     }
 
-    console.log('🔐 Login attempt for:', loginIdentifier);
-
     // Find user in the existing table structure
     const user = await c.env.DB.prepare(`
       SELECT id, email, username, firstName, lastName, password_hash, is_active, role
@@ -491,23 +455,17 @@ api.post('/simple-login', async (c: any) => {
       WHERE (username = ? OR email = ?) AND is_active = 1
       LIMIT 1
     `).bind(loginIdentifier, loginIdentifier).first();
-
     if (!user) {
-      console.log('❌ User not found:', loginIdentifier);
       return c.json({
         success: false,
         message: 'Username/Email hoặc password không đúng'
       }, 401);
     }
 
-    console.log('✅ User found:', user.username);
-
     // Check password using bcrypt
     const passwordValid = await bcrypt.compare(password, user.password_hash as string);
-    console.log('🔑 Password hash verification:', passwordValid);
 
     if (!passwordValid) {
-      console.log('❌ Invalid password for user:', loginIdentifier);
       return c.json({
         success: false,
         message: 'Username/Email hoặc password không đúng'
@@ -529,8 +487,6 @@ api.post('/simple-login', async (c: any) => {
     };
 
     const token = await sign(payload, c.env.JWT_SECRET);
-
-    console.log('✅ Login successful for:', loginIdentifier);
 
     return c.json({
       success: true,
@@ -561,33 +517,24 @@ api.post('/simple-login', async (c: any) => {
 // Create admin user with bcrypt
 api.post('/create-admin-user', async (c: any) => {
   try {
-    console.log('🔧 Creating admin user...');
     
     // Use plain text password for testing
     const adminPassword = 'admin123';
     const hashedPassword = 'admin123'; // Store as plain text for testing
-    
-    console.log('🔑 Admin password set to:', adminPassword);
-    console.log('⚠️  This is for testing only - change in production!');
-    
+
     // Generate unique ID
     const adminUserId = 'admin-' + Date.now();
     const adminRoleId = 'role-admin-' + Date.now();
-    
     // Insert admin role
     await c.env.DB.prepare(`
       INSERT OR REPLACE INTO roles (id, name, display_name, permissions) 
       VALUES (?, 'admin', 'Administrator', ?)
     `).bind(adminRoleId, JSON.stringify(['*'])).run();
-    
     // Insert admin user (using available columns from table structure)
     await c.env.DB.prepare(`
       INSERT OR REPLACE INTO users (id, email, username, firstName, lastName, password, password_hash, role, is_active) 
       VALUES (?, 'admin@smartpos.vn', 'admin', 'System', 'Administrator', ?, ?, 'ADMIN', 1)
     `).bind(adminUserId, hashedPassword, hashedPassword).run();
-
-    console.log('✅ Admin user created successfully');
-
     return c.json({
       success: true,
       message: 'Admin user đã được tạo thành công',
@@ -616,7 +563,6 @@ api.post('/create-admin-user', async (c: any) => {
 // Simple table creation test
 api.post('/create-simple-tables', async (c: any) => {
   try {
-    console.log('🔧 Creating simple tables...');
     
     // Create users table
     await c.env.DB.prepare(`
@@ -631,7 +577,6 @@ api.post('/create-simple-tables', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     // Create roles table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS roles (
@@ -642,9 +587,6 @@ api.post('/create-simple-tables', async (c: any) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
-    console.log('✅ Simple tables created successfully');
-
     return c.json({
       success: true,
       message: 'Bảng cơ bản đã được tạo thành công',
@@ -674,7 +616,7 @@ api.get('/realtime/events', (c) => {
           activeUsers: 1,
           systemLoad: 'low'
         },
-        timestamp: Date.now()
+        timestamp: Date.now();
       },
       {
         type: 'dashboard_updated',
@@ -682,12 +624,12 @@ api.get('/realtime/events', (c) => {
           todaySales: 0,
           totalCustomers: 6,
           totalProducts: 8,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString();
         },
-        timestamp: Date.now()
+        timestamp: Date.now();
       }
     ],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -696,7 +638,7 @@ api.get('/immediate-test', (c) => {
   return c.json({
     success: true,
     message: 'Immediate test route working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -705,7 +647,7 @@ api.get('/test', (c) => {
   return c.json({
     success: true,
     message: 'API test route is working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -725,7 +667,7 @@ api.get('/ws/test', (c) => {
   return c.json({
     success: true,
     message: 'WebSocket test endpoint working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -744,13 +686,10 @@ api.get('/ws', async (c: any) => {
   }
 
   try {
-    console.log('🔗 WebSocket upgrade request received');
 
     // Get or create Durable Object instance for notifications
     const id = (c.env.NOTIFICATIONS as any).idFromName('global-notifications');
     const obj = c.env.NOTIFICATIONS.get(id);
-
-    console.log('📡 Forwarding WebSocket request to Durable Object');
 
     // Create a new request with the /connect path that the Durable Object expects
     const connectUrl = new URL(c.req.url);
@@ -778,21 +717,12 @@ api.get('/ws-test', (c) => {
   return c.json({
     success: true,
     message: 'Direct WebSocket test route working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
-
-
-
-
-
-
-
-
 // Test serial numbers stats endpoint outside of /serial-numbers/* route
 api.get('/test-serial-stats', authenticate, async (c: any) => {
-  console.log('🧪 Test serial stats endpoint called (outside serial-numbers route)');
 
   const stats = {
     total_serials: 0,
@@ -803,8 +733,6 @@ api.get('/test-serial-stats', authenticate, async (c: any) => {
     defective: 0,
   };
 
-  console.log('📤 Returning test serial stats:', stats);
-
   return c.json({
     success: true,
     data: stats,
@@ -814,13 +742,12 @@ api.get('/test-serial-stats', authenticate, async (c: any) => {
 
 // Test endpoint to check if router is working
 api.get('/test-router-hello', async (c: any) => {
-  console.log('🧪 Test router hello endpoint called (outside serial-numbers route)');
 
   return c.json({
     success: true,
     data: {
       message: 'Hello from outside router!',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString();
     },
     message: 'Router test working'
   });
@@ -884,7 +811,6 @@ api.get('/products', async (c: any) => {
       FROM products p
       ${whereClause}
     `).bind(...bindings).first();
-
     // Convert is_active from number to boolean
     const formattedProducts = (products.results || []).map((product: any) => ({
       ...product,
@@ -945,7 +871,6 @@ api.get('/debug/sales-schema', async (c: any) => {
     const schema = await c.env.DB.prepare(`
       PRAGMA table_info(sales)
     `).all();
-
     return c.json({
       success: true,
       data: schema.results || []
@@ -974,7 +899,6 @@ api.get('/reports/sales-summary', async (c: any) => {
       FROM sales
       WHERE date(createdAt) = date('now')
     `).first();
-
     // This week's sales
     const weekSales = await c.env.DB.prepare(`
       SELECT
@@ -983,7 +907,6 @@ api.get('/reports/sales-summary', async (c: any) => {
       FROM sales
       WHERE date(createdAt) >= date('now', '-7 days')
     `).first();
-
     // Top products
     const topProducts = await c.env.DB.prepare(`
       SELECT
@@ -997,7 +920,6 @@ api.get('/reports/sales-summary', async (c: any) => {
       ORDER BY sales_count DESC
       LIMIT 5
     `).all();
-
     return c.json({
       success: true,
       data: {
@@ -1032,28 +954,22 @@ api.get('/dashboard/stats', async (c: any) => {
     if (cached && cached.expiresAt > now) {
       return c.json({ success: true, data: cached.value });
     }
-    console.log('📊 Dashboard stats endpoint called');
 
     // Check for authentication header
     const authHeader = c.req.header('Authorization');
-    console.log('🔐 Auth header present:', !!authHeader);
 
-    if (authHeader) {
-      console.log('🔐 Auth header value:', authHeader.substring(0, 20) + '...');
-    }
+    if (authHeader) { /* No operation */ }
 
     // Get basic stats from database
     const salesCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM sales WHERE date(created_at) = date("now")').first();
     const customersCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM customers').first();
     const productsCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM products').first();
-
     // Calculate today's revenue (simplified query)
     const todayRevenue = await c.env.DB.prepare(`
       SELECT COALESCE(SUM(total_amount), 0) as revenue
       FROM sales
       WHERE date(created_at) = date("now")
     `).first();
-
     const data = {
       todaySales: salesCount?.count || 0,
       todayRevenue: todayRevenue?.revenue || 0,
@@ -1065,8 +981,6 @@ api.get('/dashboard/stats', async (c: any) => {
       testParam: c.req.query('test') || 'no-test-param',
       authHeaderPresent: !!authHeader
     };
-
-    console.log('📊 Dashboard stats data:', data);
 
     const payload = {
       success: true,
@@ -1232,7 +1146,6 @@ async function calculateNewCustomers(db: any, startOfDay: string, endOfDay: stri
       FROM customers 
       WHERE created_at >= ? AND created_at <= ?
     `).bind(startOfDay, endOfDay).first();
-    
     return result?.count || 0;
   } catch (error) {
     console.error('Error calculating new customers:', error);
@@ -1257,22 +1170,18 @@ api.get('/analytics/kpi', async (c: any) => {
     const salesCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM sales WHERE date(created_at) = date("now")').first();
     const customersCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM customers').first();
     const productsCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM products').first();
-
     // Calculate today's revenue
     const todayRevenue = await c.env.DB.prepare(`
       SELECT COALESCE(SUM(total_amount), 0) as revenue
       FROM sales
       WHERE date(created_at) = date("now")
     `).first();
-
     // Get pending/completed orders
     const pendingOrders = await c.env.DB.prepare('SELECT COUNT(*) as count FROM sales WHERE status = "pending"').first();
     const completedOrders = await c.env.DB.prepare('SELECT COUNT(*) as count FROM sales WHERE status = "completed"').first();
-    
     // Get low stock and out of stock
     const lowStockCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM products WHERE stock <= min_stock AND is_active = 1').first();
     const outOfStockCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM products WHERE stock <= 0 AND is_active = 1').first();
-
     // Create data matching Dashboard component's KPIData interface
     const data = {
       period: {
@@ -1447,7 +1356,6 @@ api.get('/analytics/low-stock', async (c: any) => {
       WHERE stock <= ? AND is_active = 1
       ORDER BY stock ASC
     `).bind(threshold).all();
-    
     return c.json({
       success: true,
       data: products.results || [],
@@ -1477,7 +1385,6 @@ api.get('/analytics/top-products', async (c: any) => {
       ORDER BY name
       LIMIT ?
     `).bind(limit).all();
-
     // Transform to match Dashboard component's expected structure
     const transformedProducts = (products.results || []).map((product: any) => ({
       id: product.id.toString(),
@@ -1517,7 +1424,6 @@ api.get('/brands', async (c: any) => {
       WHERE is_active = 1
       ORDER BY name
     `).all();
-    
     return c.json({
       success: true,
       data: brands.results || [],
@@ -1548,7 +1454,6 @@ api.get('/settings/tax', async (c: any) => {
     const settings = await c.env.DB.prepare(`
       SELECT * FROM settings WHERE key = 'tax_rate'
     `).first();
-    
     return c.json({
       success: true,
       data: settings || { key: 'tax_rate', value: '10', description: 'Thuế VAT' },
@@ -1568,7 +1473,6 @@ api.get('/settings/payment-methods', async (c: any) => {
     const methods = await c.env.DB.prepare(`
       SELECT * FROM payment_methods WHERE is_active = 1
     `).all();
-    
     return c.json({
       success: true,
       data: methods.results || [],
@@ -1594,7 +1498,6 @@ api.get('/payment-methods', async (c: any) => {
     const methods = await c.env.DB.prepare(`
       SELECT * FROM payment_methods WHERE is_active = 1
     `).all();
-    
     return c.json({
       success: true,
       data: methods.results || [],
@@ -1619,7 +1522,6 @@ api.get('/settings/store', async (c: any) => {
     const store = await c.env.DB.prepare(`
       SELECT * FROM stores WHERE isActive = 1 LIMIT 1
     `).first();
-    
     return c.json({
       success: true,
       data: store || {
@@ -1671,7 +1573,6 @@ api.get('/customers', async (c: any) => {
     params.push(limit, (page - 1) * limit);
     
     const customers = await c.env.DB.prepare(query).bind(...params).all();
-    
     // Get total count
     let countQuery = `SELECT COUNT(*) as total FROM customers WHERE isActive = 1`;
     let countParams: any[] = [];
@@ -1707,7 +1608,7 @@ api.get('/customers', async (c: any) => {
           phone: '0901234567',
           address: '123 Nguyễn Huệ, Q1, TP.HCM',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString();
         },
         {
           id: '2',
@@ -1716,7 +1617,7 @@ api.get('/customers', async (c: any) => {
           phone: '0907654321',
           address: '456 Lê Lợi, Q3, TP.HCM',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString();
         },
         {
           id: '3',
@@ -1725,7 +1626,7 @@ api.get('/customers', async (c: any) => {
           phone: '0909876543',
           address: '789 Điện Biên Phủ, Q.Bình Thạnh, TP.HCM',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString();
         }
       ],
       pagination: {
@@ -1762,11 +1663,9 @@ api.get('/orders', async (c: any) => {
       ORDER BY created_at DESC
       LIMIT ? OFFSET ?
     `).bind(...bindings, limit, offset).all();
-
     const totalCount = await c.env.DB.prepare(`
       SELECT COUNT(*) as count FROM sales ${whereClause}
     `).bind(...bindings).first();
-
     // Transform orders to match frontend Order interface
     const transformedOrders = (orders.results || []).map((order: any) => ({
       id: order.id.toString(),
@@ -1811,7 +1710,6 @@ api.get('/orders', async (c: any) => {
 // Database initialization endpoint with RBAC support
 api.post('/init-database', async (c: any) => {
   try {
-    console.log('🚀 Starting complete system initialization...');
 
     // Create users table
     await c.env.DB.prepare(`
@@ -1838,7 +1736,6 @@ api.post('/init-database', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     // Create roles table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS roles (
@@ -1854,7 +1751,6 @@ api.post('/init-database', async (c: any) => {
         UNIQUE(tenant_id, name)
       )
     `).run();
-
     // Create user_roles table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS user_roles (
@@ -1869,7 +1765,6 @@ api.post('/init-database', async (c: any) => {
         UNIQUE(user_id, role_id, outlet_id)
       )
     `).run();
-
     // Create sessions table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS sessions (
@@ -1885,7 +1780,6 @@ api.post('/init-database', async (c: any) => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `).run();
-
     // Create stores table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS stores (
@@ -1907,41 +1801,32 @@ api.post('/init-database', async (c: any) => {
         FOREIGN KEY (manager_id) REFERENCES users(id)
       )
     `).run();
-
     // Insert default roles
     const adminRoleId = 'role-admin-' + Date.now();
     const managerRoleId = 'role-manager-' + Date.now();
     const cashierRoleId = 'role-cashier-' + Date.now();
-
     await c.env.DB.prepare(`
       INSERT OR IGNORE INTO roles (id, name, display_name, description, permissions, is_system_role) 
       VALUES (?, 'admin', 'Administrator', 'Full system access', ?, 1)
     `).bind(adminRoleId, JSON.stringify(['*'])).run();
-
     await c.env.DB.prepare(`
       INSERT OR IGNORE INTO roles (id, name, display_name, description, permissions, is_system_role) 
       VALUES (?, 'manager', 'Manager', 'Outlet management access', ?, 1)
     `).bind(managerRoleId, JSON.stringify(['pos.*', 'products.*', 'customers.*', 'reports.*'])).run();
-
     await c.env.DB.prepare(`
       INSERT OR IGNORE INTO roles (id, name, display_name, description, permissions, is_system_role) 
       VALUES (?, 'cashier', 'Cashier', 'POS operations', ?, 1)
     `).bind(cashierRoleId, JSON.stringify(['pos.*', 'products.read'])).run();
-
     // Insert default outlet
     const outletId = 'outlet-main-' + Date.now();
     await c.env.DB.prepare(`
       INSERT OR IGNORE INTO stores (id, code, name, address, phone, currency) 
       VALUES (?, 'MAIN', 'SmartPOS Store', '123 Nguyen Hue, Q1, TP.HCM', '0901234567', 'VND')
     `).bind(outletId).run();
-
     // Generate secure temporary password
     const adminPassword = 'Setup' + Date.now().toString(36) + Math.random().toString(36).substr(2);
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(adminPassword, salt);
-    
-    console.log('🔑 SETUP: Admin temporary password:', adminPassword);
-    console.log('⚠️  IMPORTANT: Change this password immediately after first login!');
 
     // Insert default admin user
     const adminUserId = 'user-admin-' + Date.now();
@@ -1949,15 +1834,11 @@ api.post('/init-database', async (c: any) => {
       INSERT OR IGNORE INTO users (id, email, username, password_hash, full_name, is_active) 
       VALUES (?, 'admin@smartpos.vn', 'admin', ?, 'System Administrator', 1)
     `).bind(adminUserId, hashedPassword).run();
-
     // Assign admin role to admin user
     await c.env.DB.prepare(`
       INSERT OR IGNORE INTO user_roles (user_id, role_id, outlet_id) 
       VALUES (?, ?, ?)
     `).bind(adminUserId, adminRoleId, outletId).run();
-
-    console.log('✅ System initialized successfully');
-
     return c.json({
       success: true,
       message: 'Hệ thống đã được khởi tạo thành công',
@@ -2058,17 +1939,14 @@ api.get('/public/inventory/stats', async (c: any) => {
     const totalProducts = await c.env.DB.prepare(`
       SELECT COUNT(*) as count FROM products WHERE tenant_id = ?
     `).bind(tenantId).first();
-    
     const lowStockProducts = await c.env.DB.prepare(`
       SELECT COUNT(*) as count FROM products 
       WHERE tenant_id = ? AND stock <= min_stock
     `).bind(tenantId).first();
-    
     const totalStockValue = await c.env.DB.prepare(`
       SELECT SUM(stock * price) as value FROM products 
       WHERE tenant_id = ? AND stock > 0
     `).bind(tenantId).first();
-    
     return c.json({
       success: true,
       data: {
@@ -2100,7 +1978,6 @@ api.get('/public/reports/basic', async (c: any) => {
       FROM orders 
       WHERE tenant_id = ? AND DATE(created_at) >= ?
     `).bind(tenantId, weekAgo).first();
-    
     return c.json({
       success: true,
       data: {
@@ -2111,7 +1988,7 @@ api.get('/public/reports/basic', async (c: any) => {
           average_order: salesSummary?.average_order || 0
         },
         top_products: [],
-        generated_at: new Date().toISOString()
+        generated_at: new Date().toISOString();
       }
     });
   } catch (error) {
@@ -2121,7 +1998,7 @@ api.get('/public/reports/basic', async (c: any) => {
         period: "Last 7 days",
         sales_summary: { total_orders: 0, total_revenue: 0, average_order: 0 },
         top_products: [],
-        generated_at: new Date().toISOString()
+        generated_at: new Date().toISOString();
       }
     });
   }
@@ -2152,7 +2029,6 @@ api.put('/public/products/:id', async (c: any) => {
       SET name = ?, price = ?
       WHERE id = ?
     `).bind(data.name, data.selling_price || data.price, id).run();
-    
     if ((result as any).changes === 0) {
       return c.json({ success: false, error: 'Product not found' }, 404);
     }
@@ -2175,7 +2051,6 @@ api.delete('/public/products/:id', async (c: any) => {
     const result = await c.env.DB.prepare(`
       DELETE FROM products WHERE id = ?
     `).bind(id).run();
-    
     if ((result as any).changes === 0) {
       return c.json({ success: false, error: 'Product not found' }, 404);
     }
@@ -2194,12 +2069,10 @@ api.post('/public/customers', async (c: any) => {
     const data = await c.req.json();
     const tenantId = c.req.header('X-Tenant-ID') || 'default';
     const customerId = crypto.randomUUID();
-    
     await c.env.DB.prepare(`
       INSERT INTO customers (id, tenant_id, name, email, phone, address)
       VALUES (?, ?, ?, ?, ?, ?)
     `).bind(customerId, tenantId, data.name, data.email, data.phone, data.address).run();
-    
     return c.json({
       success: true,
       data: { id: customerId, ...data },
@@ -2221,7 +2094,6 @@ api.put('/public/customers/:id', async (c: any) => {
       SET name = ?, email = ?, phone = ?, address = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND tenant_id = ?
     `).bind(data.name, data.email, data.phone, data.address, id, tenantId).run();
-    
     if ((result as any).changes === 0) {
       return c.json({ success: false, error: 'Customer not found' }, 404);
     }
@@ -2244,7 +2116,6 @@ api.delete('/public/customers/:id', async (c: any) => {
     const result = await c.env.DB.prepare(`
       DELETE FROM customers WHERE id = ? AND tenant_id = ?
     `).bind(id, tenantId).run();
-    
     if ((result as any).changes === 0) {
       return c.json({ success: false, error: 'Customer not found' }, 404);
     }
@@ -2374,7 +2245,6 @@ api.get('/suppliers-test', async (c: any) => {
       FROM suppliers
       ORDER BY name
     `).all();
-    
     return c.json({
       success: true,
       data: result.results || []
@@ -2393,7 +2263,6 @@ api.get('/inventory-locations-test', async (c: any) => {
       FROM warehouse_locations
       ORDER BY store_id, zone, shelf, bin
     `).all();
-    
     return c.json({
       success: true,
       data: result.results || []
@@ -2413,7 +2282,6 @@ api.get('/customers-advanced-test', async (c: any) => {
       WHERE is_active = 1
       ORDER BY min_spent ASC
     `).all();
-    
     return c.json({
       success: true,
       data: result.results || []
@@ -2429,14 +2297,9 @@ api.use('/promotions/*', apiRateLimit);
 api.use('/promotions/*', authenticate);
 // api.route('/promotions', promotionsRouter); // Commented out for now
 
-
-
-
-
 // Serial numbers stats endpoint (auth required)
 api.get('/serial-numbers-stats', authenticate, async (c: any) => {
   try {
-    console.log('📊 Public serial numbers stats endpoint called');
     const env = c.env as Env;
 
     // Check if table exists
@@ -2446,7 +2309,6 @@ api.get('/serial-numbers-stats', authenticate, async (c: any) => {
     `;
 
     const tableExists = await env.DB.prepare(tableCheckQuery).first();
-
     if (!tableExists) {
       return c.json({
         success: true,
@@ -2477,7 +2339,6 @@ api.get('/serial-numbers-stats', authenticate, async (c: any) => {
     `;
 
     const result = await env.DB.prepare(statsQuery).first();
-
     const stats = {
       total_serials: Number(result?.total_serials) || 0,
       in_stock: Number(result?.in_stock) || 0,
@@ -2571,7 +2432,6 @@ api.post('/warranty-public/init-tables', async (c: any) => {
 
     await env.DB.prepare(createWarrantyTable).run();
     await env.DB.prepare(createClaimsTable).run();
-
     return c.json({
       success: true,
       message: 'Bảng warranty đã được tạo thành công',
@@ -2648,7 +2508,6 @@ api.post('/employee-public/init-tables', async (c: any) => {
     await env.DB.prepare(createEmployeesTable).run();
     await env.DB.prepare(createAttendanceTable).run();
     await env.DB.prepare(createPerformanceTable).run();
-
     // Create indexes
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status)').run();
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_employees_role ON employees(role)').run();
@@ -2656,7 +2515,6 @@ api.post('/employee-public/init-tables', async (c: any) => {
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_attendance_employee ON employee_attendance(employee_id)').run();
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_attendance_date ON employee_attendance(date)').run();
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_performance_employee ON employee_performance(employee_id)').run();
-
     return c.json({
       success: true,
       message: 'Employee management tables created successfully',
@@ -2686,7 +2544,6 @@ api.post('/employee-public/init-sample-data', async (c: any) => {
       'cashier', 'Sales', 'Senior Cashier', '2024-01-15T00:00:00.000Z', 15000000, 'active',
       '123 Nguyen Hue, Q1, TP.HCM', 'Emergency: +84987654321', 'Senior cashier with 3 years experience'
     ).run();
-
     await env.DB.prepare(`
       INSERT OR IGNORE INTO employees (
         id, employee_id, first_name, last_name, email, phone, role, department, position,
@@ -2697,7 +2554,6 @@ api.post('/employee-public/init-sample-data', async (c: any) => {
       'manager', 'Sales', 'Sales Manager', '2023-06-01T00:00:00.000Z', 25000000, 'active',
       '456 Le Loi, Q3, TP.HCM', 'Emergency: +84976543210', 'Sales manager responsible for team performance'
     ).run();
-
     await env.DB.prepare(`
       INSERT OR IGNORE INTO employees (
         id, employee_id, first_name, last_name, email, phone, role, department, position,
@@ -2708,7 +2564,6 @@ api.post('/employee-public/init-sample-data', async (c: any) => {
       'inventory', 'Warehouse', 'Inventory Specialist', '2024-03-10T00:00:00.000Z', 18000000, 'active',
       '789 Dien Bien Phu, Q.Binh Thanh, TP.HCM', 'Emergency: +84965432109', 'Handles inventory management and stock control'
     ).run();
-
     return c.json({
       success: true,
       message: 'Sample employee data inserted successfully',
@@ -2768,13 +2623,11 @@ api.post('/rbac-public/init-tables', async (c: any) => {
     await env.DB.prepare(createRolesTable).run();
     await env.DB.prepare(createUserRolesTable).run();
     await env.DB.prepare(createAuditLogsTable).run();
-
     // Create indexes for performance
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id)').run();
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role_id)').run();
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id)').run();
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp)').run();
-
     return c.json({
       success: true,
       message: 'RBAC tables created successfully',
@@ -2859,7 +2712,6 @@ api.post('/rbac-public/init-sample-data', async (c: any) => {
       INSERT OR IGNORE INTO user_roles (user_id, role_id, assigned_at)
       VALUES ('admin-1757844102027', 'role-admin', datetime('now'))
     `).run();
-
     return c.json({
       success: true,
       message: 'Sample RBAC data inserted successfully',
@@ -2882,7 +2734,6 @@ api.post('/categories-public/cleanup-null-ids', async (c: any) => {
     const countResult = await env.DB.prepare(`
       SELECT COUNT(*) as count FROM categories WHERE id IS NULL
     `).first();
-
     const nullIdCount = countResult?.count || 0;
 
     if (nullIdCount === 0) {
@@ -2897,7 +2748,6 @@ api.post('/categories-public/cleanup-null-ids', async (c: any) => {
     const deleteResult = await env.DB.prepare(`
       DELETE FROM categories WHERE id IS NULL
     `).run();
-
     return c.json({
       success: true,
       message: `Database cleanup completed successfully`,
@@ -2955,14 +2805,12 @@ api.post('/financial-public/init-tables', async (c: any) => {
     // Execute table creation
     await env.DB.prepare(createExpenseCategoriesTable).run();
     await env.DB.prepare(createExpensesTable).run();
-
     // Add missing columns to existing tables if they don't exist
     try {
       // Check and add budget_limit column to expense_categories
       const categoriesResult = await env.DB.prepare(`
         PRAGMA table_info(expense_categories)
       `).all();
-
       const hasBudgetLimit = categoriesResult.results?.some((col: any) => col.name === 'budget_limit');
       if (!hasBudgetLimit) {
         await env.DB.prepare(`
@@ -2974,7 +2822,6 @@ api.post('/financial-public/init-tables', async (c: any) => {
       const expensesResult = await env.DB.prepare(`
         PRAGMA table_info(expenses)
       `).all();
-
       const expenseColumns = (expensesResult.results || []).map((col: any) => col.name);
       const requiredColumns = ['receipt_url', 'receipt_number', 'tags', 'vendor_name', 'payment_method', 'notes'];
 
@@ -2988,13 +2835,10 @@ api.post('/financial-public/init-tables', async (c: any) => {
           `).run();
         }
       }
-    } catch (alterError) {
-      console.log('Column alter warning (may be expected):', alterError);
-    }
+    } catch (error) { /* Error handled silently */ }
 
     // Create sample expense categories if none exist
     const existingCategories = await env.DB.prepare('SELECT COUNT(*) as count FROM expense_categories').first();
-
     if (existingCategories?.count === 0) {
       const sampleCategories = [
         { id: 'exp-cat-001', name: 'Nguyên liệu', description: 'Chi phí nguyên liệu thực phẩm', color: '#3B82F6', budget_limit: 10000000 },
@@ -3139,10 +2983,8 @@ api.post('/purchase-orders-public/init-tables', async (c: any) => {
     await env.DB.prepare(createPurchaseReturnsTable).run();
     await env.DB.prepare(createPurchaseReturnItemsTable).run();
     await env.DB.prepare(createInventoryMovementsTable).run();
-
     // Create sample suppliers if none exist
     const existingSuppliers = await env.DB.prepare('SELECT COUNT(*) as count FROM suppliers').first();
-
     if (existingSuppliers?.count === 0) {
       const sampleSuppliers = [
         { id: 'supplier-001', name: 'ABC Foods Supply', contact_person: 'Nguyen Van A', email: 'contact@abcfoods.com', phone: '0123456789', address: 'Ha Noi', payment_terms: 30 },
@@ -3182,7 +3024,6 @@ api.get('/warranty-public/test-stats', async (c: any) => {
     // Check if warranty table exists
     const tableCheck = `SELECT name FROM sqlite_master WHERE type='table' AND name='warranty_registrations'`;
     const tableExists = await env.DB.prepare(tableCheck).first();
-
     if (!tableExists) {
       return c.json({
         success: true,
@@ -3205,7 +3046,6 @@ api.get('/warranty-public/test-stats', async (c: any) => {
     `;
 
     const stats = await env.DB.prepare(statsQuery).first();
-
     return c.json({
       success: true,
       data: {
@@ -3242,7 +3082,6 @@ api.get('/warranty-public/test-lookup/:serial', async (c: any) => {
     // Check if warranty table exists
     const tableCheck = `SELECT name FROM sqlite_master WHERE type='table' AND name='warranty_registrations'`;
     const tableExists = await env.DB.prepare(tableCheck).first();
-
     if (!tableExists) {
       return c.json({
         success: true,
@@ -3264,7 +3103,6 @@ api.get('/warranty-public/test-lookup/:serial', async (c: any) => {
     `;
 
     const warranty = await env.DB.prepare(warrantyQuery).bind(serialNumber).first();
-
     if (warranty) {
       return c.json({
         success: true,
@@ -3341,7 +3179,6 @@ api.get('/warranties', async (c: any) => {
           ORDER BY w.created_at DESC 
           LIMIT ? OFFSET ?
         `).bind(limit, offset).all();
-        
         warranties = (results.results || []).map((row: any) => ({
           ...row,
           // Ensure frontend expected field names are present
@@ -3448,7 +3285,6 @@ api.post('/warranties', async (c: any) => {
   try {
     const env = c.env as Env;
     const data = await c.req.json();
-    
     // Generate warranty ID
     const warrantyId = `war_${Date.now()}`;
     
@@ -3478,14 +3314,13 @@ api.post('/warranties', async (c: any) => {
         0, // claim_count
         data.notes
       ).run();
-      
       return c.json({
         success: true,
         data: {
           id: warrantyId,
           ...data,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString();
         },
         message: 'Warranty created successfully'
       }, 201);
@@ -3497,7 +3332,7 @@ api.post('/warranties', async (c: any) => {
           id: warrantyId,
           ...data,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString();
         },
         message: 'Warranty created successfully (mock)'
       }, 201);
@@ -3516,7 +3351,6 @@ api.put('/warranties/:id', async (c: any) => {
     const env = c.env as Env;
     const id = c.req.param('id');
     const data = await c.req.json();
-    
     try {
       // Try to update real table if it exists
       const updateResult = await env.DB.prepare(`
@@ -3543,7 +3377,6 @@ api.put('/warranties/:id', async (c: any) => {
         new Date().toISOString(),
         id
       ).run();
-      
       return c.json({
         success: true,
         data: { id, ...data, updated_at: new Date().toISOString() },
@@ -3797,7 +3630,6 @@ api.post('/seed/qa', authenticate, async (c: any) => {
       const chosen = [...products].sort(() => Math.random() - 0.5).slice(0, itemsCount);
       let subtotal = 0;
       const createdAt = randomDate();
-
       for (const p of chosen) {
         const qty = 1 + Math.floor(Math.random() * 3);
         subtotal += (p.price || 0) * qty;
@@ -3813,7 +3645,6 @@ api.post('/seed/qa', authenticate, async (c: any) => {
           final_amount, payment_method, payment_status, notes, created_at
         ) VALUES (NULL, 'Walk-in', NULL, NULL, 1, ?, ?, ?, 0, ?, ?, 'paid', NULL, ?)
       `).bind(`SEED-${Date.now()}-${i}`, subtotal, tax, finalAmount, ['cash','card','transfer'][Math.floor(Math.random()*3)], createdAt).run();
-
       const saleId = saleRes.meta.last_row_id as number;
       // Insert items
       for (const p of chosen) {
@@ -3853,10 +3684,6 @@ api.route('/financial', financialRouter);
 // Test D1 routes - SECURITY FIXED: Disabled in production
 // Note: Using c.env instead of process.env for Cloudflare Workers compatibility
 // Test routes are disabled in production for security
-
-
-
-
 
 // Analytics routes
 api.use('/analytics/*', apiRateLimit);
@@ -3901,7 +3728,6 @@ api.get('/customers-test', async (c: any) => {
       FROM customers
       LIMIT 5
     `).all();
-
     return c.json({
       success: true,
       data: customers.results || [],
@@ -3918,12 +3744,11 @@ api.get('/customers-test', async (c: any) => {
 
 // Create a simple test API router
 const testApi = new Hono<{ Bindings: Env }>();
-
 testApi.get('/test', (c) => {
   return c.json({
     success: true,
     message: 'Simple test API working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -3953,7 +3778,6 @@ api.get('/dashboard/stats', async (c: any) => {
   try {
     const tenantId = c.req.header('X-Tenant-ID') || 'default';
     const { from, to } = c.req.query();
-    
     const fromDate = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = to || new Date().toISOString().split('T')[0];
 
@@ -3975,7 +3799,6 @@ api.get('/dashboard/stats', async (c: any) => {
         WHERE tenant_id = ? AND status = 'completed'
           AND DATE(created_at) >= ? AND DATE(created_at) <= ?
       `).bind(tenantId, fromDate, toDate).first();
-
       if (revenueResult) {
         stats.revenue.total = revenueResult.total_revenue || 0;
         stats.orders.total = revenueResult.order_count || 0;
@@ -3985,7 +3808,6 @@ api.get('/dashboard/stats', async (c: any) => {
       const customersResult = await c.env.DB.prepare(`
         SELECT COUNT(*) as total FROM customers WHERE tenant_id = ?
       `).bind(tenantId).first();
-      
       if (customersResult) {
         stats.customers.total = customersResult.total || 0;
       }
@@ -4001,7 +3823,6 @@ api.get('/dashboard/stats', async (c: any) => {
           COUNT(CASE WHEN stock <= 10 THEN 1 END) as low_stock
         FROM products WHERE tenant_id = ? AND active = 1
       `).bind(tenantId).first();
-
       if (productsResult) {
         stats.products.total = productsResult.total || 0;
         stats.products.low_stock = productsResult.low_stock || 0;
@@ -4022,7 +3843,6 @@ api.get('/dashboard/stats', async (c: any) => {
 
 // Mount specific endpoints that frontend expects at /api level (without v1)
 const apiDirectRoutes = new Hono<{ Bindings: Env }>();
-
 // Deprecated dashboard direct path
 apiDirectRoutes.get('/dashboard/stats', (c) => c.json({ success: false, message: 'Deprecated. Use /api/dashboard/stats', migrate_to: '/api/dashboard/stats', status: 410 }, 410));
 
@@ -4103,7 +3923,7 @@ app.notFound((c) => c.json({ success: false, error: 'NOT_FOUND' }, 404));
 //     url: c.req.url,
 //     userAgent: c.req.header('User-Agent'),
 //     ip: c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For'),
-//     timestamp: new Date().toISOString()
+//     timestamp: new Date().toISOString();
 //   });
 //
 //   // Determine error response based on error type
@@ -4206,7 +4026,6 @@ api.get('/test-db', async (c: any) => {
 // Initialize production database endpoint - Step 1: Create tables
 api.post('/init-tables', async (c: any) => {
   try {
-    console.log('🚀 Creating production database tables...');
     
     // Create users table
     await c.env.DB.prepare(`
@@ -4223,7 +4042,6 @@ api.post('/init-tables', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     // Create categories table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS categories (
@@ -4237,7 +4055,6 @@ api.post('/init-tables', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     // Create brands table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS brands (
@@ -4252,7 +4069,6 @@ api.post('/init-tables', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     // Create customers table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS customers (
@@ -4269,7 +4085,6 @@ api.post('/init-tables', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     // Create products table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS products (
@@ -4293,7 +4108,6 @@ api.post('/init-tables', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     // Create settings table
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS settings (
@@ -4306,9 +4120,6 @@ api.post('/init-tables', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
-    console.log('✅ Production database tables created successfully!');
-
     return c.json({
       success: true,
       message: 'Production database tables created successfully',
@@ -4322,7 +4133,7 @@ api.post('/init-tables', async (c: any) => {
       success: false,
       message: 'Database table creation failed',
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString();
     }, 500);
   }
 });
@@ -4330,7 +4141,6 @@ api.post('/init-tables', async (c: any) => {
 // Initialize production database endpoint - Step 2: Insert data
 api.post('/init-data', async (c: any) => {
   try {
-    console.log('🌱 Seeding production data...');
     
     // Insert categories
     await c.env.DB.prepare(`
@@ -4340,7 +4150,6 @@ api.post('/init-data', async (c: any) => {
       ('cat-003', 'Mobile Phones', 'Điện Thoại', 'Smartphones and mobile accessories', 'cat-001', 1),
       ('cat-004', 'Accessories', 'Phụ Kiện', 'Computer and mobile accessories', 'cat-001', 1)
     `).run();
-
     // Insert brands
     await c.env.DB.prepare(`
       INSERT OR REPLACE INTO brands (id, name, name_vi, description, website, is_active) VALUES
@@ -4350,7 +4159,6 @@ api.post('/init-data', async (c: any) => {
       ('brand-004', 'HP', 'HP', 'Hewlett Packard Enterprise', 'https://hp.com', 1),
       ('brand-005', 'Lenovo', 'Lenovo', 'Chinese technology company', 'https://lenovo.com', 1)
     `).run();
-
     // Insert customers
     await c.env.DB.prepare(`
       INSERT OR REPLACE INTO customers (id, name, email, phone, address, loyalty_points, is_active) VALUES
@@ -4360,7 +4168,6 @@ api.post('/init-data', async (c: any) => {
       ('customer-004', 'Phạm Thị Dung', 'phamthidung@email.com', '0901111111', '321 Cách Mạng Tháng 8, Q10, TP.HCM', 300, 1),
       ('customer-005', 'Hoàng Văn Em', 'hoangvanem@email.com', '0902222222', '654 Nguyễn Văn Cừ, Q5, TP.HCM', 50, 1)
     `).run();
-
     // Insert products
     await c.env.DB.prepare(`
       INSERT OR REPLACE INTO products (id, name, sku, barcode, description, price, cost, stock, min_stock, max_stock, category_id, brand_id, unit, is_active) VALUES
@@ -4370,7 +4177,6 @@ api.post('/init-data', async (c: any) => {
       ('prod-004', 'Dell XPS 13 Plus', 'DXP13P', '1234567890126', 'Dell XPS 13 Plus với Intel i7', 32990000, 27000000, 12, 3, 40, 'cat-002', 'brand-003', 'piece', 1),
       ('prod-005', 'ASUS ROG Strix G15', 'ASRG15', '1234567890127', 'ASUS ROG Strix G15 Gaming Laptop', 25990000, 21000000, 8, 2, 30, 'cat-002', 'brand-005', 'piece', 1)
     `).run();
-
     // Insert settings
     await c.env.DB.prepare(`
       INSERT OR REPLACE INTO settings (id, key, value, description, category) VALUES
@@ -4381,9 +4187,6 @@ api.post('/init-data', async (c: any) => {
       ('setting-005', 'tax_rate', '10', 'Tỷ lệ thuế mặc định (%)', 'tax'),
       ('setting-006', 'currency', 'VND', 'Đơn vị tiền tệ', 'general')
     `).run();
-
-    console.log('✅ Production data seeded successfully!');
-
     return c.json({
       success: true,
       message: 'Production data seeded successfully',
@@ -4397,7 +4200,7 @@ api.post('/init-data', async (c: any) => {
       success: false,
       message: 'Data seeding failed',
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString();
     }, 500);
   }
 });

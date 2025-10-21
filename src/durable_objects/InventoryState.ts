@@ -12,7 +12,7 @@ export class InventoryState {
 
     if (request.method === "GET" && url.pathname === "/state") {
       // Get inventory state
-      const state = await this.state.storage.get("inventory") || {};
+      const state = await this.state.storage.get("inventory") || { /* No operation */ }
       return new Response(JSON.stringify({ success: true, data: state }), {
         headers: { "Content-Type": "application/json" }
       });

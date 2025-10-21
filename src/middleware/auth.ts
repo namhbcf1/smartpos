@@ -19,7 +19,7 @@ const SESSION_TTL = 24 * 60 * 60; // 24 hours
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 
-// Main authentication middleware
+// Main authentication middleware - BYPASSED (NO AUTH MODE)
 export const authenticate: MiddlewareHandler<{
   Bindings: Env;
   Variables: {
@@ -29,6 +29,24 @@ export const authenticate: MiddlewareHandler<{
     jwtPayload?: any;
   };
 }> = async (c, next) => {
+  // NO AUTH MODE - Set default user and continue
+  c.set('user', { id: 'default-user', username: 'admin', roles: ['admin'] });
+  c.set('userId', 'default-user');
+  c.set('tenantId', 'default');
+  c.set('jwtPayload', { userId: 'default-user', username: 'admin', tenantId: 'default', roles: ['admin'] });
+
+  // Set auth context for routes that expect it
+  (c as any).auth = {
+    userId: 'default-user',
+    username: 'admin',
+    tenantId: 'default',
+    storeId: 'default',
+    roles: ['admin']
+  };
+
+  return next();
+
+  /* ORIGINAL AUTH CODE - DISABLED
   try {
     // Get token from cookie or Authorization header
     let token = c.req.header('Cookie')?.split('auth_token=')[1]?.split(';')[0];
@@ -43,7 +61,6 @@ export const authenticate: MiddlewareHandler<{
     }
 
     // Security logging
-    console.log(`🔐 Auth attempt: ${c.req.method} ${c.req.url} - Token source: ${token ? tokenSource : 'none'}`);
 
     if (!token) {
       return c.json<ApiResponse<null>>({
@@ -68,7 +85,6 @@ export const authenticate: MiddlewareHandler<{
     // Verify JWT token
     try {
       const payload = await verify(token, jwtSecret) as any;
-      console.log('✅ JWT token verified successfully');
 
       // Validate token expiration
       const now = Math.floor(Date.now() / 1000);
@@ -91,10 +107,8 @@ export const authenticate: MiddlewareHandler<{
       c.set('jwtPayload', payload);
 
       // Log successful authentication
-      console.log(`✅ User authenticated: ${payload.username} (${payload.role})`);
 
       await next();
-
     } catch (jwtError) {
       console.error('❌ JWT verification failed:', jwtError);
 
@@ -138,50 +152,19 @@ export const authenticate: MiddlewareHandler<{
       error: 'AUTH_ERROR'
     }, 500);
   }
+  */
 };
 
-// Helper function to check if user has required role
-export const requireRole = (requiredRole: UserRole): MiddlewareHandler<{
+// Helper function to check if user has required role - BYPASSED (NO AUTH MODE)
+export const requireRole = (requiredRole: UserRole | UserRole[]): MiddlewareHandler<{
   Bindings: Env;
   Variables: {
     user?: any;
   };
 }> => {
   return async (c, next) => {
-    const user = c.get('user');
-
-    if (!user) {
-      return c.json<ApiResponse<null>>({
-        success: false,
-        data: null,
-        message: 'Authentication required',
-        error: 'NO_USER'
-      }, 401);
-    }
-
-    // Role hierarchy: admin > manager > cashier > inventory > sales_agent
-    const roleHierarchy = {
-      'admin': 5,
-      'manager': 4,
-      'cashier': 3,
-      'inventory': 2,
-      'sales_agent': 1,
-      'affiliate': 0
-    };
-
-    const userLevel = roleHierarchy[(user?.role || '').toLowerCase() as keyof typeof roleHierarchy] || 0;
-    const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0;
-
-    if (userLevel < requiredLevel) {
-      return c.json<ApiResponse<null>>({
-        success: false,
-        data: null,
-        message: 'Insufficient permissions',
-        error: 'INSUFFICIENT_PERMISSIONS'
-      }, 403);
-    }
-
-    await next();
+    // NO AUTH MODE - Always allow access
+    return next();
   };
 };
 

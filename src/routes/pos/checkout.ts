@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import { jwt } from 'hono/jwt';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { auditLog } from '../../services/AuditLogService';
 
 const AddToCartSchema = z.object({
   product_id: z.string(),
@@ -58,8 +59,8 @@ import {
   ERROR_CODES 
 } from '../../utils/api-response';
 import { requirePermissions } from '../../middleware/rbac';
-import { RealtimeEventBroadcaster } from '../../services/RealtimeEventBroadcaster';
-import { NotificationService } from '../../services/NotificationService';
+import { RealtimeEventBroadcaster_Realtimetsx as RealtimeEventBroadcaster } from '../../services/RealtimeEventBroadcaster-Realtimetsx';
+import { NotificationService_NotificationsManagementtsx as NotificationService } from '../../services/NotificationService-NotificationsManagementtsx';
 import type { Context } from 'hono';
 import type { CartItem, Invoice, Payment, CustomerInfo } from '../../types/api-standard';
 
@@ -73,7 +74,6 @@ const app = new Hono<{
     tenantId: string;
   };
 }>();
-
 // =============================================================================
 // VALIDATION SCHEMAS
 // =============================================================================
@@ -151,7 +151,6 @@ app.get('/cart',
         WHERE ci.user_id = ? AND ci.tenant_id = ? AND ci.status = 'active'
         ORDER BY ci.created_at DESC
       `).bind(userId, tenantId).all();
-
       const subtotal = (cartItems.results || []).reduce((sum: number, item: any) => 
         sum + (item.line_total || 0), 0);
 
@@ -205,7 +204,6 @@ app.post('/cart/items',
         data.product_id, 
         tenantId
       ).first();
-
       if (!productCheck) {
         return c.json(createErrorResponse(ERROR_MESSAGES.PRODUCT_NOT_FOUND), 404);
       }
@@ -221,7 +219,6 @@ app.post('/cart/items',
           AND COALESCE(variant_id, '') = COALESCE(?, '')
           AND status = 'active'
       `).bind(userId, tenantId, data.product_id, data.variant_id || '').first();
-
       let cartItem;
       if (existingItem) {
         // Update existing item
@@ -246,7 +243,6 @@ app.post('/cart/items',
       } else {
         // Create new cart item
         const cartItemId = crypto.randomUUID();
-        
         cartItem = await c.env.DB.prepare(`
           INSERT INTO cart_items (
             id, user_id, tenant_id, product_id, variant_id,
@@ -277,7 +273,6 @@ app.post('/cart/items',
           product_name: 'Product',
           unit_price: data.unit_price
         });
-        console.log('✅ Cart update broadcasted');
       } catch (broadcastError) {
         console.error('⚠️ Cart broadcast failed:', broadcastError);
       }
@@ -320,7 +315,6 @@ app.put('/cart/items/:id',
         userId,
         tenantId
       ).first();
-
       if (!cartItem) {
         return c.json(createErrorResponse('Cart item not found'), 404);
       }
@@ -347,7 +341,6 @@ app.delete('/cart/items/:id',
         DELETE FROM cart_items 
         WHERE id = ? AND user_id = ? AND tenant_id = ? AND status = 'active'
       `).bind(itemId, userId, tenantId).run();
-
       if ((result as any).changes === 0) {
         return c.json(createErrorResponse('Cart item not found'), 404);
       }
@@ -373,7 +366,6 @@ app.delete('/cart',
         DELETE FROM cart_items 
         WHERE user_id = ? AND tenant_id = ? AND status = 'active'
       `).bind(userId, tenantId).run();
-
       return c.json(createSuccessResponse(null, 'Cart cleared successfully'));
     } catch (error) {
       console.error('Clear cart error:', error);
@@ -405,7 +397,6 @@ app.post('/checkout',
         LEFT JOIN product_variants pv ON ci.variant_id = pv.id
         WHERE ci.user_id = ? AND ci.tenant_id = ? AND ci.status = 'active'
       `).bind(userId, tenantId).all();
-
       if (!cartItems.results || cartItems.results.length === 0) {
         return c.json(createErrorResponse('Cart is empty'), 400);
       }
@@ -450,7 +441,6 @@ app.post('/checkout',
         data.invoice_date || new Date().toISOString().split('T')[0],
         data.notes || null, userId
       ).first();
-
       // Create invoice items
       for (const item of cartItems.results) {
         const itemId = crypto.randomUUID();
@@ -465,15 +455,83 @@ app.post('/checkout',
           item.quantity, item.unit_price, item.discount_percent,
           item.quantity * item.unit_price * (1 - item.discount_percent / 100)
         ).run();
-
         // Update inventory
         await c.env.DB.prepare(`
-          UPDATE inventory_levels 
+          UPDATE inventory_levels
           SET quantity = quantity - ?
           WHERE product_id = ? AND COALESCE(variant_id, '') = COALESCE(?, '')
             AND tenant_id = ?
         `).bind(
           item.quantity, item.product_id, item.variant_id || '', tenantId
+        ).run();
+
+        // 🔥 AUTO-UPDATE SERIAL NUMBERS: Mark serials as sold (FIFO)
+        const serialsResult = await c.env.DB.prepare(`
+          SELECT id, serial_number FROM serial_numbers
+          WHERE product_id = ?
+            AND status = 'in_stock'
+            AND COALESCE(tenant_id, 'default') = ?
+          ORDER BY created_at ASC
+          LIMIT ?
+        `).bind(item.product_id, tenantId, item.quantity).all();
+
+        const serials = serialsResult.results || [];
+
+        if (serials.length < item.quantity) {
+          console.warn(`⚠️ Not enough serials for ${item.product_name}. Need ${item.quantity}, found ${serials.length}`);
+        }
+
+        // Mark found serials as sold with WARRANTY DATES
+        const soldDate = new Date().toISOString();
+        for (const serial of serials) {
+          // Get warranty_months from serial (default 12)
+          const serialInfo = await c.env.DB.prepare(`
+            SELECT warranty_months FROM serial_numbers WHERE id = ?
+          `).bind((serial as any).id).first();
+
+          const warrantyMonths = Number((serialInfo as any)?.warranty_months || 36);
+          const warrantyStartDate = soldDate;
+          const warrantyEndDate = new Date(new Date(soldDate).setMonth(new Date(soldDate).getMonth() + warrantyMonths)).toISOString();
+
+          await c.env.DB.prepare(`
+            UPDATE serial_numbers
+            SET status = 'sold',
+                sold_date = ?,
+                sold_to_customer_id = ?,
+                order_id = ?,
+                order_item_id = ?,
+                warranty_start_date = ?,
+                warranty_end_date = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND COALESCE(tenant_id, 'default') = ?
+          `).bind(
+            soldDate,
+            customerId,
+            invoiceId,
+            itemId,
+            warrantyStartDate,
+            warrantyEndDate,
+            (serial as any).id,
+            tenantId
+          ).run();
+        }
+
+        // Update product stock to match serial count
+        const stockCountResult = await c.env.DB.prepare(`
+          SELECT COUNT(*) as count FROM serial_numbers
+          WHERE product_id = ?
+            AND status = 'in_stock'
+            AND COALESCE(tenant_id, 'default') = ?
+        `).bind(item.product_id, tenantId).first();
+
+        await c.env.DB.prepare(`
+          UPDATE products
+          SET stock = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND COALESCE(tenant_id, 'default') = ?
+        `).bind(
+          Number((stockCountResult as any)?.count || 0),
+          item.product_id,
+          tenantId
         ).run();
       }
 
@@ -493,23 +551,21 @@ app.post('/checkout',
 
       // Clear cart
       await c.env.DB.prepare(`
-        DELETE FROM cart_items 
+        DELETE FROM cart_items
         WHERE user_id = ? AND tenant_id = ? AND status = 'active'
       `).bind(userId, tenantId).run();
 
-      // Create audit log
-      await c.env.DB.prepare(`
-        INSERT INTO audit_logs (
-          id, tenant_id, user_id, entity_type, entity_id, action, description
-        ) VALUES (?, ?, ?, 'invoice', ?, 'create', ?)
-      `).bind(
-        crypto.randomUUID(), tenantId, userId, invoiceId,
-        `Created invoice ${invoiceNumber} for ${data.customer_info.name}`
-      ).run();
-
+      // Audit log for checkout
+      await auditLog(c, 'checkout', 'order', invoiceId, {
+        invoice_number: invoiceNumber,
+        customer_name: data.customer_info.name,
+        total_amount: totalAmount,
+        items_count: cartItems.results.length,
+        payment_methods: (data.payments as Array<{ payment_method: string }>).map((p: { payment_method: string }) => p.payment_method)
+      });
       // 🔴 REAL-TIME: Broadcast sale completion
       try {
-        await RealtimeEventBroadcaster.broadcastSaleUpdate(c.env, {
+        await RealtimeEventBroadcaster.broadcastSaleUpdate(c.env, 'default', {
           type: 'checkout_completed',
           invoice_id: invoiceId,
           invoice_number: invoiceNumber,
@@ -523,7 +579,7 @@ app.post('/checkout',
 
         // 🔴 REAL-TIME: Broadcast inventory updates for each item
         for (const item of cartItems.results) {
-          await RealtimeEventBroadcaster.broadcastInventoryUpdate(c.env, {
+          await RealtimeEventBroadcaster.broadcastInventoryUpdate(c.env, 'default', {
             type: 'stock_reduced',
             product_id: item.product_id,
             variant_id: item.variant_id,
@@ -533,7 +589,6 @@ app.post('/checkout',
           });
         }
 
-        console.log('✅ Real-time checkout notifications sent');
       } catch (broadcastError) {
         console.error('⚠️ Real-time broadcast failed:', broadcastError);
         // Don't fail the checkout if broadcast fails
@@ -541,7 +596,8 @@ app.post('/checkout',
 
       // 🔔 Create system notification for sale completion
       try {
-        await NotificationService.notifySaleCompleted(c.env, tenantId, {
+        const notificationService = new NotificationService(c.env);
+        await (notificationService as any).notifySaleCompleted?.(tenantId, {
           invoice_id: invoiceId,
           invoice_number: invoiceNumber,
           total_amount: totalAmount,
@@ -584,7 +640,6 @@ app.get('/invoices/:id',
         LEFT JOIN users u ON i.user_id = u.id
         WHERE i.id = ? AND i.tenant_id = ?
       `).bind(invoiceId, tenantId).first();
-
       if (!invoice) {
         return c.json(createErrorResponse(ERROR_MESSAGES.INVOICE_NOT_FOUND), 404);
       }
@@ -595,14 +650,12 @@ app.get('/invoices/:id',
         WHERE invoice_id = ? AND tenant_id = ?
         ORDER BY created_at
       `).bind(invoiceId, tenantId).all();
-
       // Get payments
       const payments = await c.env.DB.prepare(`
         SELECT * FROM payments 
         WHERE invoice_id = ? AND tenant_id = ?
         ORDER BY processed_at
       `).bind(invoiceId, tenantId).all();
-
       const invoiceDetails = {
         ...invoice,
         items: items.results || [],
@@ -634,7 +687,6 @@ app.post('/invoices/:id/void',
         SELECT * FROM invoices 
         WHERE id = ? AND tenant_id = ? AND status = 'completed'
       `).bind(invoiceId, tenantId).first();
-
       if (!invoice) {
         return c.json(createErrorResponse('Invoice not found or cannot be voided'), 404);
       }
@@ -649,12 +701,10 @@ app.post('/invoices/:id/void',
           notes = COALESCE(notes || ' | ', '') || ?
         WHERE id = ? AND tenant_id = ?
       `).bind(data.reason, userId, data.notes || '', invoiceId, tenantId).run();
-
       // Restore inventory
       const items = await c.env.DB.prepare(`
         SELECT * FROM invoice_items WHERE invoice_id = ? AND tenant_id = ?
       `).bind(invoiceId, tenantId).all();
-
       for (const item of items.results || []) {
         await c.env.DB.prepare(`
           UPDATE inventory_levels 
@@ -671,7 +721,6 @@ app.post('/invoices/:id/void',
         UPDATE payments SET status = 'voided' 
         WHERE invoice_id = ? AND tenant_id = ?
       `).bind(invoiceId, tenantId).run();
-
       // Create audit log
       await c.env.DB.prepare(`
         INSERT INTO audit_logs (
@@ -681,7 +730,6 @@ app.post('/invoices/:id/void',
         crypto.randomUUID(), tenantId, userId, invoiceId,
         `Voided invoice ${invoice.invoice_number}: ${data.reason}`
       ).run();
-
       return c.json(createSuccessResponse(null, 'Invoice voided successfully'));
     } catch (error) {
       console.error('Void invoice error:', error);
@@ -702,7 +750,6 @@ async function generateInvoiceNumber(db: any, tenantId: string): Promise<string>
     WHERE tenant_id = ? AND invoice_number LIKE ? 
     ORDER BY created_at DESC LIMIT 1
   `).bind(tenantId, `INV${today}%`).first();
-
   let sequence = 1;
   if (lastInvoice) {
     const lastSequence = parseInt(lastInvoice.invoice_number.slice(-4));

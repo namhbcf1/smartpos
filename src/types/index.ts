@@ -3,6 +3,19 @@ export type { Category, Customer, Order, Product, User, Pagination, ApiResponse 
 export * from './database';
 export * from './warranty';
 
+// Additional type definitions
+export type UserRole = 'admin' | 'manager' | 'cashier' | 'employee' | 'inventory' | 'sales_agent' | 'affiliate';
+
+export interface JwtPayload {
+  sub: string;
+  username: string;
+  role: UserRole;
+  store: number;
+  iat: number;
+  exp: number;
+  tenantId?: string;
+}
+
 // Cloudflare Bindings
 export interface Env {
   DB: D1Database;

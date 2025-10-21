@@ -1,7 +1,6 @@
 export class POSSyncObject {
   private state: any;
   private sessions: Set<any> = new Set();
-
   constructor(state: any) {
     this.state = state;
   }
@@ -16,7 +15,6 @@ export class POSSyncObject {
       
       this.sessions.add(server);
       server.accept();
-      
       server.addEventListener('message', async (event: any) => {
         try {
           const data = JSON.parse(event.data);

@@ -33,7 +33,6 @@ const app = new Hono<{
     tenantId: string;
   };
 }>();
-
 // Ensure required D1 tables exist (idempotent)
 async function ensureSupplierSchema(db: D1Database) {
   await db.exec(`
@@ -132,11 +131,10 @@ const supplierSchema = z.object({
   status: z.enum(['active', 'inactive', 'blocked']).default('active'),
   rating: z.number().min(1).max(5).default(3),
   categories: z.array(z.string()).default([]),
-  custom_fields: z.record(z.string(), z.any()).optional()
+  custom_fields: z.record(z.string(), z.any()).optional();
 });
 
 const supplierUpdateSchema = supplierSchema.partial();
-
 const purchaseOrderSchema = z.object({
   supplier_id: z.string().min(1, 'Supplier ID is required'),
   po_number: z.string().optional(), // Auto-generated if not provided
@@ -152,13 +150,13 @@ const purchaseOrderSchema = z.object({
     quantity: z.number().positive('Quantity must be positive'),
     unit_price: z.number().positive('Unit price must be positive'),
     discount_percent: z.number().min(0).max(100).default(0),
-    notes: z.string().optional()
+    notes: z.string().optional();
   })).min(1, 'At least one item is required')
 });
 
 const updatePOStatusSchema = z.object({
   status: z.enum(['draft', 'sent', 'confirmed', 'partial', 'completed', 'cancelled']),
-  notes: z.string().optional()
+  notes: z.string().optional();
 });
 
 const receivePOItemSchema = z.object({
@@ -167,7 +165,7 @@ const receivePOItemSchema = z.object({
   quality_check: z.enum(['passed', 'failed', 'pending']).default('passed'),
   notes: z.string().optional(),
   expiry_date: z.string().optional(),
-  batch_number: z.string().optional()
+  batch_number: z.string().optional();
 });
 
 // =============================================================================
@@ -234,7 +232,6 @@ app.get('/suppliers',
       const totalResult = await c.env.DB.prepare(countQuery)
         .bind(tenantId, ...params)
         .first();
-      
       const total = totalResult?.count || 0;
 
       // Get suppliers with pagination
@@ -272,7 +269,6 @@ app.get('/suppliers',
       const suppliers = await c.env.DB.prepare(suppliersQuery)
         .bind(tenantId, tenantId, ...params, limit, (page - 1) * limit)
         .all();
-
       const pagination = createPaginationInfo(page, limit, total);
 
       return c.json(createPaginatedResponse(
@@ -306,7 +302,6 @@ app.get('/suppliers/:id',
         LEFT JOIN users u2 ON s.updated_by = u2.id
         WHERE s.id = ? AND s.tenant_id = ?
       `).bind(supplierId, tenantId).first();
-
       if (!supplier) {
         return c.json(createErrorResponse('Supplier not found'), 404);
       }
@@ -324,7 +319,6 @@ app.get('/suppliers/:id',
         FROM purchase_orders
         WHERE supplier_id = ? AND tenant_id = ? AND status != 'cancelled'
       `).bind(supplierId, tenantId).first();
-
       // Get recent purchase orders
       const recentOrders = await c.env.DB.prepare(`
         SELECT 
@@ -339,7 +333,6 @@ app.get('/suppliers/:id',
         ORDER BY created_at DESC
         LIMIT 10
       `).bind(supplierId, tenantId).all();
-
       // Get products supplied by this supplier
       const suppliedProducts = await c.env.DB.prepare(`
         SELECT DISTINCT
@@ -355,7 +348,6 @@ app.get('/suppliers/:id',
         ORDER BY times_ordered DESC
         LIMIT 20
       `).bind(supplierId, tenantId).all();
-
       const supplierDetails = {
         ...supplier,
         statistics: {
@@ -396,7 +388,6 @@ app.post('/suppliers',
         const existingEmail = await c.env.DB.prepare(`
           SELECT id FROM suppliers WHERE email = ? AND tenant_id = ?
         `).bind(data.email, tenantId).first();
-
         if (existingEmail) {
           return c.json(createValidationErrorResponse([
             createApiError(ERROR_CODES.RESOURCE_CONFLICT, ERROR_MESSAGES.EMAIL_EXISTS, 'email')
@@ -408,7 +399,6 @@ app.post('/suppliers',
       const existingPhone = await c.env.DB.prepare(`
         SELECT id FROM suppliers WHERE phone = ? AND tenant_id = ?
       `).bind(data.phone, tenantId).first();
-
       if (existingPhone) {
         return c.json(createValidationErrorResponse([
           createApiError(ERROR_CODES.RESOURCE_CONFLICT, 'Phone number already exists', 'phone')
@@ -418,7 +408,6 @@ app.post('/suppliers',
       // Generate supplier code
       const supplierCode = await generateSupplierCode(c.env.DB, tenantId);
       const supplierId = crypto.randomUUID();
-
       const supplier = await c.env.DB.prepare(`
         INSERT INTO suppliers (
           id, tenant_id, supplier_code, name, contact_person, email, phone,
@@ -439,7 +428,6 @@ app.post('/suppliers',
         JSON.stringify(data.categories), JSON.stringify(data.custom_fields || {}),
         userId
       ).first();
-
       // Create audit log
       await c.env.DB.prepare(`
         INSERT INTO audit_logs (
@@ -449,7 +437,6 @@ app.post('/suppliers',
         crypto.randomUUID(), tenantId, userId, supplierId,
         `Created supplier: ${data.name} (${supplierCode})`
       ).run();
-
       return c.json(createSuccessResponse(supplier, 'Supplier created successfully'), 201);
     } catch (error) {
       console.error('Create supplier error:', error);
@@ -474,7 +461,6 @@ app.put('/suppliers/:id',
       const existingSupplier = await c.env.DB.prepare(`
         SELECT * FROM suppliers WHERE id = ? AND tenant_id = ?
       `).bind(supplierId, tenantId).first();
-
       if (!existingSupplier) {
         return c.json(createErrorResponse('Supplier not found'), 404);
       }
@@ -484,7 +470,6 @@ app.put('/suppliers/:id',
         const existingEmail = await c.env.DB.prepare(`
           SELECT id FROM suppliers WHERE email = ? AND tenant_id = ? AND id != ?
         `).bind(data.email, tenantId, supplierId).first();
-
         if (existingEmail) {
           return c.json(createValidationErrorResponse([
             createApiError(ERROR_CODES.RESOURCE_CONFLICT, ERROR_MESSAGES.EMAIL_EXISTS, 'email')
@@ -520,7 +505,6 @@ app.put('/suppliers/:id',
         WHERE id = ? AND tenant_id = ?
         RETURNING *
       `).bind(...params).first();
-
       // Create audit log
       await c.env.DB.prepare(`
         INSERT INTO audit_logs (
@@ -530,7 +514,6 @@ app.put('/suppliers/:id',
         crypto.randomUUID(), tenantId, userId, supplierId,
         `Updated supplier: ${supplier?.name || existingSupplier.name}`
       ).run();
-
       return c.json(createSuccessResponse(supplier, 'Supplier updated successfully'));
     } catch (error) {
       console.error('Update supplier error:', error);
@@ -589,7 +572,6 @@ app.get('/purchase-orders',
       const totalResult = await c.env.DB.prepare(countQuery)
         .bind(tenantId, ...params)
         .first();
-
       const total = totalResult?.count || 0;
 
       // Get purchase orders
@@ -614,7 +596,6 @@ app.get('/purchase-orders',
       const orders = await c.env.DB.prepare(ordersQuery)
         .bind(tenantId, ...params, limit, (page - 1) * limit)
         .all();
-
       const pagination = createPaginationInfo(page, limit, total);
 
       return c.json(createPaginatedResponse(
@@ -644,7 +625,6 @@ app.post('/purchase-orders',
       const supplier = await c.env.DB.prepare(`
         SELECT * FROM suppliers WHERE id = ? AND tenant_id = ? AND status = 'active'
       `).bind(data.supplier_id, tenantId).first();
-
       if (!supplier) {
         return c.json(createErrorResponse('Supplier not found or inactive'), 404);
       }
@@ -657,7 +637,6 @@ app.post('/purchase-orders',
         const product = await c.env.DB.prepare(`
           SELECT id FROM products WHERE id = ? AND tenant_id = ? AND status = 'active'
         `).bind(item.product_id, tenantId).first();
-
         if (!product) {
           return c.json(createErrorResponse(`Product ${item.product_id} not found`), 400);
         }
@@ -673,7 +652,6 @@ app.post('/purchase-orders',
       const totalAmount = taxableAmount + taxAmount + data.shipping_cost;
 
       const poId = crypto.randomUUID();
-
       // Create purchase order
       const purchaseOrder = await c.env.DB.prepare(`
         INSERT INTO purchase_orders (
@@ -688,7 +666,6 @@ app.post('/purchase-orders',
         data.tax_percent, taxAmount, data.shipping_cost, totalAmount,
         data.notes || null, userId
       ).first();
-
       // Create purchase order items
       for (const item of data.items) {
         const itemId = crypto.randomUUID();
@@ -715,7 +692,6 @@ app.post('/purchase-orders',
         crypto.randomUUID(), tenantId, userId, poId,
         `Created PO ${poNumber} for ${supplier.name}`
       ).run();
-
       return c.json(createSuccessResponse({
         ...purchaseOrder,
         po_number: poNumber,
@@ -732,7 +708,7 @@ app.post('/purchase-orders',
 // UTILITIES
 // =============================================================================
 
-async function generateSupplierCode(db: D1Database, tenantId: string): Promise<string> {
+async function generateSupplierCode(db: D1Database, tenantId: string): Promise {
   const today = new Date().toISOString().split('T')[0]?.replace(/-/g, '') || '';
   
   const lastSupplier = await db.prepare(`
@@ -740,7 +716,6 @@ async function generateSupplierCode(db: D1Database, tenantId: string): Promise<s
     WHERE tenant_id = ? AND supplier_code LIKE ? 
     ORDER BY created_at DESC LIMIT 1
   `).bind(tenantId, `SUP${today}%`).first();
-
   let sequence = 1;
   if (lastSupplier) {
     const lastSequence = parseInt((lastSupplier.supplier_code as string)?.slice(-4) || '0');
@@ -750,7 +725,7 @@ async function generateSupplierCode(db: D1Database, tenantId: string): Promise<s
   return `SUP${today}${sequence.toString().padStart(4, '0')}`;
 }
 
-async function generatePONumber(db: D1Database, tenantId: string): Promise<string> {
+async function generatePONumber(db: D1Database, tenantId: string): Promise {
   const today = new Date().toISOString().split('T')[0]?.replace(/-/g, '') || '';
   
   const lastPO = await db.prepare(`
@@ -758,7 +733,6 @@ async function generatePONumber(db: D1Database, tenantId: string): Promise<strin
     WHERE tenant_id = ? AND po_number LIKE ? 
     ORDER BY created_at DESC LIMIT 1
   `).bind(tenantId, `PO${today}%`).first();
-
   let sequence = 1;
   if (lastPO) {
     const lastSequence = parseInt((lastPO.po_number as string)?.slice(-4) || '0');

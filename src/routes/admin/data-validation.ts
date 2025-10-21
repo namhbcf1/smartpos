@@ -9,7 +9,6 @@ import { getUser } from '../../utils/auth';
 import type { Env } from '../../types';
 
 const app = new Hono<{ Bindings: Env }>();
-
 // ==========================================
 // DATA VALIDATION ENDPOINTS
 // ==========================================
@@ -21,7 +20,6 @@ app.get('/serial-numbers',
   async (c: any) => {
     try {
       const env = c.env as Env;
-      console.log('🔍 Starting serial number data validation...');
 
       const validationResults = {
         total_serials: 0,
@@ -126,8 +124,6 @@ app.get('/serial-numbers',
 
       const hasIssues = validationResults.issues.length > 0;
 
-      console.log('✅ Serial number validation completed:', validationResults);
-
       return c.json({
         success: true,
         data: {
@@ -149,7 +145,7 @@ app.get('/serial-numbers',
         error: {
           type: 'VALIDATION_ERROR',
           details: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString();
         }
       }, 500);
     }
@@ -165,7 +161,6 @@ app.post('/fix-all',
     try {
       const env = c.env as Env;
       const user = getUser(c);
-      console.log('🔧 Starting comprehensive data fix...');
 
       const fixResults = {
         supplier_data_fixed: 0,
@@ -294,9 +289,6 @@ app.post('/fix-all',
         `Comprehensive data fix completed. Total fixes: ${fixResults.total_fixes}`,
         (user as any).sub
       ).run();
-
-      console.log('✅ Comprehensive data fix completed:', fixResults);
-
       return c.json({
         success: true,
         data: {
@@ -315,7 +307,7 @@ app.post('/fix-all',
         error: {
           type: 'DATA_FIX_ERROR',
           details: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString();
         }
       }, 500);
     }

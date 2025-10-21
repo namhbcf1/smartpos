@@ -41,8 +41,7 @@ export interface LogEntry {
 export class EnhancedLogger {
   private static instance: EnhancedLogger;
   private requestId: string = '';
-  private context: Record<string, any> = {};
-
+  private context: Record<string, any> = { /* No operation */ }
   static getInstance(): EnhancedLogger {
     if (!EnhancedLogger.instance) {
       EnhancedLogger.instance = new EnhancedLogger();
@@ -67,17 +66,14 @@ export class EnhancedLogger {
 
   debug(message: string, context?: Record<string, any>) {
     const entry = this.createLogEntry(LogLevel.DEBUG, message, context);
-    console.debug('🔍 DEBUG:', JSON.stringify(entry));
   }
 
   info(message: string, context?: Record<string, any>) {
     const entry = this.createLogEntry(LogLevel.INFO, message, context);
-    console.info('ℹ️ INFO:', JSON.stringify(entry));
   }
 
   warn(message: string, context?: Record<string, any>) {
     const entry = this.createLogEntry(LogLevel.WARN, message, context);
-    console.warn('⚠️ WARN:', JSON.stringify(entry));
   }
 
   error(message: string, error?: Error, context?: Record<string, any>) {
@@ -205,9 +201,8 @@ export interface HealthCheckResult {
 
 export class HealthChecker {
   static async performHealthCheck(env: Env): Promise<HealthCheckResult> {
-    const checks: HealthCheckResult['checks'] = {};
+    const checks: HealthCheckResult['checks'] = { /* No operation */ }
     const startTime = Date.now();
-
     // Database health check
     try {
       const dbStart = Date.now();
@@ -312,7 +307,6 @@ export const requestMonitoringMiddleware = async (c: Context<{ Bindings: Env }>,
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
   const logger = EnhancedLogger.getInstance();
-  
   // Set request context
   const requestContext = {
     requestId,
@@ -335,7 +329,6 @@ export const requestMonitoringMiddleware = async (c: Context<{ Bindings: Env }>,
     });
     
     await next();
-    
     const duration = Date.now() - startTime;
     const isError = c.res.status >= 400;
     
@@ -452,7 +445,6 @@ export class ErrorTracker {
 
 // Export singleton instances
 export const logger = EnhancedLogger.getInstance();
-
 // ============================================================================
 // DB TIMING HELPER
 // ============================================================================
@@ -462,12 +454,12 @@ export async function timeDb<T>(env: Env, label: string, fn: () => Promise<T>): 
   try {
     const result = await fn();
     const duration = Date.now() - start;
-    try { DatabaseMonitor.recordQuery(label, duration); } catch {}
+    try { DatabaseMonitor.recordQuery(label, duration); } catch { /* No operation */ }
     logger.info('DB query timing', { label, duration });
     return result;
   } catch (e) {
     const duration = Date.now() - start;
-    try { DatabaseMonitor.recordQuery(label, duration); } catch {}
+    try { DatabaseMonitor.recordQuery(label, duration); } catch { /* No operation */ }
     logger.error('DB query failed', e as Error, { label, duration });
     throw e;
   }

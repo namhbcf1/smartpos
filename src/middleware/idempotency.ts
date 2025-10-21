@@ -27,8 +27,7 @@ export function withIdempotency(options?: {
     keyHeader = 'Idempotency-Key',
     ttlSeconds = 24 * 60 * 60, // 24 hours default
     skipIf
-  } = options || {};
-
+  } = options || { /* No operation */ }
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
     try {
       // Skip if condition is met
@@ -70,7 +69,6 @@ export function withIdempotency(options?: {
       const existingResponse = await getIdempotentResponse(c.env, storageKey);
       if (existingResponse) {
         // Return the cached response
-        console.log(`Idempotency hit for key: ${idempotencyKey}`);
 
         // Set original headers
         const cached = existingResponse as IdempotentResponse;
@@ -91,8 +89,7 @@ export function withIdempotency(options?: {
       // Override json method to capture response
       c.json = (body: any, init?: any) => {
         const status = (init && (init.status as number)) || 200;
-        const headers: Record<string, string> = {};
-
+        const headers: Record<string, string> = { /* No operation */ }
         // Capture relevant headers (exclude some internal headers)
         const responseHeaders = c.res.headers as any;
         if (typeof responseHeaders?.forEach === 'function') {
@@ -115,13 +112,11 @@ export function withIdempotency(options?: {
 
       // Process the request
       await next();
-
       // Store the response for future idempotency checks
       if (capturedResponse) {
         // Only cache successful operations (2xx status codes)
         if ((capturedResponse as IdempotentResponse).statusCode >= 200 && (capturedResponse as IdempotentResponse).statusCode < 300) {
           await storeIdempotentResponse(c.env, storageKey, capturedResponse, ttlSeconds);
-          console.log(`Idempotency response cached for key: ${idempotencyKey}`);
         }
       }
 
@@ -165,7 +160,6 @@ async function getIdempotentResponse(env: Env, key: string): Promise<IdempotentR
         FROM idempotency_cache
         WHERE key = ? AND expires_at > datetime('now')
       `).bind(key).first();
-
       if (result && result.response_data) {
         return JSON.parse(result.response_data as string);
       }
@@ -208,14 +202,11 @@ async function storeIdempotentResponse(
           expires_at TEXT NOT NULL
         )
       `).run();
-
       const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-
       await env.DB.prepare(`
         INSERT OR REPLACE INTO idempotency_cache (key, response_data, expires_at)
         VALUES (?, ?, ?)
       `).bind(key, responseData, expiresAt).run();
-
       // Clean up expired entries occasionally
       if (Math.random() < 0.01) { // 1% chance
         await env.DB.prepare(`
@@ -274,9 +265,7 @@ export async function cleanupExpiredIdempotencyEntries(env: Env): Promise<number
       const result = await env.DB.prepare(`
         DELETE FROM idempotency_cache WHERE expires_at < datetime('now')
       `).run();
-
       const changes = (result as any)?.meta?.changes ?? (result as any)?.changes ?? 0;
-      console.log(`Cleaned up ${changes} expired idempotency entries`);
       return changes;
     }
 

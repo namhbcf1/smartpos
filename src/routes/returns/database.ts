@@ -2,8 +2,7 @@ import { Env } from '../../types';
 import { Return, ReturnStats, ReturnItem, RefundTransaction } from './types';
 
 export class ReturnsDatabase {
-  constructor(private env: Env) {}
-
+  constructor(private env: Env) { /* No operation */ }
   // Initialize all returns-related tables
   async initializeTables(): Promise<void> {
     try {
@@ -36,7 +35,6 @@ export class ReturnsDatabase {
           FOREIGN KEY (completed_by) REFERENCES users (id)
         )
       `).run();
-
       // Return items table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS return_items (
@@ -60,7 +58,6 @@ export class ReturnsDatabase {
           FOREIGN KEY (product_id) REFERENCES products (id)
         )
       `).run();
-
       // Refund transactions table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS refund_transactions (
@@ -79,7 +76,6 @@ export class ReturnsDatabase {
           FOREIGN KEY (created_by) REFERENCES users (id)
         )
       `).run();
-
       // Return policies table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS return_policies (
@@ -96,7 +92,6 @@ export class ReturnsDatabase {
           updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
         )
       `).run();
-
       // Return reasons table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS return_reasons (
@@ -112,7 +107,6 @@ export class ReturnsDatabase {
           updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
         )
       `).run();
-
       // Exchange requests table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS exchange_requests (
@@ -132,7 +126,6 @@ export class ReturnsDatabase {
           FOREIGN KEY (created_by) REFERENCES users (id)
         )
       `).run();
-
       // Store credits table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS store_credits (
@@ -152,7 +145,6 @@ export class ReturnsDatabase {
           FOREIGN KEY (created_by) REFERENCES users (id)
         )
       `).run();
-
       // Store credit transactions table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS store_credit_transactions (
@@ -171,11 +163,8 @@ export class ReturnsDatabase {
           FOREIGN KEY (created_by) REFERENCES users (id)
         )
       `).run();
-
       // Create indexes for better performance
       await this.createIndexes();
-
-      console.log('Returns tables initialized successfully');
     } catch (error) {
       console.error('Error initializing returns tables:', error);
       throw error;
@@ -210,9 +199,7 @@ export class ReturnsDatabase {
       const policiesCount = await this.env.DB.prepare(
         'SELECT COUNT(*) as count FROM return_policies'
       ).first<{ count: number }>();
-
       if (policiesCount && policiesCount.count === 0) {
-        console.log('Creating default return policies...');
         
         // Create default return policy
         await this.env.DB.prepare(`
@@ -228,17 +215,13 @@ export class ReturnsDatabase {
           0, // No processing fee
           1
         ).run();
-
-        console.log('Default return policies created');
       }
 
       // Check if we have any return reasons
       const reasonsCount = await this.env.DB.prepare(
         'SELECT COUNT(*) as count FROM return_reasons'
       ).first<{ count: number }>();
-
       if (reasonsCount && reasonsCount.count === 0) {
-        console.log('Creating default return reasons...');
         
         const reasons = [
           { code: 'DEFECTIVE', name: 'Sản phẩm lỗi', category: 'defective', requires_approval: 0, auto_restock: 0 },
@@ -260,7 +243,6 @@ export class ReturnsDatabase {
           ).run();
         }
 
-        console.log('Default return reasons created');
       }
     } catch (error) {
       console.error('Error creating default returns data:', error);
@@ -289,7 +271,6 @@ export class ReturnsDatabase {
           COUNT(CASE WHEN return_status = 'rejected' THEN 1 END) as rejected_returns
         FROM returns
       `).first<any>();
-
       // Today's stats
       const todayStats = await this.env.DB.prepare(`
         SELECT 
@@ -298,7 +279,6 @@ export class ReturnsDatabase {
         FROM returns 
         WHERE DATE(created_at) = ?
       `).bind(today).first<any>();
-
       // Week stats
       const weekStats = await this.env.DB.prepare(`
         SELECT 
@@ -307,7 +287,6 @@ export class ReturnsDatabase {
         FROM returns 
         WHERE created_at >= ?
       `).bind(weekStart.toISOString()).first<any>();
-
       // Month stats
       const monthStats = await this.env.DB.prepare(`
         SELECT 
@@ -316,12 +295,10 @@ export class ReturnsDatabase {
         FROM returns 
         WHERE created_at >= ?
       `).bind(monthStart.toISOString()).first<any>();
-
       // Calculate return rate (returns vs sales)
       const salesCount = await this.env.DB.prepare(`
         SELECT COUNT(*) as total_sales FROM sales WHERE sale_status = 'completed'
       `).first<{ total_sales: number }>();
-
       const returnRate = salesCount && salesCount.total_sales > 0 
         ? ((basicStats?.total_returns || 0) / salesCount.total_sales) * 100 
         : 0;
@@ -356,14 +333,13 @@ export class ReturnsDatabase {
   async generateReturnNumber(): Promise<string> {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    
+
     // Get today's return count
     const count = await this.env.DB.prepare(`
-      SELECT COUNT(*) as count 
-      FROM returns 
+      SELECT COUNT(*) as count
+      FROM returns
       WHERE DATE(created_at) = DATE('now')
     `).first<{ count: number }>();
-
     const sequence = String((count?.count || 0) + 1).padStart(4, '0');
     return `RET-${dateStr}-${sequence}`;
   }
@@ -372,14 +348,13 @@ export class ReturnsDatabase {
   async generateStoreCreditNumber(): Promise<string> {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    
+
     // Get today's store credit count
     const count = await this.env.DB.prepare(`
-      SELECT COUNT(*) as count 
-      FROM store_credits 
+      SELECT COUNT(*) as count
+      FROM store_credits
       WHERE DATE(created_at) = DATE('now')
     `).first<{ count: number }>();
-
     const sequence = String((count?.count || 0) + 1).padStart(4, '0');
     return `SC-${dateStr}-${sequence}`;
   }

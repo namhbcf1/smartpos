@@ -9,11 +9,11 @@ import type { ApiResponse, ApiError, ApiMeta, PaginatedResponse, PaginationInfo 
 // SUCCESS RESPONSE BUILDERS
 // =============================================================================
 
-export function createSuccessResponse<T>(
-  data: T, 
+export function createSuccessResponse(
+  data: any, 
   message: string = 'Operation completed successfully',
   meta?: ApiMeta
-): ApiResponse<T> {
+): ApiResponse {
   return {
     success: true,
     data,
@@ -23,12 +23,12 @@ export function createSuccessResponse<T>(
   };
 }
 
-export function createPaginatedResponse<T>(
-  data: T[],
+export function createPaginatedResponse(
+  data: any[],
   pagination: PaginationInfo,
   message: string = 'Data retrieved successfully',
   meta?: ApiMeta
-): ApiResponse<PaginatedResponse<T>> {
+): ApiResponse<PaginatedResponse> {
   return {
     success: true,
     data: {
@@ -191,11 +191,11 @@ import type { Context, Next } from 'hono';
 export function responseMiddleware() {
   return async (c: Context, next: Next) => {
     // Add response helpers to context
-    c.set('success', <T>(data: T, message?: string, meta?: ApiMeta) => 
+    c.set('success', (data: any, message?: string, meta?: ApiMeta) => 
       createSuccessResponse(data, message, meta)
     );
     
-    c.set('paginated', <T>(data: T[], pagination: PaginationInfo, message?: string, meta?: ApiMeta) =>
+    c.set('paginated', (data: any[], pagination: PaginationInfo, message?: string, meta?: ApiMeta) =>
       createPaginatedResponse(data, pagination, message, meta)
     );
     

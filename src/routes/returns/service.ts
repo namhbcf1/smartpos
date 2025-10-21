@@ -22,12 +22,8 @@ export class ReturnsService {
   // Initialize service
   async initialize(): Promise<void> {
     try {
-      console.log('🔄 Initializing returns service...');
       await this.db.initializeTables();
-      console.log('✅ Returns tables initialized');
       await this.db.createDefaultData();
-      console.log('✅ Returns default data created');
-      console.log('✅ Returns service initialization complete');
     } catch (error) {
       console.error('❌ Returns service initialization failed:', error);
       throw error;
@@ -144,15 +140,9 @@ export class ReturnsService {
         LIMIT ? OFFSET ?
       `;
 
-      console.log('🔍 Executing returns query:', query);
-      console.log('🔍 Query bindings:', [...bindings, limit, offset]);
-
       const returns = await this.env.DB.prepare(query)
         .bind(...bindings, limit, offset)
         .all<Return>();
-
-      console.log('✅ Returns query executed, found:', returns.results?.length || 0, 'records');
-
       // Get total count
       const countQuery = `
         SELECT COUNT(*) as total
@@ -164,9 +154,7 @@ export class ReturnsService {
       const countResult = await this.env.DB.prepare(countQuery)
         .bind(...bindings)
         .first<{ total: number }>();
-
       const total = countResult?.total || 0;
-      console.log('📊 Total returns count:', total);
 
       // Get stats if requested (first page only)
       let stats: ReturnStats | undefined;
@@ -209,7 +197,6 @@ export class ReturnsService {
         LEFT JOIN users u3 ON r.completed_by = u3.id
         WHERE r.id = ?
       `).bind(id).first<Return>();
-
       if (!returnItem) return null;
 
       // Get return items
@@ -224,7 +211,6 @@ export class ReturnsService {
         WHERE ri.return_id = ?
         ORDER BY ri.id
       `).bind(id).all<any>();
-
       returnItem.items = items.results || [];
 
       // Get refund transactions
@@ -237,7 +223,6 @@ export class ReturnsService {
         WHERE rt.return_id = ?
         ORDER BY rt.created_at
       `).bind(id).all<any>();
-
       returnItem.refund_transactions = transactions.results || [];
 
       await this.cache.set(this.env, cacheKey, returnItem, { ttl: 300 }); // Cache for 5 minutes
@@ -253,12 +238,10 @@ export class ReturnsService {
     try {
       // Generate return number
       const returnNumber = await this.db.generateReturnNumber();
-
       // Validate original sale exists
       const originalSale = await this.env.DB.prepare(
         'SELECT id, sale_number, customer_name, customer_phone FROM sales WHERE id = ?'
       ).bind(data.original_sale_id).first<any>();
-
       if (!originalSale) {
         throw new Error('Original sale not found');
       }
@@ -270,7 +253,6 @@ export class ReturnsService {
         const saleItem = await this.env.DB.prepare(
           'SELECT unit_price, quantity FROM sale_items WHERE id = ? AND sale_id = ?'
         ).bind(item.sale_item_id, data.original_sale_id).first<any>();
-
         if (!saleItem) {
           throw new Error(`Sale item ${item.sale_item_id} not found`);
         }
@@ -306,7 +288,6 @@ export class ReturnsService {
         data.notes,
         createdBy
       ).run();
-
       const returnId = returnResult.meta.last_row_id as number;
 
       // Create return items
@@ -314,7 +295,6 @@ export class ReturnsService {
         const saleItem = await this.env.DB.prepare(
           'SELECT product_id, product_name, product_sku, unit_price FROM sale_items WHERE id = ?'
         ).bind(item.sale_item_id).first<any>();
-
         await this.env.DB.prepare(`
           INSERT INTO return_items (
             return_id, sale_item_id, product_id, product_name, product_sku,
@@ -380,7 +360,6 @@ export class ReturnsService {
         SET ${updateFields.join(', ')}
         WHERE id = ?
       `).bind(...bindings).run();
-
       // Clear cache
       await this.cache.delete(this.env, CacheKeys.return(id));
       await this.cache.delete(this.env, CacheKeys.returnsList());
@@ -430,7 +409,6 @@ export class ReturnsService {
         approvedBy,
         id
       ).run();
-
       // Clear cache
       await this.cache.delete(this.env, CacheKeys.return(id));
       await this.cache.delete(this.env, CacheKeys.returnsList());
@@ -468,7 +446,6 @@ export class ReturnsService {
             updated_at = datetime('now')
         WHERE id = ?
       `).bind(rejectionReason, rejectedBy, id).run();
-
       // Clear cache
       await this.cache.delete(this.env, CacheKeys.return(id));
       await this.cache.delete(this.env, CacheKeys.returnsList());
@@ -506,7 +483,6 @@ export class ReturnsService {
             updated_at = datetime('now')
         WHERE id = ?
       `).bind(completedBy, id).run();
-
       // Restock items if applicable
       if (existingReturn.items) {
         for (const item of existingReturn.items) {

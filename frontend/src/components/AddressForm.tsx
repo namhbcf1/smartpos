@@ -53,6 +53,8 @@ export interface AddressData {
   fullName: string;
   phone: string;
   address: string;
+  house_number?: string;
+  hamlet?: string; // tổ/thôn/ấp/xóm
   province: Province | null;
   district: District | null;
   ward: Ward | null;
@@ -82,6 +84,8 @@ const AddressForm: React.FC<AddressFormProps> = ({
     fullName: initialData?.fullName || '',
     phone: initialData?.phone || '',
     address: initialData?.address || '',
+    house_number: initialData?.house_number || '',
+    hamlet: initialData?.hamlet || '',
     province: initialData?.province || null,
     district: initialData?.district || null,
     ward: initialData?.ward || null,
@@ -97,6 +101,9 @@ const AddressForm: React.FC<AddressFormProps> = ({
   });
 
   const [typingTimer, setTypingTimer] = useState<number | undefined>(undefined);
+  // Structured address helpers
+  const [houseNumber, setHouseNumber] = useState<string>('');
+  const [hamlet, setHamlet] = useState<string>('');
 
   // Load provinces on mount
   useEffect(() => {
@@ -108,14 +115,18 @@ const AddressForm: React.FC<AddressFormProps> = ({
     window.clearTimeout(typingTimer);
     const id = window.setTimeout(() => {
       const fullAddress = [
+        houseNumber,
+        hamlet,
         addressData.address,
         addressData.ward?.name,
         addressData.district?.name,
         addressData.province?.name
-      ].filter(Boolean).join(', ');
+      ].filter((v) => !!(v && String(v).trim())).join(', ');
 
       const updatedData = {
         ...addressData,
+        house_number: houseNumber,
+        hamlet: hamlet,
         full_address: fullAddress
       };
 
@@ -134,7 +145,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
     return () => {
       window.clearTimeout(id);
     };
-  }, [addressData.province, addressData.district, addressData.ward, addressData.address, addressData.fullName, addressData.phone]);
+  }, [addressData.province, addressData.district, addressData.ward, addressData.address, addressData.fullName, addressData.phone, houseNumber, hamlet]);
 
   const loadProvinces = async () => {
     try {
@@ -441,22 +452,46 @@ const AddressForm: React.FC<AddressFormProps> = ({
           />
         </Grid>
 
+        {/* Số nhà */}
+        <Grid item xs={12} md={4}>
+          <TextField
+            fullWidth
+            label="Số nhà (bắt buộc nếu có)"
+            value={houseNumber}
+            onChange={(e) => setHouseNumber(e.target.value)}
+            placeholder="VD: Số 399"
+          />
+        </Grid>
+
+        {/* Tổ/Thôn/Ấp/Xóm */}
+        <Grid item xs={12} md={4}>
+          <TextField
+            fullWidth
+            label="Tổ/Thôn/Ấp/Xóm *"
+            value={hamlet}
+            onChange={(e) => setHamlet(e.target.value)}
+            placeholder="VD: Tổ 1 / Ấp 3 / Xóm 2"
+            required
+            helperText="Bắt buộc cho GHTK - nhập tổ/thôn/ấp/xóm của bạn"
+            error={showValidation && !hamlet.trim()}
+          />
+        </Grid>
+
         {/* Địa chỉ chi tiết */}
-        <Grid item xs={12}>
+        <Grid item xs={12} md={4}>
           <TextField
             fullWidth
             label="Địa chỉ chi tiết"
             value={addressData.address}
             onChange={(e) => handleInputChange('address', e.target.value)}
             placeholder="Số nhà, tên đường, tên khu phố..."
-            multiline
-            rows={4}
             required
             error={validation.errors.includes('Vui lòng nhập địa chỉ chi tiết')}
             helperText={validation.errors.includes('Vui lòng nhập địa chỉ chi tiết') ? 'Vui lòng nhập địa chỉ chi tiết' : ''}
             sx={{
               '& .MuiOutlinedInput-root': {
                 fontSize: '18px',
+                height: '64px',
                 borderRadius: 3,
                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 '& fieldset': {
@@ -608,61 +643,75 @@ const AddressForm: React.FC<AddressFormProps> = ({
 
         {/* Phường/Xã */}
         <Grid item xs={12} md={4}>
-          <FormControl fullWidth required error={validation.errors.includes('Vui lòng chọn phường/xã')}>
-            <InputLabel sx={{ 
-              fontSize: '16px', 
-              fontWeight: 600,
-              color: '#64748b',
-              '&.Mui-focused': {
-                color: validation.errors.includes('Vui lòng chọn phường/xã') ? '#dc2626' : '#3b82f6',
-              }
-            }}>
-              🏠 Phường/Xã
-            </InputLabel>
-            <Select
-              value={addressData.ward_id}
-              onChange={(e) => {
-                const ward = wards.find(w => w.id === e.target.value);
-                handleWardChange(ward || null);
-              }}
-              label="🏠 Phường/Xã"
-              disabled={!addressData.district || loading.wards}
-              sx={{
-                height: '64px',
-                fontSize: '18px',
-                borderRadius: 3,
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderWidth: 2,
-                  borderColor: validation.errors.includes('Vui lòng chọn phường/xã') ? '#ef4444' : '#e2e8f0',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: validation.errors.includes('Vui lòng chọn phường/xã') ? '#dc2626' : '#3b82f6',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderWidth: 3,
-                  borderColor: validation.errors.includes('Vui lòng chọn phường/xã') ? '#dc2626' : '#3b82f6',
-                },
-              }}
-            >
-              {loading.wards ? (
-                <MenuItem disabled sx={{ fontSize: '18px', py: 3 }}>
-                  <CircularProgress size={28} sx={{ mr: 3 }} />
-                  Đang tải...
-                </MenuItem>
-              ) : Array.isArray(wards) && wards.length > 0 ? (
-                wards.map((ward) => (
-                  <MenuItem key={ward.id} value={ward.id} sx={{ fontSize: '18px', py: 3 }}>
-                    {ward.name}
+          {(!loading.wards && Array.isArray(wards) && wards.length === 0 && addressData.district) ? (
+            // Fallback: allow manual ward input when list is empty
+            <TextField
+              fullWidth
+              label="🏠 Phường/Xã (nhập tay khi không có danh sách)"
+              value={addressData.ward?.name || ''}
+              onChange={(e) => handleWardChange({ id: 'manual', name: e.target.value, district_id: addressData.district_id, type: 'Ward' })}
+              placeholder="Ví dụ: Phường Hồng Bàng"
+              required
+              error={validation.errors.includes('Vui lòng chọn phường/xã')}
+              helperText={validation.errors.includes('Vui lòng chọn phường/xã') ? 'Vui lòng nhập phường/xã' : ''}
+            />
+          ) : (
+            <FormControl fullWidth required error={validation.errors.includes('Vui lòng chọn phường/xã')}>
+              <InputLabel sx={{ 
+                fontSize: '16px', 
+                fontWeight: 600,
+                color: '#64748b',
+                '&.Mui-focused': {
+                  color: validation.errors.includes('Vui lòng chọn phường/xã') ? '#dc2626' : '#3b82f6',
+                }
+              }}>
+                🏠 Phường/Xã
+              </InputLabel>
+              <Select
+                value={addressData.ward_id}
+                onChange={(e) => {
+                  const ward = wards.find(w => w.id === e.target.value);
+                  handleWardChange(ward || null);
+                }}
+                label="🏠 Phường/Xã"
+                disabled={!addressData.district || loading.wards}
+                sx={{
+                  height: '64px',
+                  fontSize: '18px',
+                  borderRadius: 3,
+                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderWidth: 2,
+                    borderColor: validation.errors.includes('Vui lòng chọn phường/xã') ? '#ef4444' : '#e2e8f0',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: validation.errors.includes('Vui lòng chọn phường/xã') ? '#dc2626' : '#3b82f6',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderWidth: 3,
+                    borderColor: validation.errors.includes('Vui lòng chọn phường/xã') ? '#dc2626' : '#3b82f6',
+                  },
+                }}
+              >
+                {loading.wards ? (
+                  <MenuItem disabled sx={{ fontSize: '18px', py: 3 }}>
+                    <CircularProgress size={28} sx={{ mr: 3 }} />
+                    Đang tải...
                   </MenuItem>
-                ))
-              ) : (
-                <MenuItem disabled sx={{ fontSize: '18px', py: 3 }}>
-                  {addressData.district ? 'Chọn quận/huyện trước' : 'Chưa chọn quận/huyện'}
-                </MenuItem>
-              )}
-            </Select>
-          </FormControl>
+                ) : Array.isArray(wards) && wards.length > 0 ? (
+                  wards.map((ward) => (
+                    <MenuItem key={ward.id} value={ward.id} sx={{ fontSize: '18px', py: 3 }}>
+                      {ward.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled sx={{ fontSize: '18px', py: 3 }}>
+                    {addressData.district ? 'Chọn quận/huyện trước' : 'Chưa chọn quận/huyện'}
+                  </MenuItem>
+                )}
+              </Select>
+            </FormControl>
+          )}
         </Grid>
 
         {/* Địa chỉ đầy đủ */}

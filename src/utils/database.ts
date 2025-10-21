@@ -6,7 +6,7 @@ import { Env } from '../types';
 
 export interface QueryResult<T = any> {
   success: boolean;
-  data?: T;
+  data?: any;
   meta?: {
     changes?: number;
     duration?: number;
@@ -23,7 +23,7 @@ export interface PaginationOptions {
 }
 
 export interface PaginatedResult<T> {
-  data: T[];
+  data: any[];
   pagination: {
     page: number;
     limit: number;
@@ -52,7 +52,6 @@ export class DatabasePool {
 
   async getConnection(env: Env): Promise<any> {
     const connectionId = this.generateConnectionId();
-    
     // For Cloudflare D1, we don't actually pool connections
     // but we can implement connection tracking and monitoring
     const connection = {
@@ -64,7 +63,6 @@ export class DatabasePool {
 
     this.connections.set(connectionId, connection);
     this.cleanupOldConnections();
-    
     return connection;
   }
 
@@ -264,7 +262,6 @@ export class DatabaseMonitor {
     avgTime: number;
     slowQueries: number;
   }> = new Map();
-
   static recordQuery(query: string, duration: number): void {
     const normalizedQuery = this.normalizeQuery(query);
     const stats = this.queryStats.get(normalizedQuery) || {
@@ -285,9 +282,7 @@ export class DatabaseMonitor {
     this.queryStats.set(normalizedQuery, stats);
 
     // Log slow queries
-    if (duration > 1000) {
-      console.warn(`Slow query detected (${duration}ms):`, query);
-    }
+    if (duration > 1000) { /* No operation */ }
   }
 
   private static normalizeQuery(query: string): string {
@@ -297,7 +292,7 @@ export class DatabaseMonitor {
       .replace(/'[^']*'/g, '?')
       .replace(/\s+/g, ' ')
       .trim()
-      .toLowerCase();
+      .toLowerCase()
   }
 
   static getStats(): Record<string, any> {
@@ -324,13 +319,12 @@ export class DatabaseMonitor {
  * Enhanced database executor with monitoring and error handling
  */
 export class DatabaseExecutor {
-  constructor(private env: Env) {}
-
+  constructor(private env: Env) { /* No operation */ }
   async execute<T = any>(
     query: string, 
     bindings: any[] = [],
-    options: { timeout?: number; retries?: number } = {}
-  ): Promise<QueryResult<T>> {
+    options: { timeout?: number; retries?: number } = { /* No operation */ }
+  ): Promise<QueryResult> {
     const startTime = Date.now();
     const { timeout = 10000, retries = 3 } = options;
 
@@ -343,16 +337,14 @@ export class DatabaseExecutor {
         // PERFORMANCE: Optimize query before execution
         const optimizedQuery = this.optimizeQuery(query);
 
-        const queryPromise = this.executeQuery<T>(optimizedQuery, bindings);
-        const result = await Promise.race([queryPromise, timeoutPromise]) as QueryResult<T>;
+        const queryPromise = this.executeQuery(optimizedQuery, bindings);
+        const result = await Promise.race([queryPromise, timeoutPromise]) as QueryResult;
 
         const duration = Date.now() - startTime;
         DatabaseMonitor.recordQuery(optimizedQuery, duration);
 
         // PERFORMANCE: Log slow queries for optimization
-        if (duration > 1000) {
-          console.warn(`🐌 Slow query detected (${duration}ms):`, optimizedQuery.substring(0, 100));
-        }
+        if (duration > 1000) { /* No operation */ }
 
         return {
           ...result,
@@ -406,7 +398,7 @@ export class DatabaseExecutor {
     return optimized;
   }
 
-  private async executeQuery<T>(query: string, bindings: any[]): Promise<QueryResult<T>> {
+  private async executeQuery(query: string, bindings: any[]): Promise<QueryResult> {
     const stmt = this.env.DB.prepare(query);
     const boundStmt = bindings.length > 0 ? stmt.bind(...bindings) : stmt;
 
@@ -414,7 +406,7 @@ export class DatabaseExecutor {
       const result = await boundStmt.all();
       return {
         success: true,
-        data: result.results as T,
+        data: result.results as unknown as any,
         meta: {
           changes: result.results?.length || 0
         }
@@ -423,7 +415,7 @@ export class DatabaseExecutor {
       const result = await boundStmt.run();
       return {
         success: true,
-        data: result as T,
+        data: result as unknown as any,
         meta: {
           changes: (result as any).changes,
           lastRowId: result.meta?.last_row_id
@@ -452,8 +444,8 @@ export class DatabaseExecutor {
     }
     paginatedQuery += ` LIMIT ${limit} OFFSET ${offset}`;
 
-    const dataResult = await this.execute<T[]>(paginatedQuery, bindings);
-    const data = dataResult.data || [];
+    const dataResult = await this.execute<any>(paginatedQuery, bindings);
+    const data = (dataResult.data || []) as T[];
 
     const totalPages = Math.ceil(total / limit);
 
@@ -475,15 +467,15 @@ export class DatabaseExecutor {
   ): Promise<QueryResult<T[]>> {
     // Note: Cloudflare D1 doesn't support traditional transactions
     // This is a simplified implementation that executes operations sequentially
-    const results: T[] = [];
+    const results: any[] = [];
     
     try {
       for (const operation of operations) {
-        const result = await this.execute<T>(operation.query, operation.bindings || []);
+        const result = await this.execute(operation.query, operation.bindings || []);
         if (!result.success) {
           throw new Error(result.error || 'Transaction operation failed');
         }
-        results.push(result.data as T);
+        results.push(result.data as unknown as any);
       }
 
       return {

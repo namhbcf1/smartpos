@@ -6,7 +6,7 @@
 
 import { Hono } from 'hono';
 import { jwt } from 'hono/jwt';
-import { zValidator } from '@hono/zod-validator';
+// import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import type { Env } from '../../types';
 import type { 
@@ -27,7 +27,6 @@ import { validateDateRange } from '../../utils/validation';
 import { timeDb } from '../../utils/monitoring-enhanced';
 
 const app = new Hono<{ Bindings: Env }>();
-
 // =============================================================================
 // VALIDATION SCHEMAS
 // =============================================================================
@@ -77,7 +76,6 @@ app.get('/overview', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secu
         AND i.is_void = 0
         ${outletFilter}
     `).bind(...outletBinding).first();
-
     // Get yesterday's stats for comparison
     const yesterdayStats = await c.env.DB.prepare(`
       SELECT 
@@ -89,19 +87,16 @@ app.get('/overview', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secu
         AND i.is_void = 0
         ${outletFilter}
     `).bind(...outletBinding).first();
-
     // Get total customers
     const totalCustomers = await c.env.DB.prepare(`
       SELECT COUNT(*) as count FROM customers 
       WHERE tenant_id = ? AND is_active = 1
     `).bind(user.tenantId).first();
-
     // Get total products
     const totalProducts = await c.env.DB.prepare(`
       SELECT COUNT(*) as count FROM products 
       WHERE tenant_id = ? AND is_active = 1
     `).bind(user.tenantId).first();
-
     // Get low stock products
     const lowStockProducts = await c.env.DB.prepare(`
       SELECT COUNT(*) as count
@@ -112,7 +107,6 @@ app.get('/overview', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secu
         AND p.is_active = 1
         AND (sl.quantity <= p.min_stock OR sl.quantity IS NULL)
     `).bind(user.tenantId).first();
-
     // Get pending orders (draft/pending invoices)
     const pendingOrders = await c.env.DB.prepare(`
       SELECT COUNT(*) as count 
@@ -120,7 +114,6 @@ app.get('/overview', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secu
       WHERE tenant_id = ? AND status IN ('draft', 'pending')
         ${outletFilter}
     `).bind(user.tenantId, ...outletBinding).first();
-
     // Get active warranties
     const activeWarranties = await c.env.DB.prepare(`
       SELECT COUNT(*) as count 
@@ -129,7 +122,6 @@ app.get('/overview', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secu
         AND status = 'active' 
         AND expiry_date > date('now')
     `).bind(user.tenantId).first();
-
     // Get pending warranty claims
     const pendingClaims = await c.env.DB.prepare(`
       SELECT COUNT(*) as count 
@@ -137,7 +129,6 @@ app.get('/overview', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secu
       WHERE tenant_id = ? 
         AND status IN ('new', 'triage', 'approved')
     `).bind(user.tenantId).first();
-
     // Calculate growth rates
     const revenueGrowth = yesterdayStats && yesterdayStats.yesterday_revenue > 0 
       ? ((todayStats?.today_revenue || 0) - (yesterdayStats.yesterday_revenue || 0)) / (yesterdayStats.yesterday_revenue || 1) * 100
@@ -181,7 +172,7 @@ app.get('/overview', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secu
 // =============================================================================
 
 // GET /dashboard/sales-analytics (timezone-aware)
-app.get('/sales-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secure-random-string-32-chars-minimum' }), zValidator('query', analyticsQuerySchema), async (c: any) => {
+app.get('/sales-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secure-random-string-32-chars-minimum' }), async (c: any) => {
   try {
     const user = c.get('jwtPayload') as AuthTokenPayload;
     
@@ -356,7 +347,6 @@ app.get('/sales-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key-20
           AND i.tenant_id = ?
           ${outletFilter}
       `).bind(compareStartDate, compareEndDate, user.tenantId, ...outletBinding).first();
-
       comparison = {
         period: `${compareStartDate} to ${compareEndDate}`,
         total_revenue: compareStats?.total_revenue || 0,
@@ -430,7 +420,6 @@ app.get('/inventory-analytics', jwt({ secret: 'smartpos-production-jwt-secret-ke
       ORDER BY current_stock ASC
       LIMIT 20
     `).bind(user.tenantId).all();
-
     // Get stock value by category
     const stockValueByCategory = await c.env.DB.prepare(`
       SELECT 
@@ -446,7 +435,6 @@ app.get('/inventory-analytics', jwt({ secret: 'smartpos-production-jwt-secret-ke
       HAVING product_count > 0
       ORDER BY retail_value DESC
     `).bind(user.tenantId).all();
-
     // Get fast/slow moving products (last 30 days)
     const productMovement = await c.env.DB.prepare(`
       SELECT 
@@ -469,7 +457,6 @@ app.get('/inventory-analytics', jwt({ secret: 'smartpos-production-jwt-secret-ke
       GROUP BY p.id
       ORDER BY turnover_ratio DESC
     `).bind(user.tenantId).all();
-
     const fastMoving = (productMovement.results || []).filter((p: any) => p.turnover_ratio > 0.5).slice(0, 10);
     const slowMoving = (productMovement.results || []).filter((p: any) => p.turnover_ratio < 0.1 && p.current_stock > 0).slice(0, 10);
 
@@ -486,7 +473,6 @@ app.get('/inventory-analytics', jwt({ secret: 'smartpos-production-jwt-secret-ke
       LEFT JOIN stock_levels sl ON p.id = sl.product_id
       WHERE p.tenant_id = ? AND p.is_active = 1
     `).bind(user.tenantId).first();
-
     const response = {
       metrics: {
         total_products: inventoryMetrics?.total_products || 0,
@@ -538,7 +524,6 @@ app.get('/customer-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key
       FROM customers
       WHERE tenant_id = ? AND is_active = 1
     `).bind(user.tenantId).first();
-
     // Get customers by loyalty tier
     const loyaltyTierDistribution = await c.env.DB.prepare(`
       SELECT 
@@ -558,7 +543,6 @@ app.get('/customer-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key
           ELSE 0 
         END DESC
     `).bind(user.tenantId).all();
-
     // Get top customers by spend
     const topCustomers = await c.env.DB.prepare(`
       SELECT 
@@ -576,7 +560,6 @@ app.get('/customer-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key
       ORDER BY total_spent DESC
       LIMIT 10
     `).bind(user.tenantId).all();
-
     // Get customer acquisition trend (last 12 months)
     const acquisitionTrend = await c.env.DB.prepare(`
       SELECT 
@@ -590,7 +573,6 @@ app.get('/customer-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key
       GROUP BY strftime('%Y-%m', created_at)
       ORDER BY month
     `).bind(user.tenantId).all();
-
     // Get customer retention metrics
     const retentionMetrics = await c.env.DB.prepare(`
       SELECT 
@@ -603,7 +585,6 @@ app.get('/customer-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key
       FROM customers
       WHERE tenant_id = ? AND is_active = 1
     `).bind(user.tenantId).first();
-
     const response = {
       metrics: {
         total_customers: customerMetrics?.total_customers || 0,
@@ -639,7 +620,7 @@ app.get('/customer-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key
 // =============================================================================
 
 // GET /dashboard/financial-analytics
-app.get('/financial-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secure-random-string-32-chars-minimum' }), zValidator('query', analyticsQuerySchema), async (c: any) => {
+app.get('/financial-analytics', jwt({ secret: 'smartpos-production-jwt-secret-key-2025-secure-random-string-32-chars-minimum' }), async (c: any) => {
   try {
     const user = c.get('jwtPayload') as AuthTokenPayload;
     
@@ -669,7 +650,6 @@ app.get('/financial-analytics', jwt({ secret: 'smartpos-production-jwt-secret-ke
         AND i.is_void = 0
         AND i.tenant_id = ?
     `).bind(startDate, endDate, user.tenantId).first();
-
     // Get payment method breakdown
     const paymentMethods = await c.env.DB.prepare(`
       SELECT 
@@ -686,7 +666,6 @@ app.get('/financial-analytics', jwt({ secret: 'smartpos-production-jwt-secret-ke
       GROUP BY pm.id, pm.name, pm.type
       ORDER BY total_amount DESC
     `).bind(startDate, endDate, user.tenantId).all();
-
     // Get daily financial trend
     const dailyTrend = await c.env.DB.prepare(`
       SELECT 
@@ -704,7 +683,6 @@ app.get('/financial-analytics', jwt({ secret: 'smartpos-production-jwt-secret-ke
       GROUP BY date(i.invoice_date)
       ORDER BY date(i.invoice_date)
     `).bind(startDate, endDate, user.tenantId).all();
-
     // Get refunds and voids
     const refundsAndVoids = await c.env.DB.prepare(`
       SELECT 
@@ -717,7 +695,6 @@ app.get('/financial-analytics', jwt({ secret: 'smartpos-production-jwt-secret-ke
       WHERE date(i.invoice_date) BETWEEN ? AND ?
         AND i.tenant_id = ?
     `).bind(startDate, endDate, user.tenantId).first();
-
     // Calculate margins and ratios
     const grossRevenue = financialMetrics?.gross_revenue || 0;
     const netRevenue = financialMetrics?.net_revenue || 0;

@@ -1,7 +1,6 @@
 /**
  * PRODUCTION-SAFE LOGGING UTILITY
  * 
- * Replaces console.log statements with proper logging that:
  * - Respects environment settings
  * - Provides structured logging
  * - Includes performance monitoring
@@ -193,13 +192,10 @@ export class Logger {
 
     switch (entry.level) {
       case LogLevel.DEBUG:
-        console.debug(message, entry.context || '');
         break;
       case LogLevel.INFO:
-        console.info(message, entry.context || '');
         break;
       case LogLevel.WARN:
-        console.warn(message, entry.context || '');
         break;
       case LogLevel.ERROR:
       case LogLevel.CRITICAL:
@@ -281,11 +277,8 @@ export class Logger {
 }
 
 /**
- * Convenience functions for easy migration from console.log
  */
 export const logger = Logger.getInstance();
-
-// Migration helpers - these replace console.log statements
 export const log = {
   debug: (message: string, ...args: any[]) => logger.debug(message, args.length > 0 ? args : undefined),
   info: (message: string, ...args: any[]) => logger.info(message, args.length > 0 ? args : undefined),
@@ -299,7 +292,6 @@ export const log = {
  */
 export class PerformanceLogger {
   private static timers = new Map<string, number>();
-
   static start(operation: string): void {
     PerformanceLogger.timers.set(operation, Date.now());
   }
@@ -318,12 +310,11 @@ export class PerformanceLogger {
     return duration;
   }
 
-  static measure<T>(operation: string, fn: () => T | Promise<T>, context?: any): T | Promise<T> {
+  static measure(operation: string, fn: () => T | Promise, context?: any): any | Promise {
     PerformanceLogger.start(operation);
     
     try {
       const result = fn();
-      
       if (result instanceof Promise) {
         return result.finally(() => {
           PerformanceLogger.end(operation, context);
@@ -348,7 +339,6 @@ export function createRequestLogger(env: Env) {
   return (c: any, next: any) => {
     const requestId = crypto.randomUUID();
     const startTime = Date.now();
-    
     logger.info('Request started', {
       requestId,
       method: c.req.method,

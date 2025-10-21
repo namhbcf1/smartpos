@@ -1,59 +1,134 @@
-name = "smartpos-api"
+name = "namhbcf-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
+account_id = "5b62d10947844251d23e0eac532531dd"
+compatibility_flags = ["nodejs_compat"]
 
-[env.production]
-name = "smartpos-api"
-route = "namhbcf-api.bangachieu2.workers.dev/*"
-
-[env.staging]
-name = "smartpos-api-staging"
-route = "smartpos-api-staging.bangachieu2.workers.dev/*"
+# Cron Triggers
+[triggers]
+crons = ["*/15 * * * *"]  # Every 15 minutes
 
 # D1 Database
 [[d1_databases]]
 binding = "DB"
-database_name = "Smart POS Free"
-database_id = "1f6dec6f-f953-4f00-9408-afd28a7f6650"
+database_name = "namhbcf-uk"
+database_id = "55344bf5-d142-4c0d-9e53-0ace4c41870c"
 
 # KV Storage
 [[kv_namespaces]]
 binding = "CACHE"
 id = "1aefb75bb01146b480b7d73fa4189724"
-preview_id = "1aefb75bb01146b480b7d73fa4189724"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
 id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
-preview_id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
 
 [[kv_namespaces]]
 binding = "CONFIG"
 id = "3e4b6c72d12d40929b73df05c7c93450"
-preview_id = "3e4b6c72d12d40929b73df05c7c93450"
 
 [[kv_namespaces]]
 binding = "ANALYTICS"
 id = "eb7da0cbf6e349f39a9c229975daa9b4"
-preview_id = "eb7da0cbf6e349f39a9c229975daa9b4"
 
 # R2 Storage
 [[r2_buckets]]
 binding = "UPLOADS"
 bucket_name = "smartpos-uploads"
 
+# Environment Variables (Default)
+[vars]
+NODE_ENV = "production"
+ENVIRONMENT = "production"
+JWT_SECRET = "smartpos-production-jwt-secret-key-2025-secure-random-string-32-chars-minimum"
+JWT_ISSUER = "smartpos-production"
+JWT_AUDIENCE = "smartpos-clients"
+ENCRYPTION_KEY = "production-encryption-key-32-chars"
+API_VERSION = "v1"
+API_BASE_URL = "https://namhbcf-api.bangachieu2.workers.dev"
+FRONTEND_URL = "https://namhbcf-uk.pages.dev"
+CORS_ORIGINS = "https://namhbcf.uk,https://namhbcf-uk.pages.dev,http://localhost:5173"
+RATE_LIMIT_ENABLED = "true"
+RATE_LIMIT_WINDOW_MS = "60000"
+RATE_LIMIT_MAX_REQUESTS = "100"
+AUTH_RATE_LIMIT_MAX_REQUESTS = "5"
+AUTH_RATE_LIMIT_WINDOW_MS = "900000"
+LOG_LEVEL = "info"
+ENABLE_ACCESS_LOGS = "true"
+ENABLE_ERROR_LOGS = "true"
+HEALTH_CHECK_ENABLED = "true"
+MONITORING_ENABLED = "true"
+ANALYTICS_ENABLED = "true"
+CACHE_TTL = "3600"
+SESSION_TIMEOUT = "86400"
+MAX_UPLOAD_SIZE = "10485760"
+ENABLE_REAL_TIME = "true"
+ENABLE_NOTIFICATIONS = "true"
+ENABLE_ANALYTICS = "true"
+ENABLE_BACKUP = "true"
+
+# GHTK Shipping Service
+GHTK_BASE_URL = "https://services.giaohangtietkiem.vn"
+GHTK_TOKEN = "2WUbAdad9bm3CtdgkntvD0gm7tqYVkDjn1zZmGf"
+
+[env.production]
+name = "namhbcf-api"
+
 # Durable Objects
-[[durable_objects.bindings]]
+[[env.production.durable_objects.bindings]]
 name = "NOTIFICATION_OBJECT"
 class_name = "NotificationBroadcaster"
 
-# Migrations
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = [ "NotificationBroadcaster" ]
+[[env.production.durable_objects.bindings]]
+name = "INVENTORY_SYNC"
+class_name = "InventorySyncObject"
+
+[[env.production.durable_objects.bindings]]
+name = "POS_SYNC"
+class_name = "POSSyncObject"
+
+[[env.production.durable_objects.bindings]]
+name = "WARRANTY_SYNC"
+class_name = "WarrantySyncObject"
+
+[[env.production.durable_objects.bindings]]
+name = "INVENTORY_STATE"
+class_name = "InventoryState"
+
+[[env.production.durable_objects.bindings]]
+name = "SESSION_MANAGER"
+class_name = "SessionManager"
+
+# D1 Database
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "namhbcf-uk"
+database_id = "55344bf5-d142-4c0d-9e53-0ace4c41870c"
+
+# KV Storage
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "1aefb75bb01146b480b7d73fa4189724"
+
+[[env.production.kv_namespaces]]
+binding = "SESSIONS"
+id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
+
+[[env.production.kv_namespaces]]
+binding = "CONFIG"
+id = "3e4b6c72d12d40929b73df05c7c93450"
+
+[[env.production.kv_namespaces]]
+binding = "ANALYTICS"
+id = "eb7da0cbf6e349f39a9c229975daa9b4"
+
+# R2 Storage
+[[env.production.r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "smartpos-uploads"
 
 # Environment Variables
-[vars]
+[env.production.vars]
 NODE_ENV = "production"
 ENVIRONMENT = "production"
 JWT_SECRET = "smartpos-production-jwt-secret-key-2025-secure-random-string-32-chars-minimum"
@@ -82,3 +157,203 @@ ENABLE_REAL_TIME = "true"
 ENABLE_NOTIFICATIONS = "true"
 ENABLE_ANALYTICS = "true"
 ENABLE_BACKUP = "true"
+ENABLE_MIGRATIONS = "false"
+
+# GHTK Shipping Service
+GHTK_BASE_URL = "https://services.giaohangtietkiem.vn"
+GHTK_TOKEN = "2WUbAdad9bm3CtdgkntvD0gm7tqYVkDjn1zZmGf"
+
+[env.main]
+name = "namhbcf-api"
+
+# Durable Objects
+[[env.main.durable_objects.bindings]]
+name = "NOTIFICATION_OBJECT"
+class_name = "NotificationBroadcaster"
+
+[[env.main.durable_objects.bindings]]
+name = "INVENTORY_SYNC"
+class_name = "InventorySyncObject"
+
+[[env.main.durable_objects.bindings]]
+name = "POS_SYNC"
+class_name = "POSSyncObject"
+
+[[env.main.durable_objects.bindings]]
+name = "WARRANTY_SYNC"
+class_name = "WarrantySyncObject"
+
+[[env.main.durable_objects.bindings]]
+name = "INVENTORY_STATE"
+class_name = "InventoryState"
+
+[[env.main.durable_objects.bindings]]
+name = "SESSION_MANAGER"
+class_name = "SessionManager"
+
+# D1 Database
+[[env.main.d1_databases]]
+binding = "DB"
+database_name = "namhbcf-uk"
+database_id = "55344bf5-d142-4c0d-9e53-0ace4c41870c"
+
+# KV Storage
+[[env.main.kv_namespaces]]
+binding = "CACHE"
+id = "1aefb75bb01146b480b7d73fa4189724"
+
+[[env.main.kv_namespaces]]
+binding = "SESSIONS"
+id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
+
+[[env.main.kv_namespaces]]
+binding = "CONFIG"
+id = "3e4b6c72d12d40929b73df05c7c93450"
+
+[[env.main.kv_namespaces]]
+binding = "ANALYTICS"
+id = "eb7da0cbf6e349f39a9c229975daa9b4"
+
+# R2 Storage
+[[env.main.r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "smartpos-uploads"
+
+# Environment Variables
+[env.main.vars]
+NODE_ENV = "production"
+ENVIRONMENT = "main"
+JWT_SECRET = "smartpos-production-jwt-secret-key-2025-secure-random-string-32-chars-minimum"
+JWT_ISSUER = "smartpos-production"
+JWT_AUDIENCE = "smartpos-clients"
+ENCRYPTION_KEY = "production-encryption-key-32-chars"
+API_VERSION = "v1"
+API_BASE_URL = "https://namhbcf-api.bangachieu2.workers.dev"
+FRONTEND_URL = "https://namhbcf-uk.pages.dev"
+CORS_ORIGINS = "https://namhbcf.uk,https://namhbcf-uk.pages.dev"
+RATE_LIMIT_ENABLED = "true"
+RATE_LIMIT_WINDOW_MS = "60000"
+RATE_LIMIT_MAX_REQUESTS = "100"
+AUTH_RATE_LIMIT_MAX_REQUESTS = "5"
+AUTH_RATE_LIMIT_WINDOW_MS = "900000"
+LOG_LEVEL = "info"
+ENABLE_ACCESS_LOGS = "true"
+ENABLE_ERROR_LOGS = "true"
+HEALTH_CHECK_ENABLED = "true"
+MONITORING_ENABLED = "true"
+ANALYTICS_ENABLED = "true"
+CACHE_TTL = "3600"
+SESSION_TIMEOUT = "86400"
+MAX_UPLOAD_SIZE = "10485760"
+ENABLE_REAL_TIME = "true"
+ENABLE_NOTIFICATIONS = "true"
+ENABLE_ANALYTICS = "true"
+ENABLE_BACKUP = "true"
+ENABLE_MIGRATIONS = "false"
+
+# Cloudflare R2 Storage Credentials
+CLOUDFLARE_R2_ACCESS_KEY_ID = "75c8e3a1127fe219646506b804b70537"
+CLOUDFLARE_R2_SECRET_ACCESS_KEY = "6e63a2c4af0d3b395842caef6e1d6d1b1da092188be26d4ba041781373b48091"
+CLOUDFLARE_R2_ENDPOINT = "https://5b62d10947844251d23e0eac532531dd.r2.cloudflarestorage.com"
+CLOUDFLARE_R2_BUCKET_NAME = "smartpos-uploads"
+
+[env.staging]
+name = "smartpos-api-staging"
+route = "smartpos-api-staging.bangachieu2.workers.dev/*"
+
+# D1 Database
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "smartpos-free"
+database_id = "1f6dec6f-f953-4f00-9408-afd28a7f6650"
+
+# KV Storage
+[[env.staging.kv_namespaces]]
+binding = "CACHE"
+id = "1aefb75bb01146b480b7d73fa4189724"
+preview_id = "1aefb75bb01146b480b7d73fa4189724"
+
+[[env.staging.kv_namespaces]]
+binding = "SESSIONS"
+id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
+preview_id = "1df2ffe3c7cd4ef3842132ab73cff0c7"
+
+[[env.staging.kv_namespaces]]
+binding = "CONFIG"
+id = "3e4b6c72d12d40929b73df05c7c93450"
+preview_id = "3e4b6c72d12d40929b73df05c7c93450"
+
+[[env.staging.kv_namespaces]]
+binding = "ANALYTICS"
+id = "eb7da0cbf6e349f39a9c229975daa9b4"
+preview_id = "eb7da0cbf6e349f39a9c229975daa9b4"
+
+# R2 Storage
+[[env.staging.r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "smartpos-uploads"
+
+# Durable Objects
+[[durable_objects.bindings]]
+name = "NOTIFICATION_OBJECT"
+class_name = "NotificationBroadcaster"
+
+[[durable_objects.bindings]]
+name = "INVENTORY_SYNC"
+class_name = "InventorySyncObject"
+
+[[durable_objects.bindings]]
+name = "POS_SYNC"
+class_name = "POSSyncObject"
+
+[[durable_objects.bindings]]
+name = "WARRANTY_SYNC"
+class_name = "WarrantySyncObject"
+
+[[durable_objects.bindings]]
+name = "INVENTORY_STATE"
+class_name = "InventoryState"
+
+[[durable_objects.bindings]]
+name = "SESSION_MANAGER"
+class_name = "SessionManager"
+
+# Migrations - enable DO classes
+[[migrations]]
+tag = "v3-enable-dos"
+new_sqlite_classes = [ "NotificationBroadcaster", "InventoryState", "SessionManager", "InventorySyncObject", "POSSyncObject", "WarrantySyncObject", "NotificationObject" ]
+
+# Environment Variables
+[env.staging.vars]
+NODE_ENV = "production"
+ENVIRONMENT = "staging"
+JWT_SECRET = "smartpos-staging-jwt-secret-key-2025-secure-random-string-32-chars-minimum"
+JWT_ISSUER = "smartpos-staging"
+JWT_AUDIENCE = "smartpos-clients"
+ENCRYPTION_KEY = "staging-encryption-key-32-chars"
+API_VERSION = "v1"
+API_BASE_URL = "https://smartpos-api-staging.bangachieu2.workers.dev"
+FRONTEND_URL = "https://namhbcf-uk.pages.dev"
+CORS_ORIGINS = "https://namhbcf.uk,https://namhbcf-uk.pages.dev"
+RATE_LIMIT_ENABLED = "true"
+RATE_LIMIT_WINDOW_MS = "60000"
+RATE_LIMIT_MAX_REQUESTS = "100"
+AUTH_RATE_LIMIT_MAX_REQUESTS = "5"
+AUTH_RATE_LIMIT_WINDOW_MS = "900000"
+LOG_LEVEL = "info"
+ENABLE_ACCESS_LOGS = "true"
+ENABLE_ERROR_LOGS = "true"
+HEALTH_CHECK_ENABLED = "true"
+MONITORING_ENABLED = "true"
+ANALYTICS_ENABLED = "true"
+CACHE_TTL = "3600"
+SESSION_TIMEOUT = "86400"
+MAX_UPLOAD_SIZE = "10485760"
+ENABLE_REAL_TIME = "true"
+ENABLE_NOTIFICATIONS = "true"
+ENABLE_ANALYTICS = "true"
+ENABLE_BACKUP = "true"
+
+# GHTK Shipping Service
+GHTK_BASE_URL = "https://services.giaohangtietkiem.vn"
+GHTK_TOKEN = "2WUbAdad9bm3CtdgkntvD0gm7tqYVkDjn1zZmGf"

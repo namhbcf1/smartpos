@@ -4,13 +4,11 @@ import { MigrationService } from '../../services/MigrationService';
 import { sign } from 'hono/jwt';
 
 const app = new Hono<{ Bindings: Env }>();
-
 // POST /admin/seed/migrate - Run complete schema migration
 app.post('/migrate', async (c: any) => {
   try {
     // Simple migration - just ensure basic tables exist
     await c.env.DB.prepare('PRAGMA foreign_keys = ON').run();
-
     // Create basic products table if not exists
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS products (
@@ -27,7 +25,6 @@ app.post('/migrate', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     // Create basic categories table if not exists
     await c.env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS categories (
@@ -40,7 +37,6 @@ app.post('/migrate', async (c: any) => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
     return c.json({
       success: true,
       message: 'Basic schema migration completed successfully'
@@ -60,7 +56,6 @@ app.get('/schema-health', async (c: any) => {
   try {
     const migrationService = new MigrationService(c.env);
     const health = await migrationService.checkSchemaHealth();
-
     return c.json({
       success: true,
       data: health
@@ -80,7 +75,7 @@ app.get('/test', async (c: any) => {
   return c.json({
     success: true,
     message: 'Admin seed router is working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString();
   });
 });
 
@@ -146,7 +141,6 @@ app.post('/bootstrap', async (c: any) => {
 app.post('/products', async (c: any) => {
   try {
     const { count = 50, tenant_id = 'default' } = await c.req.json();
-    
     const products = [];
     const categories = ['Electronics', 'Clothing', 'Food', 'Books', 'Home'];
     
@@ -164,7 +158,6 @@ app.post('/products', async (c: any) => {
     const categoryRows = await c.env.DB.prepare(`
       SELECT id FROM categories WHERE tenant_id = ?
     `).bind(tenant_id).all();
-    
     const categoryIds = (categoryRows.results || []).map((row: any) => row.id);
     
     for (let i = 1; i <= count; i++) {
@@ -180,13 +173,11 @@ app.post('/products', async (c: any) => {
         INSERT INTO products (id, tenant_id, name, sku, price, cost, stock, category_id, active)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(productId, tenant_id, name, sku, price, cost, stock, categoryId, 1).run();
-
       // Log initial inventory
       await c.env.DB.prepare(`
         INSERT INTO inventory_logs (tenant_id, product_id, delta, reason)
         VALUES (?, ?, ?, ?)
       `).bind(tenant_id, productId, stock, 'Initial stock').run();
-
       products.push({ id: productId, name, sku, price, stock });
     }
     
@@ -207,7 +198,6 @@ app.post('/products', async (c: any) => {
 app.post('/customers', async (c: any) => {
   try {
     const { count = 100, tenant_id = 'default' } = await c.req.json();
-    
     const customers = [];
     const tiers = ['standard', 'silver', 'gold', 'platinum'];
     
@@ -223,7 +213,6 @@ app.post('/customers', async (c: any) => {
         INSERT INTO customers (id, tenant_id, name, phone, email, tier, loyalty_points)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `).bind(customerId, tenant_id, name, phone, email, tier, loyaltyPoints).run();
-      
       customers.push({ id: customerId, name, phone, email, tier, loyaltyPoints });
     }
     
@@ -240,11 +229,95 @@ app.post('/customers', async (c: any) => {
   }
 });
 
+// POST /admin/seed/extend-serial-numbers - Add comprehensive fields to serial_numbers table
+app.post('/extend-serial-numbers', async (c: any) => {
+  try {
+    const statements = [
+      // Add import information fields
+      'ALTER TABLE serial_numbers ADD COLUMN import_invoice TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN supplier_id TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN imported_by TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN cost_price INTEGER', // in cents
+      
+      // Add sale information fields
+      'ALTER TABLE serial_numbers ADD COLUMN sale_date TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN customer_name TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN customer_phone TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN sale_price INTEGER', // in cents
+      'ALTER TABLE serial_numbers ADD COLUMN sold_by TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN sales_channel TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN order_status TEXT',
+      
+      // Add warranty information fields
+      'ALTER TABLE serial_numbers ADD COLUMN warranty_type TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN warranty_start_date TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN warranty_end_date TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN warranty_months INTEGER DEFAULT 36',
+      'ALTER TABLE serial_numbers ADD COLUMN warranty_ticket TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN warranty_provider TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN warranty_status TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN warranty_last_service TEXT',
+      
+      // Add internal management fields
+      'ALTER TABLE serial_numbers ADD COLUMN internal_id TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN source TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN cycle_count INTEGER DEFAULT 0',
+      'ALTER TABLE serial_numbers ADD COLUMN cycle_status TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN risk_level TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN internal_notes TEXT',
+      
+      // Add system information fields
+      'ALTER TABLE serial_numbers ADD COLUMN data_source TEXT',
+      'ALTER TABLE serial_numbers ADD COLUMN sync_status TEXT',
+      
+      // Create indexes for new fields
+      'CREATE INDEX IF NOT EXISTS idx_serial_numbers_supplier ON serial_numbers(supplier_id)',
+      'CREATE INDEX IF NOT EXISTS idx_serial_numbers_warranty ON serial_numbers(warranty_status, warranty_end_date)',
+      'CREATE INDEX IF NOT EXISTS idx_serial_numbers_internal ON serial_numbers(internal_id)',
+      'CREATE INDEX IF NOT EXISTS idx_serial_numbers_source ON serial_numbers(source)',
+      'CREATE INDEX IF NOT EXISTS idx_serial_numbers_cycle ON serial_numbers(cycle_status)'
+    ];
+
+    const results = [];
+    for (const statement of statements) {
+      try {
+        const result = await c.env.DB.prepare(statement).run();
+        results.push({ statement, success: true, changes: result.changes });
+      } catch (error: any) {
+        // Skip if column already exists
+        if (error.message.includes('duplicate column name')) {
+          results.push({ statement, success: true, skipped: true, reason: 'Column already exists' });
+        } else {
+          results.push({ statement, success: false, error: error.message });
+        }
+      }
+    }
+
+    return c.json({
+      success: true,
+      message: 'Serial numbers table extended successfully',
+      data: {
+        total_statements: statements.length,
+        successful: results.filter(r => r.success).length,
+        skipped: results.filter(r => r.skipped).length,
+        failed: results.filter(r => !r.success).length,
+        results
+      }
+    });
+  } catch (error) {
+    console.error('Extend serial numbers error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to extend serial numbers table',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
 // POST /admin/seed/cleanup - Delete all data for specified tenant_id
 app.post('/cleanup', async (c: any) => {
   try {
     const { tenant_id = 'default' } = await c.req.json();
-    
     // Delete in reverse dependency order
     const tables = [
       'audit_logs',
@@ -259,13 +332,11 @@ app.post('/cleanup', async (c: any) => {
       'users'
     ];
     
-    const deleteCounts = {};
-    
+    const deleteCounts = { /* No operation */ }
     for (const table of tables) {
       const result = await c.env.DB.prepare(`
         DELETE FROM ${table} WHERE tenant_id = ?
       `).bind(tenant_id).run();
-      
       (deleteCounts as any)[table] = (result as any).changes || 0;
     }
     
@@ -284,7 +355,7 @@ app.post('/cleanup', async (c: any) => {
 });
 
 // Helper function to hash passwords
-async function hashPassword(password: string): Promise<string> {
+async function hashPassword(password: string): Promise {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -293,5 +364,4 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 export default app;
-
 

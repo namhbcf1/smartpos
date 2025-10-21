@@ -183,9 +183,7 @@ export class ErrorLogger {
     }
 
     // Log based on severity
-    if (error instanceof AppError && error.statusCode < 500) {
-      console.warn('Application Warning:', JSON.stringify(logData, null, 2));
-    } else {
+    if (error instanceof AppError && error.statusCode < 500) { /* No operation */ } else {
       console.error('Application Error:', JSON.stringify(logData, null, 2));
     }
   }
@@ -208,7 +206,6 @@ export function createErrorHandler(isDevelopment: boolean = false) {
   return (error: Error, c: any) => {
     // Generate request ID for tracking
     const requestId = crypto.randomUUID();
-    
     // Log the error
     ErrorLogger.log(error, {
       requestId,
@@ -237,9 +234,9 @@ export function createErrorHandler(isDevelopment: boolean = false) {
 
 // Async error wrapper
 export function asyncHandler<T extends any[], R>(
-  fn: (...args: T) => Promise<R>
+  fn: (...args: any) => Promise<R>
 ) {
-  return (...args: T): Promise<R> => {
+  return (...args: any): Promise<R> => {
     return Promise.resolve(fn(...args)).catch((error) => {
       throw error instanceof AppError ? error : new AppError(
         error.message || 'An unexpected error occurred',

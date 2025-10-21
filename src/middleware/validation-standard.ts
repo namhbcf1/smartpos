@@ -186,7 +186,7 @@ export const withValidation = {
     params: CommonSchemas.idParam,
     body: z.object({
       quantity: z.number().int('Quantity must be an integer'),
-      type: z.enum(['in', 'out', 'adjustment'], 'Invalid movement type'),
+      type: z.enum(['in', 'out', 'adjustment'], { message: 'Invalid movement type' }),
       reason: z.string().optional(),
     }),
   }),

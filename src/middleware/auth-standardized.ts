@@ -52,7 +52,6 @@ export const standardAuthenticate: MiddlewareHandler<{
     }
 
     // Security logging
-    console.log(`🔐 Auth attempt: ${c.req.method} ${c.req.url} - Token source: ${token ? tokenSource : 'none'}`);
 
     if (!token) {
       return c.json<ApiResponse<null>>({
@@ -99,9 +98,7 @@ export const standardAuthenticate: MiddlewareHandler<{
       // Store JWT payload for logout
       c.set('jwtPayload', payload);
 
-      console.log(`✅ Auth success: ${payload.username} (${payload.role})`);
       await next();
-
     } catch (jwtError) {
       console.error('❌ JWT verification failed:', jwtError);
 
@@ -150,7 +147,6 @@ export const standardAuthorize = (allowedRoles: UserRole[]): MiddlewareHandler =
       const user = c.get('user');
       
       if (!user) {
-        console.warn('🚨 Authorization failed: No user in context');
         return c.json<ApiResponse<null>>({
           success: false,
           data: null,
@@ -160,7 +156,6 @@ export const standardAuthorize = (allowedRoles: UserRole[]): MiddlewareHandler =
       }
 
       if (!allowedRoles.includes(user.role)) {
-        console.warn(`🚨 Authorization failed: User ${user.username} (${user.role}) attempted to access endpoint requiring roles: ${allowedRoles.join(', ')}`);
         
         // Log security event
         await logSecurityEvent(c.env, {
@@ -171,7 +166,7 @@ export const standardAuthorize = (allowedRoles: UserRole[]): MiddlewareHandler =
           requiredRoles: allowedRoles,
           endpoint: c.req.url,
           method: c.req.method,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString();
         });
 
         return c.json<ApiResponse<null>>({
@@ -182,9 +177,7 @@ export const standardAuthorize = (allowedRoles: UserRole[]): MiddlewareHandler =
         }, 403);
       }
 
-      console.log(`✅ Authorization success: ${user.username} (${user.role}) accessing ${c.req.method} ${c.req.url}`);
       await next();
-
     } catch (error) {
       console.error('❌ Authorization middleware error:', error);
       return c.json<ApiResponse<null>>({
@@ -230,7 +223,6 @@ export const optionalAuthenticate: MiddlewareHandler<{
         });
       } catch (error) {
         // Ignore token errors for optional auth
-        console.log('Optional auth: Invalid token ignored');
       }
     }
 
@@ -251,7 +243,6 @@ async function logSecurityEvent(env: Env, event: any): Promise<void> {
     await env.CACHE.put(eventKey, JSON.stringify(event)); // Store security event
     
     // Also log to console for immediate monitoring
-    console.warn('🚨 SECURITY EVENT:', JSON.stringify(event));
   } catch (error) {
     console.error('Failed to log security event:', error);
   }
@@ -270,7 +261,6 @@ export const authRateLimit: MiddlewareHandler = async (c, next) => {
     const attempts = currentAttempts ? parseInt(currentAttempts) : 0;
     
     if (attempts >= MAX_LOGIN_ATTEMPTS) {
-      console.warn(`🚨 Rate limit exceeded for IP: ${clientIP}`);
       return c.json({
         success: false,
         message: 'Too many login attempts. Please try again later.',
@@ -279,7 +269,6 @@ export const authRateLimit: MiddlewareHandler = async (c, next) => {
     }
     
     await next();
-    
   } catch (error) {
     console.error('Rate limiting error:', error);
     await next(); // Continue on rate limit errors

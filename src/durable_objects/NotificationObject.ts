@@ -1,7 +1,6 @@
 export class NotificationObject {
   private state: any;
   private sessions: Set<any> = new Set();
-
   constructor(state: any) {
     this.state = state;
   }
@@ -18,7 +17,6 @@ export class NotificationObject {
       this.sessions.add(server);
       
       server.accept();
-      
       server.addEventListener('message', async (event: any) => {
         try {
           const data = JSON.parse(event.data);
@@ -48,7 +46,6 @@ export class NotificationObject {
     if (request.method === "POST" && url.pathname === "/broadcast") {
       // Broadcast message to all connected clients
       const data = await request.json();
-      
       for (const session of this.sessions) {
         try {
           session.send(JSON.stringify(data));

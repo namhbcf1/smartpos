@@ -2,12 +2,44 @@ import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 
 // API Configuration - Use environment variable or fallback
 // Ensure base URL always points to the /api aggregator
-const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://namhbcf-api.bangachieu2.workers.dev';
-const API_BASE_URL = RAW_API_BASE_URL.endsWith('/api') ? RAW_API_BASE_URL : `${RAW_API_BASE_URL}/api`;
+function sanitizeApiBaseUrl(raw: string | undefined): string {
+  const fallback = 'https://namhbcf-api.bangachieu2.workers.dev';
 
-// Create axios instance
+  // If no value provided, use fallback
+  if (!raw) {
+    console.warn('⚠️ VITE_API_BASE_URL not set, using fallback:', fallback);
+    return fallback;
+  }
+
+  // Guard against literal placeholders or invalid values coming from build envs
+  const looksLikePlaceholder = /\$\{[^}]+\}/.test(raw) || raw.trim() === '' || raw.startsWith('$');
+  const invalidScheme = !/^https?:\/\//i.test(raw);
+
+  if (looksLikePlaceholder) {
+    console.warn('⚠️ VITE_API_BASE_URL contains placeholder, using fallback:', fallback);
+    return fallback;
+  }
+
+  if (invalidScheme) {
+    console.warn('⚠️ VITE_API_BASE_URL has invalid scheme, using fallback:', fallback);
+    return fallback;
+  }
+
+  // Remove /api suffix if present (we'll add it separately)
+  const resolved = raw.replace(/\/api\/?$/, '');
+  return resolved;
+}
+
+const API_BASE_URL = sanitizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+console.log('🔧 API Configuration:', {
+  envVar: import.meta.env.VITE_API_BASE_URL,
+  resolvedBaseURL: API_BASE_URL
+});
+
+// Create axios instance with /api suffix
 const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/api`,
   timeout: 10000, // Increase to 10 seconds to avoid timeout
   headers: {
     'Content-Type': 'application/json',
@@ -631,10 +663,11 @@ export const authAPI = {
   // Login with real API - Using fetch for better compatibility
   login: async (username: string, password: string) => {
     try {
-      console.log('Attempting login:', { username, apiUrl: API_BASE_URL });
-      
+      const loginUrl = `${API_BASE_URL}/api/auth/login`;
+      console.log('Attempting login:', { username, apiUrl: loginUrl });
+
       const startTime = Date.now();
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

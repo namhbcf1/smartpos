@@ -21,7 +21,6 @@ export class ReturnsHandlers {
   async initialize(): Promise<void> {
     try {
       await this.service.initialize();
-      console.log('✅ Returns service initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize returns service:', error);
       // Don't throw error to prevent blocking the entire application
@@ -31,7 +30,6 @@ export class ReturnsHandlers {
   // GET /returns - Get all returns with filtering and pagination
   async getReturns(c: Context<{ Bindings: Env }>): Promise<Response> {
     try {
-      console.log('🔍 Returns handler called');
 
       const query = c.req.query();
       const params: ReturnQueryParams = {
@@ -52,8 +50,6 @@ export class ReturnsHandlers {
         sort_order: (query.sort_order as 'asc' | 'desc') || 'desc'
       };
 
-      console.log('📄 Returns query params:', params);
-
       try {
         const result = await this.service.getReturns(params);
 
@@ -71,7 +67,6 @@ export class ReturnsHandlers {
 
         return c.json(response);
       } catch (serviceError) {
-        console.warn('Service error, falling back to empty response:', serviceError);
 
         // Fallback response when service fails
         const response: ReturnResponse = {
@@ -143,7 +138,6 @@ export class ReturnsHandlers {
       }
 
       const data = await c.req.json<ReturnCreateData>();
-      
       // Basic validation
       if (!data.original_sale_id || !data.return_reason) {
         return c.json({
@@ -160,6 +154,47 @@ export class ReturnsHandlers {
       }
 
       const returnItem = await this.service.createReturn(data, currentUser.id);
+
+      // Optional: handle serial numbers immediately (mark as returned, record movements)
+      try {
+        const now = new Date().toISOString();
+        for (const item of (data.items || [])) {
+          const serials: string[] = Array.isArray((item as any).serial_numbers) ? (item as any).serial_numbers : [];
+          if (serials.length === 0) continue;
+
+          for (const sn of serials) {
+            const row = await c.env.DB.prepare(`
+              SELECT id, status FROM serial_numbers
+              WHERE product_id = ? AND serial_number = ? AND COALESCE(tenant_id, 'default') = 'default'
+            `).bind(item.product_id, String(sn).trim()).first();
+            if (!row) continue;
+            // Only allow transition from sold -> returned at create time
+            if ((row as any).status === 'sold') {
+              await c.env.DB.prepare(`
+                UPDATE serial_numbers
+                SET status = 'returned', updated_at = ?
+                WHERE id = ?
+              `).bind(now, (row as any).id).run();
+
+              // Movement record
+              await c.env.DB.prepare(`
+                INSERT INTO inventory_movements (
+                  id, tenant_id, product_id, transaction_type, quantity, reason, created_at, product_name, product_sku
+                ) VALUES (?, 'default', ?, 'return', 1, ?, ?, (SELECT name FROM products WHERE id = ?), (SELECT sku FROM products WHERE id = ?))
+              `).bind(crypto.randomUUID(), item.product_id, data.return_reason || 'return', now, item.product_id, item.product_id).run();
+            }
+          }
+
+          // Store serials into return_items.notes (JSON merge)
+          await c.env.DB.prepare(`
+            UPDATE return_items
+            SET notes = CASE WHEN notes IS NULL OR notes = '' THEN ? ELSE notes || '\n' || ? END
+            WHERE return_id = ? AND product_id = ?
+          `).bind(JSON.stringify({ serial_numbers: serials }), JSON.stringify({ serial_numbers: serials }), (returnItem as any).id, item.product_id).run();
+        }
+      } catch (e) {
+        console.warn('Return create: serial handling warning:', (e as any)?.message);
+      }
 
       const response: ReturnResponse = {
         success: true,
@@ -197,7 +232,6 @@ export class ReturnsHandlers {
       }
 
       const data = await c.req.json<ReturnUpdateData>();
-
       const returnItem = await this.service.updateReturn(id, data, currentUser.id);
 
       const response: ReturnResponse = {
@@ -236,7 +270,6 @@ export class ReturnsHandlers {
       }
 
       const data = await c.req.json<ReturnApprovalData>();
-
       const returnItem = await this.service.approveReturn(id, data, currentUser.id);
 
       const response: ReturnResponse = {
@@ -275,7 +308,6 @@ export class ReturnsHandlers {
       }
 
       const { rejection_reason } = await c.req.json<{ rejection_reason: string }>();
-
       if (!rejection_reason || rejection_reason.trim().length === 0) {
         return c.json({
           success: false,
@@ -322,6 +354,41 @@ export class ReturnsHandlers {
 
       const returnItem = await this.service.completeReturn(id, currentUser.id);
 
+      // If items are restockable and condition=new, move serials returned -> in_stock
+      try {
+        const now = new Date().toISOString();
+        const full = await this.service.getReturnById(id);
+        if (full && (full as any).items) {
+          for (const ri of (full as any).items) {
+            if (ri.restockable && ri.condition === 'new') {
+              // Read serials from notes JSON if present
+              let serials: string[] = [];
+              try {
+                if (ri.notes) {
+                  const parsed = JSON.parse(ri.notes);
+                  if (Array.isArray(parsed?.serial_numbers)) serials = parsed.serial_numbers as string[];
+                }
+              } catch {}
+              for (const sn of serials) {
+                await c.env.DB.prepare(`
+                  UPDATE serial_numbers
+                  SET status = 'in_stock', order_id = order_id, order_item_id = order_item_id, updated_at = ?
+                  WHERE product_id = ? AND serial_number = ? AND status = 'returned'
+                `).bind(now, ri.product_id, String(sn).trim()).run();
+
+                await c.env.DB.prepare(`
+                  INSERT INTO inventory_movements (
+                    id, tenant_id, product_id, transaction_type, quantity, reason, created_at, product_name, product_sku
+                  ) VALUES (?, 'default', ?, 'adjustment_in', 1, 'restock from return', ?, (SELECT name FROM products WHERE id = ?), (SELECT sku FROM products WHERE id = ?))
+                `).bind(crypto.randomUUID(), ri.product_id, now, ri.product_id, ri.product_id).run();
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Return complete: serial restock warning:', (e as any)?.message);
+      }
+
       const response: ReturnResponse = {
         success: true,
         data: returnItem,
@@ -342,7 +409,6 @@ export class ReturnsHandlers {
   async getStats(c: Context<{ Bindings: Env }>): Promise<Response> {
     try {
       const stats = await this.service.getStats();
-
       const response: ReturnResponse = {
         success: true,
         stats

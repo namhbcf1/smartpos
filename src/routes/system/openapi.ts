@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { Env } from '../../types';
 
 const router = new Hono<{ Bindings: Env }>();
-
 router.get('/openapi.json', (c) => {
   const doc = {
     openapi: '3.0.0',
@@ -18,5 +17,4 @@ router.get('/openapi.json', (c) => {
 });
 
 export default router;
-
 

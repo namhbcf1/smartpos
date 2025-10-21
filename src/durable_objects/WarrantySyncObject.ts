@@ -1,7 +1,6 @@
 export class WarrantySyncObject {
   private state: any;
   private sessions: Set<any> = new Set();
-
   constructor(state: any, env: any) {
     this.state = state;
   }
@@ -25,7 +24,6 @@ export class WarrantySyncObject {
       });
 
       server.accept();
-      
       server.send(JSON.stringify({
         type: 'connected',
         message: 'Warranty sync connected'
@@ -37,7 +35,6 @@ export class WarrantySyncObject {
     if (request.method === "POST" && url.pathname === "/broadcast") {
       // Broadcast warranty updates
       const data = await request.json();
-      
       for (const session of this.sessions) {
         try {
           session.send(JSON.stringify(data));

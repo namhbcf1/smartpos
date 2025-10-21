@@ -46,7 +46,6 @@ export const performanceMonitoring = async (c: Context<{ Bindings: Env }>, next:
     });
 
     await next();
-
     // Record successful request
     const duration = Date.now() - startTime;
     const status = c.res.status;
@@ -123,7 +122,6 @@ export const errorHandlingWithCircuitBreaker = async (c: Context<{ Bindings: Env
       operationName,
       async () => {
         await next();
-        
         // Check if response indicates an error
         if (c.res.status >= 500) {
           throw new Error(`Server error: ${c.res.status}`);
@@ -183,7 +181,6 @@ export const databaseMonitoring = async (c: Context<{ Bindings: Env }>, next: Ne
               if (['first', 'all', 'run'].includes(stmtProp as string)) {
                 return async function(...args: any[]) {
                   const startTime = Date.now();
-                  
                   try {
                     const result = await (stmtTarget as any)[stmtProp](...args);
                     const duration = Date.now() - startTime;
@@ -265,7 +262,6 @@ export const cacheMonitoring = async (c: Context<{ Bindings: Env }>, next: Next)
         if (['get', 'put', 'delete'].includes(prop as string)) {
           return async function(...args: any[]) {
             const startTime = Date.now();
-            
             try {
               const result = await (target as any)[prop](...args);
               const duration = Date.now() - startTime;
@@ -312,7 +308,6 @@ export const businessMetricsTracking = async (c: Context<{ Bindings: Env }>, nex
   initializeServices(c.env);
 
   await next();
-
   // Track business-specific metrics based on the endpoint
   const path = c.req.path;
   const method = c.req.method;
@@ -349,7 +344,6 @@ function classifyError(error: any): ErrorType {
   if (!error) return ErrorType.VALIDATION_ERROR;
   
   const message = error.message || error.toString();
-  
   if (message.includes('database') || message.includes('SQL')) {
     return ErrorType.DATABASE_ERROR;
   } else if (message.includes('network') || message.includes('fetch')) {
@@ -374,7 +368,7 @@ function classifyError(error: any): ErrorType {
  */
 async function recordError(c: Context<{ Bindings: Env }>, error: any, errorType: ErrorType): Promise<void> {
   try {
-    const user = (c as any).get('user') || {};
+    const user = (c as any).get('user') || { /* No operation */ }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const stackTrace = error instanceof Error ? error.stack : null;
     

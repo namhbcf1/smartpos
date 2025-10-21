@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart POS System</title>
+    <style>
+      #root-loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      .loader { font-size: 24px; }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="root-loading">
+        <div class="loader">Đang tải Smart POS...</div>
+      </div>
+    </div>
+    <script>
+      (async () => {
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) { try { await r.unregister(); } catch(e){} }
+          }
+          if (window.caches && caches.keys) {
+            const keys = await caches.keys();
+            for (const k of keys) { try { await caches.delete(k); } catch(e){} }
+          }
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

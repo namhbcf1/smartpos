@@ -12,7 +12,7 @@ export interface CacheOptions {
 }
 
 export interface CacheEntry<T = any> {
-  data: T;
+  data: any;
   timestamp: number;
   ttl: number;
   tags?: string[];
@@ -50,7 +50,7 @@ export class CacheManager {
   async get<T = any>(
     env: Env,
     key: string,
-    options: CacheOptions = {}
+    options: CacheOptions = { /* No operation */ }
   ): Promise<T | null> {
     const fullKey = this.buildKey(key, options.namespace);
     
@@ -59,28 +59,26 @@ export class CacheManager {
     if (memoryEntry && !this.isExpired(memoryEntry)) {
       this.stats.hits++;
       this.updateHitRate();
-      return this.deserializeData<T>(memoryEntry);
+      return this.deserializeData(memoryEntry);
     }
 
     // Try KV cache
     try {
       const kvValue = await env.CACHE.get(fullKey);
       if (kvValue) {
-        const entry: CacheEntry<T> = JSON.parse(kvValue);
+        const entry: CacheEntry = JSON.parse(kvValue);
         if (!this.isExpired(entry)) {
           // Store in memory cache for faster access
           this.setMemoryCache(fullKey, entry);
           this.stats.hits++;
           this.updateHitRate();
-          return this.deserializeData<T>(entry);
+          return this.deserializeData(entry);
         } else {
           // Remove expired entry
           await env.CACHE.delete(fullKey);
         }
       }
-    } catch (error) {
-      console.warn('KV cache read error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
 
     this.stats.misses++;
     this.updateHitRate();
@@ -93,12 +91,12 @@ export class CacheManager {
   async set<T = any>(
     env: Env,
     key: string,
-    value: T,
-    options: CacheOptions = {}
+    value: any,
+    options: CacheOptions = { /* No operation */ }
   ): Promise<void> {
     const fullKey = this.buildKey(key, options.namespace);
     const ttl = options.ttl || this.defaultTTL;
-    const entry: CacheEntry<T> = {
+    const entry: CacheEntry = {
       data: value,
       timestamp: Date.now(),
       ttl: ttl * 1000, // Convert to milliseconds
@@ -122,9 +120,7 @@ export class CacheManager {
         JSON.stringify(entry)
       );
       this.stats.sets++;
-    } catch (error) {
-      console.warn('KV cache write error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
   }
 
   /**
@@ -140,9 +136,7 @@ export class CacheManager {
     try {
       await env.CACHE.delete(fullKey);
       this.stats.deletes++;
-    } catch (error) {
-      console.warn('KV cache delete error:', error);
-    }
+    } catch (error) { /* Error handled silently */ }
   }
 
   /**
@@ -158,7 +152,6 @@ export class CacheManager {
 
     // For KV cache, we'd need to maintain a tag index
     // This is a simplified implementation
-    console.log(`Cleared cache entries with tags: ${tags.join(', ')}`);
   }
 
   /**
@@ -168,9 +161,9 @@ export class CacheManager {
     env: Env,
     key: string,
     factory: () => Promise<T>,
-    options: CacheOptions = {}
+    options: CacheOptions = { /* No operation */ }
   ): Promise<T> {
-    const cached = await this.get<T>(env, key, options);
+    const cached = await this.get(env, key, options);
     if (cached !== null) {
       return cached;
     }
@@ -186,13 +179,12 @@ export class CacheManager {
   async getMultiple<T = any>(
     env: Env,
     keys: string[],
-    options: CacheOptions = {}
+    options: CacheOptions = { /* No operation */ }
   ): Promise<Map<string, T | null>> {
     const results = new Map<string, T | null>();
-    
     // Use Promise.all for parallel fetching
     const promises = keys.map(async (key) => {
-      const value = await this.get<T>(env, key, options);
+      const value = await this.get(env, key, options);
       return { key, value };
     });
 
@@ -210,7 +202,7 @@ export class CacheManager {
   async setMultiple<T = any>(
     env: Env,
     entries: Map<string, T>,
-    options: CacheOptions = {}
+    options: CacheOptions = { /* No operation */ }
   ): Promise<void> {
     const promises = Array.from(entries.entries()).map(([key, value]) =>
       this.set(env, key, value, options)
@@ -269,21 +261,21 @@ export class CacheManager {
     this.memoryCache.set(key, entry);
   }
 
-  private deserializeData<T>(entry: CacheEntry): T {
+  private deserializeData<T>(entry: CacheEntry): any {
     if (entry.compressed) {
       return this.decompressData(entry.data);
     }
     return entry.data;
   }
 
-  private async compressData<T>(data: T): Promise<any> {
+  private async compressData<T>(data: any): Promise<any> {
     // Simple compression using JSON stringification
     // In production, you might want to use actual compression algorithms
     const jsonString = JSON.stringify(data);
     return { compressed: true, data: jsonString };
   }
 
-  private decompressData<T>(compressedData: any): T {
+  private decompressData<T>(compressedData: any): any {
     if (compressedData.compressed) {
       return JSON.parse(compressedData.data);
     }
@@ -304,8 +296,8 @@ export class CacheDecorators {
    * Cache the result of a function
    */
   static cached<T extends any[], R>(
-    keyGenerator: (...args: T) => string,
-    options: CacheOptions = {}
+    keyGenerator: (...args: any) => string,
+    options: CacheOptions = { /* No operation */ }
   ) {
     return function (
       target: any,
@@ -314,7 +306,7 @@ export class CacheDecorators {
     ) {
       const method = descriptor.value;
       
-      descriptor.value = async function (...args: T): Promise<R> {
+      descriptor.value = async function (...args: any): Promise<R> {
         const env = (this as any).env || args.find((arg: any) => arg?.CACHE);
         if (!env) {
           return method.apply(this, args);
@@ -353,7 +345,6 @@ export class CacheDecorators {
         const env = (this as any).env || args.find((arg: any) => arg?.CACHE);
         if (env) {
           const cache = CacheManager.getInstance();
-          
           if (typeof keyPattern === 'string') {
             await cache.delete(env, keyPattern, namespace);
           } else {

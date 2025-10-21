@@ -33,7 +33,6 @@ const app = new Hono<{
     tenantId: string;
   };
 }>();
-
 // =============================================================================
 // VALIDATION SCHEMAS
 // =============================================================================
@@ -64,7 +63,7 @@ const warrantyClaimSchema = z.object({
   urgency: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
   attachments: z.array(z.string()).default([]), // Photos, documents
   symptoms: z.array(z.string()).default([]),
-  steps_to_reproduce: z.string().optional()
+  steps_to_reproduce: z.string().optional();
 });
 
 const updateClaimStatusSchema = z.object({
@@ -73,7 +72,7 @@ const updateClaimStatusSchema = z.object({
   resolution_notes: z.string().optional(),
   technician_notes: z.string().optional(),
   estimated_cost: z.number().min(0).optional(),
-  estimated_completion: z.string().optional()
+  estimated_completion: z.string().optional();
 });
 
 const repairOrderSchema = z.object({
@@ -103,7 +102,7 @@ const updateRepairStatusSchema = z.object({
   actual_parts_cost: z.number().min(0).optional(),
   completion_date: z.string().optional(),
   quality_check_passed: z.boolean().optional(),
-  customer_satisfaction: z.number().min(1).max(5).optional()
+  customer_satisfaction: z.number().min(1).max(5).optional();
 });
 
 // =============================================================================
@@ -174,7 +173,6 @@ app.get('/warranties',
       const totalResult = await c.env.DB.prepare(countQuery)
         .bind(tenantId, ...params)
         .first();
-
       const total = totalResult?.count || 0;
 
       // Get warranties
@@ -215,7 +213,6 @@ app.get('/warranties',
       const warranties = await c.env.DB.prepare(warrantiesQuery)
         .bind(tenantId, tenantId, ...params, limit, (page - 1) * limit)
         .all();
-
       const pagination = createPaginationInfo(page, limit, total);
 
       return c.json(createPaginatedResponse(
@@ -245,7 +242,6 @@ app.post('/warranties',
       const customer = await c.env.DB.prepare(`
         SELECT id, name FROM customers WHERE id = ? AND tenant_id = ?
       `).bind(data.customer_id, tenantId).first();
-
       if (!customer) {
         return c.json(createErrorResponse(ERROR_MESSAGES.CUSTOMER_NOT_FOUND), 404);
       }
@@ -254,7 +250,6 @@ app.post('/warranties',
       const product = await c.env.DB.prepare(`
         SELECT id, name, warranty_months FROM products WHERE id = ? AND tenant_id = ?
       `).bind(data.product_id, tenantId).first();
-
       if (!product) {
         return c.json(createErrorResponse(ERROR_MESSAGES.PRODUCT_NOT_FOUND), 404);
       }
@@ -263,7 +258,6 @@ app.post('/warranties',
       const existingSerial = await c.env.DB.prepare(`
         SELECT id FROM warranties WHERE serial_number = ? AND tenant_id = ?
       `).bind(data.serial_number, tenantId).first();
-
       if (existingSerial) {
         return c.json(createValidationErrorResponse([
           createApiError(ERROR_CODES.RESOURCE_CONFLICT, 'Serial number already registered', 'serial_number')
@@ -278,7 +272,6 @@ app.post('/warranties',
       // Generate warranty number
       const warrantyNumber = await generateWarrantyNumber(c.env.DB, tenantId);
       const warrantyId = crypto.randomUUID();
-
       const warranty = await c.env.DB.prepare(`
         INSERT INTO warranties (
           id, tenant_id, warranty_number, customer_id, product_id, variant_id,
@@ -295,7 +288,6 @@ app.post('/warranties',
         data.dealer_name || null, data.dealer_contact || null,
         data.notes || null, JSON.stringify(data.attachments), userId
       ).first();
-
       // Create audit log
       await c.env.DB.prepare(`
         INSERT INTO audit_logs (
@@ -305,7 +297,6 @@ app.post('/warranties',
         crypto.randomUUID(), tenantId, userId, warrantyId,
         `Registered warranty ${warrantyNumber} for ${customer.name} - ${product.name} (S/N: ${data.serial_number})`
       ).run();
-
       return c.json(createSuccessResponse({
         ...warranty,
         warranty_number: warrantyNumber,
@@ -353,7 +344,6 @@ app.get('/warranties/:id',
         LEFT JOIN users u2 ON w.updated_by = u2.id
         WHERE w.id = ? AND w.tenant_id = ?
       `).bind(warrantyId, tenantId).first();
-
       if (!warranty) {
         return c.json(createErrorResponse('Warranty not found'), 404);
       }
@@ -368,7 +358,6 @@ app.get('/warranties/:id',
         WHERE wc.warranty_id = ? AND wc.tenant_id = ?
         ORDER BY wc.created_at DESC
       `).bind(warrantyId, tenantId).all();
-
       const warrantyDetails = {
         ...warranty,
         claims: claims.results || []
@@ -438,7 +427,6 @@ app.get('/warranty-claims',
       const totalResult = await c.env.DB.prepare(countQuery)
         .bind(tenantId, ...params)
         .first();
-
       const total = totalResult?.count || 0;
 
       // Get warranty claims
@@ -472,7 +460,6 @@ app.get('/warranty-claims',
       const claims = await c.env.DB.prepare(claimsQuery)
         .bind(tenantId, ...params, limit, (page - 1) * limit)
         .all();
-
       const pagination = createPaginationInfo(page, limit, total);
 
       return c.json(createPaginatedResponse(
@@ -513,7 +500,6 @@ app.post('/warranty-claims',
         LEFT JOIN products p ON w.product_id = p.id
         WHERE w.id = ? AND w.tenant_id = ? AND w.status = 'active'
       `).bind(data.warranty_id, tenantId).first();
-
       if (!warranty) {
         return c.json(createErrorResponse('Warranty not found or inactive'), 404);
       }
@@ -521,7 +507,6 @@ app.post('/warranty-claims',
       // Generate claim number
       const claimNumber = await generateClaimNumber(c.env.DB, tenantId);
       const claimId = crypto.randomUUID();
-
       const claim = await c.env.DB.prepare(`
         INSERT INTO warranty_claims (
           id, tenant_id, claim_number, warranty_id, issue_description, issue_category,
@@ -536,7 +521,6 @@ app.post('/warranty-claims',
         data.preferred_resolution, data.urgency, JSON.stringify(data.attachments),
         JSON.stringify(data.symptoms), data.steps_to_reproduce || null, userId
       ).first();
-
       // Create audit log
       await c.env.DB.prepare(`
         INSERT INTO audit_logs (
@@ -546,7 +530,6 @@ app.post('/warranty-claims',
         crypto.randomUUID(), tenantId, userId, claimId,
         `Submitted claim ${claimNumber} for ${warranty.product_name} - ${data.issue_category}: ${data.issue_description.substring(0, 100)}`
       ).run();
-
       return c.json(createSuccessResponse({
         ...claim,
         claim_number: claimNumber,
@@ -575,7 +558,6 @@ app.put('/warranty-claims/:id/status',
       const existingClaim = await c.env.DB.prepare(`
         SELECT * FROM warranty_claims WHERE id = ? AND tenant_id = ?
       `).bind(claimId, tenantId).first();
-
       if (!existingClaim) {
         return c.json(createErrorResponse('Warranty claim not found'), 404);
       }
@@ -599,7 +581,6 @@ app.put('/warranty-claims/:id/status',
         data.technician_notes || null, data.estimated_cost || null,
         data.estimated_completion || null, userId, claimId, tenantId
       ).first();
-
       // Create audit log
       await c.env.DB.prepare(`
         INSERT INTO audit_logs (
@@ -609,7 +590,6 @@ app.put('/warranty-claims/:id/status',
         crypto.randomUUID(), tenantId, userId, claimId,
         `Updated claim ${existingClaim.claim_number} status: ${existingClaim.status} → ${data.status}`
       ).run();
-
       return c.json(createSuccessResponse(claim, 'Claim status updated successfully'));
     } catch (error) {
       console.error('Update claim status error:', error);
@@ -622,7 +602,7 @@ app.put('/warranty-claims/:id/status',
 // UTILITIES
 // =============================================================================
 
-async function generateWarrantyNumber(db: D1Database, tenantId: string): Promise<string> {
+async function generateWarrantyNumber(db: D1Database, tenantId: string): Promise {
   const today = new Date().toISOString().split('T')[0]?.replace(/-/g, '') || '';
   
   const lastWarranty = await db.prepare(`
@@ -630,7 +610,6 @@ async function generateWarrantyNumber(db: D1Database, tenantId: string): Promise
     WHERE tenant_id = ? AND warranty_number LIKE ? 
     ORDER BY created_at DESC LIMIT 1
   `).bind(tenantId, `WR${today}%`).first();
-
   let sequence = 1;
   if (lastWarranty) {
     const lastSequence = parseInt((lastWarranty.warranty_number as string)?.slice(-4) || '0');
@@ -640,7 +619,7 @@ async function generateWarrantyNumber(db: D1Database, tenantId: string): Promise
   return `WR${today}${sequence.toString().padStart(4, '0')}`;
 }
 
-async function generateClaimNumber(db: D1Database, tenantId: string): Promise<string> {
+async function generateClaimNumber(db: D1Database, tenantId: string): Promise {
   const today = new Date().toISOString().split('T')[0]?.replace(/-/g, '') || '';
   
   const lastClaim = await db.prepare(`
@@ -648,7 +627,6 @@ async function generateClaimNumber(db: D1Database, tenantId: string): Promise<st
     WHERE tenant_id = ? AND claim_number LIKE ? 
     ORDER BY created_at DESC LIMIT 1
   `).bind(tenantId, `CL${today}%`).first();
-
   let sequence = 1;
   if (lastClaim) {
     const lastSequence = parseInt((lastClaim.claim_number as string)?.slice(-4) || '0');

@@ -7,7 +7,7 @@ export class PasswordSecurity {
    * Hash a password using PBKDF2-HMAC-SHA256 with a random salt.
    * Storage format: v1$pbkdf2$sha256$ITERATIONS$SALT_B64$HASH_B64
    */
-  static async hashPassword(password: string, saltBase64?: string, iterations: number = 210000): Promise<string> {
+  static async hashPassword(password: string, saltBase64?: string, iterations: number = 210000): Promise {
     const encoder = new TextEncoder();
     const salt = saltBase64 ? PasswordSecurity.base64ToBytes(saltBase64) : PasswordSecurity.generateSaltBytes(16);
 
@@ -66,7 +66,6 @@ export class PasswordSecurity {
       }
 
       // Very legacy plain text fallback (should be migrated)
-      console.warn('⚠️ Legacy plain text password detected - should be migrated');
       return password === stored;
     } catch (error) {
       console.error('Password verification error:', error);
@@ -186,8 +185,7 @@ export class PasswordSecurity {
   /**
    * Migrate plain text password to hashed password
    */
-  static async migratePlainTextPassword(plainTextPassword: string): Promise<string> {
-    console.log('🔄 Migrating plain text password to hashed password');
+  static async migratePlainTextPassword(plainTextPassword: string): Promise {
     return await this.hashPassword(plainTextPassword);
   }
 }
@@ -205,7 +203,6 @@ export class PasswordMigration {
     errors: number;
     total: number;
   }> {
-    console.log('🔄 Starting password migration...');
     
     let migrated = 0;
     let errors = 0;
@@ -218,9 +215,7 @@ export class PasswordMigration {
         FROM users 
         WHERE password_hash NOT LIKE '%:%'
       `).all();
-
       total = users.results?.length || 0;
-      console.log(`Found ${total} users with plain text passwords`);
 
       if (total === 0) {
         return { migrated: 0, errors: 0, total: 0 };
@@ -236,17 +231,13 @@ export class PasswordMigration {
             SET password_hash = ?, updated_at = datetime('now')
             WHERE id = ?
           `).bind(hashedPassword, user.id).run();
-
           migrated++;
-          console.log(`✅ Migrated password for user: ${user.username}`);
         } catch (error) {
           errors++;
           console.error(`❌ Failed to migrate password for user ${user.username}:`, error);
         }
       }
 
-      console.log(`🎉 Password migration completed: ${migrated}/${total} successful, ${errors} errors`);
-      
     } catch (error) {
       console.error('❌ Password migration failed:', error);
       errors = total;
@@ -268,7 +259,6 @@ export class PasswordMigration {
       const existingUser = await db.prepare(`
         SELECT id FROM users WHERE username = ?
       `).bind(username).first();
-
       if (existingUser) {
         return {
           success: false,
@@ -294,11 +284,6 @@ export class PasswordMigration {
         1,
         1
       ).run();
-
-      console.log(`✅ Created secure admin user: ${username}`);
-      console.log(`🔑 Generated password: ${securePassword}`);
-      console.log('⚠️ IMPORTANT: Save this password securely - it cannot be recovered!');
-
       return {
         success: true,
         password: securePassword

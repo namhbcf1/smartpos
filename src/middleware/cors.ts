@@ -21,7 +21,11 @@ export const createCorsMiddleware = (config: CorsConfig = {}) => {
       'Accept',
       'Origin',
       'Access-Control-Request-Method',
-      'Access-Control-Request-Headers'
+      'Access-Control-Request-Headers',
+      'X-Tenant-ID',
+      'X-Store-ID',
+      'X-Device-ID',
+      'X-Session-ID'
     ],
     exposedHeaders = ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
     credentials = true,

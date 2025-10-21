@@ -5,7 +5,10 @@ export interface Env {
   DB: D1Database;
   CACHE: KVNamespace;
   SESSIONS: KVNamespace;
+  CONFIG: KVNamespace;
+  ANALYTICS: KVNamespace;
   SMARTPOS_DATA: KVNamespace;
+  UPLOADS: R2Bucket;
   NOTIFICATIONS: DurableObjectNamespace;
   INVENTORY_SYNC: DurableObjectNamespace;
   POS_SYNC: DurableObjectNamespace;
@@ -28,6 +31,9 @@ export interface Env {
   VNPAY_TMN_CODE?: string;
   VNPAY_HASH_SECRET?: string;
   VNPAY_URL?: string;
+  VNPAY_RETURN_URL?: string;
+  VNPAY_IPN_URL?: string;
+  VNPAY_MERCHANT_ACCOUNT?: string;
   MOMO_PARTNER_CODE?: string;
   MOMO_ACCESS_KEY?: string;
   MOMO_SECRET_KEY?: string;
@@ -42,6 +48,12 @@ export interface Env {
   CLOUDFLARE_R2_SECRET_ACCESS_KEY?: string;
   CLOUDFLARE_R2_BUCKET_UPLOADS?: string;
   CLOUDFLARE_R2_ENDPOINT?: string;
+  
+  // Additional Cloudflare bindings
+  KV_CACHE?: KVNamespace;
+  KV_SESSIONS?: KVNamespace;
+  KV_CONFIG?: KVNamespace;
+  KV_ANALYTICS?: KVNamespace;
 
   [key: string]: any; // Index signature for Hono compatibility
 }
@@ -601,9 +613,9 @@ export interface DashboardStats {
 }
 
 // API response interfaces
-export interface ApiResponse<T> {
+export interface ApiResponse<T = any> {
   success: boolean;
-  data: T;
+  data?: T;
   message?: string;
   error?: string;
   errors?: Record<string, string[]>;
@@ -611,7 +623,7 @@ export interface ApiResponse<T> {
   details?: any;
 }
 
-export interface PaginatedResult<T> {
+export interface PaginatedResult<T = any> {
   data: T[];
   pagination: {
     total: number;

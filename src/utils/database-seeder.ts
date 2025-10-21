@@ -6,25 +6,18 @@
 import { Env } from '../types';
 
 export class DatabaseSeeder {
-  constructor(private env: Env) {}
-
+  constructor(private env: Env) { /* No operation */ }
   /**
    * Kiểm tra và tạo dữ liệu mẫu nếu cần thiết
    */
   async seedIfEmpty(): Promise<void> {
     try {
-      console.log('🌱 Checking if database needs seeding...');
       
       // Kiểm tra xem có dữ liệu không
       const isEmpty = await this.isDatabaseEmpty();
-      
       if (isEmpty) {
-        console.log('📦 Database is empty, creating sample data...');
         await this.createSampleData();
-        console.log('✅ Sample data created successfully');
-      } else {
-        console.log('✅ Database already has data, skipping seeding');
-      }
+      } else { /* No operation */ }
     } catch (error) {
       console.error('❌ Database seeding error:', error);
       throw error;
@@ -40,16 +33,13 @@ export class DatabaseSeeder {
       const usersCount = await this.env.DB.prepare(
         'SELECT COUNT(*) as count FROM users WHERE is_active = 1'
       ).first<{ count: number }>();
-
       const productsCount = await this.env.DB.prepare(
         'SELECT COUNT(*) as count FROM products'
       ).first<{ count: number }>();
-
       // Database is empty if no active users or no products
       return (usersCount?.count || 0) === 0 || (productsCount?.count || 0) === 0;
     } catch (error) {
       // If tables don't exist, database is empty
-      console.log('Database tables not found, assuming empty:', error);
       return true;
     }
   }
@@ -60,16 +50,12 @@ export class DatabaseSeeder {
   private async createSampleData(): Promise<void> {
     // Tạo admin user FIRST (most important for authentication)
     await this.createAdminUser();
-
     // Tạo categories
     await this.createCategories();
-
     // Tạo products
     await this.createProducts();
-
     // Tạo customers
     await this.createCustomers();
-
     // Tạo suppliers
     await this.createSuppliers();
   }
@@ -262,7 +248,6 @@ export class DatabaseSeeder {
           version INTEGER NOT NULL DEFAULT 1
         )
       `).run();
-
       // Ensure stores table exists
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS stores (
@@ -279,19 +264,15 @@ export class DatabaseSeeder {
           updated_by TEXT NOT NULL DEFAULT 'system'
         )
       `).run();
-
       // Create default store
       await this.env.DB.prepare(`
         INSERT OR IGNORE INTO stores (id, name, code, address, phone, email, is_active, created_by, updated_by)
         VALUES ('store1', 'Cửa hàng chính', 'MAIN', '123 Đường ABC, Quận 1, TP.HCM', '0123456789', 'info@computerpos.vn', 1, 'system', 'system')
       `).run();
-
       const adminExists = await this.env.DB.prepare(
         'SELECT id FROM users WHERE username = ?'
       ).bind('admin').first();
-
       if (!adminExists) {
-        console.log('🔐 Creating default admin user...');
 
         await this.env.DB.prepare(`
           INSERT INTO users (
@@ -307,12 +288,7 @@ export class DatabaseSeeder {
           'admin',
           'store1'
         ).run();
-
-        console.log('✅ Default admin user created: admin / 123456');
-        console.log('✅ Mật khẩu đơn giản để dễ đăng nhập');
-      } else {
-        console.log('✅ Admin user already exists');
-      }
+      } else { /* No operation */ }
     } catch (error) {
       console.error('❌ Error creating admin user:', error);
       // Continue even if admin creation fails

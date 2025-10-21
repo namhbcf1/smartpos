@@ -134,13 +134,45 @@ app.get('/track/:order_code', async (c) => {
   }
 });
 
-// GET /shipping/ghtk/label/:order_code - print label
+// GET /shipping/ghtk/label/:order_code - stream label PDF directly from GHTK
 app.get('/label/:order_code', async (c) => {
   try {
-    const svc = new ShippingGHTKService(c.env);
     const code = c.req.param('order_code');
-    const res = await svc.printLabel(code);
-    return c.json(res, res.success ? 200 : 404);
+    const original = c.req.query('original') || 'portrait'; // portrait | landscape
+    const pageSize = c.req.query('page_size') || 'A6'; // A5 | A6
+
+    const url = new URL(`https://services.giaohangtietkiem.vn/services/label/${encodeURIComponent(code)}`);
+    if (original) url.searchParams.set('original', String(original));
+    if (pageSize) url.searchParams.set('page_size', String(pageSize));
+
+    const token = (c.env as any).GHTK_TOKEN;
+    if (!token) return c.json({ success: false, error: 'Missing GHTK_TOKEN in environment' }, 500);
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        Token: token,
+        'X-Client-Source': 'SmartPOS'
+      }
+    });
+
+    // On success GHTK returns PDF or binary stream (sometimes octet-stream)
+    if (resp.ok) {
+      const buf = await resp.arrayBuffer();
+      const upstreamType = resp.headers.get('content-type') || 'application/pdf';
+      return new Response(buf, {
+        headers: {
+          'Content-Type': upstreamType.includes('application/json') ? 'application/pdf' : upstreamType,
+          'Content-Disposition': `inline; filename="${code}.pdf"`,
+          'Cache-Control': 'no-store'
+        },
+        status: 200
+      });
+    }
+
+    // Error path: forward JSON from GHTK
+    let errJson: any = null;
+    try { errJson = await resp.json(); } catch { errJson = { message: 'Label fetch failed' }; }
+    return c.json({ success: false, error: errJson?.message || 'Failed to get label', data: errJson }, resp.status || 400);
   } catch (e: any) {
     return c.json({ success: false, error: e?.message || 'Failed to get label' }, 500);
   }
@@ -235,6 +267,45 @@ app.post('/webhook', async (c) => {
   } catch (e: any) {
     console.error(`[GHTK Webhook] Webhook processing failed - Request ID: ${requestId}`, e);
     return c.json({ success: false, error: e?.message || 'Webhook processing error' }, 500);
+  }
+});
+
+// POST /shipping/ghtk/verify-purge - verify local orders against GHTK and purge missing
+app.post('/verify-purge', async (c) => {
+  try {
+    const tenantId = (c.get as any)('tenantId') || 'default';
+    const db = c.env.DB;
+    const { GHTKRealSyncService } = await import('../../services/GHTKRealSyncService');
+    const syncService = new GHTKRealSyncService(c.env);
+
+    // Load local GHTK orders
+    const rows = await db.prepare(
+      `SELECT id, carrier_order_code FROM shipping_orders 
+       WHERE COALESCE(tenant_id,'default') = ? AND carrier = 'ghtk'`
+    ).bind(tenantId).all();
+
+    let checked = 0;
+    let purged = 0;
+    const errors: string[] = [];
+
+    for (const r of (rows.results || [])) {
+      const code = (r as any).carrier_order_code as string;
+      checked += 1;
+      try {
+        const res = await syncService.fetchOrderFromGHTK(code);
+        if (!res.success) {
+          // Not found on GHTK -> purge locally
+          await db.prepare('DELETE FROM shipping_orders WHERE id = ?').bind((r as any).id).run();
+          purged += 1;
+        }
+      } catch (e: any) {
+        errors.push(`${code}: ${e?.message || 'verify_failed'}`);
+      }
+    }
+
+    return c.json({ success: true, checked, purged, errors });
+  } catch (e: any) {
+    return c.json({ success: false, error: e?.message || 'Failed to verify and purge' }, 500);
   }
 });
 
@@ -378,144 +449,237 @@ app.get('/order-detail/:order_id', async (c) => {
       }, 404);
     }
     
-    // Transform the order details to match the format from the image
+    // Try to enrich with local order and customer information - GET FULL DATA
+    let localOrder: any = null;
+    let localCustomer: any = null;
+    let shippingPayload: any = null;
+    const tenantId = (c.get as any)('tenantId') || 'default';
+
+    try {
+      // Get full order data with customer info
+      localOrder = await c.env.DB.prepare(
+        `SELECT o.*, c.name as customer_full_name, c.phone as customer_full_phone,
+                c.address, c.province_id, c.district_id, c.ward_id, c.street, c.hamlet,
+                c.email as customer_email
+         FROM orders o
+         LEFT JOIN customers c ON o.customer_id = c.id
+         WHERE o.id = ? AND COALESCE(o.tenant_id,'default') = ?`
+      ).bind(orderId, tenantId).first();
+    } catch {}
+
+    // If not found by primary id, try by order_number
+    if (!localOrder) {
+      try {
+        localOrder = await c.env.DB.prepare(
+          `SELECT o.*, c.name as customer_full_name, c.phone as customer_full_phone,
+                  c.address, c.province_id, c.district_id, c.ward_id, c.street, c.hamlet,
+                  c.email as customer_email
+           FROM orders o
+           LEFT JOIN customers c ON o.customer_id = c.id
+           WHERE o.order_number = ? AND COALESCE(o.tenant_id,'default') = ?`
+        ).bind(orderId, tenantId).first();
+      } catch {}
+    }
+
+    // Try with usedCode
+    if (!localOrder && usedCode && usedCode !== orderId) {
+      try {
+        localOrder = await c.env.DB.prepare(
+          `SELECT o.*, c.name as customer_full_name, c.phone as customer_full_phone,
+                  c.address, c.province_id, c.district_id, c.ward_id, c.street, c.hamlet,
+                  c.email as customer_email
+           FROM orders o
+           LEFT JOIN customers c ON o.customer_id = c.id
+           WHERE o.order_number = ? AND COALESCE(o.tenant_id,'default') = ?`
+        ).bind(usedCode, tenantId).first();
+      } catch {}
+    }
+
+    // Try via shipping_orders table
+    if (!localOrder) {
+      try {
+        const shipping = await c.env.DB.prepare(
+          `SELECT order_id, payload FROM shipping_orders
+           WHERE carrier = 'ghtk' AND carrier_order_code = ? AND COALESCE(tenant_id,'default') = ?`
+        ).bind(usedCode, tenantId).first();
+        if (shipping) {
+          // Get payload for additional info
+          try {
+            shippingPayload = typeof (shipping as any).payload === 'string'
+              ? JSON.parse((shipping as any).payload)
+              : (shipping as any).payload;
+          } catch {
+            shippingPayload = {};
+          }
+
+          localOrder = await c.env.DB.prepare(
+            `SELECT o.*, c.name as customer_full_name, c.phone as customer_full_phone,
+                    c.address, c.province_id, c.district_id, c.ward_id, c.street, c.hamlet,
+                    c.email as customer_email
+             FROM orders o
+             LEFT JOIN customers c ON o.customer_id = c.id
+             WHERE o.id = ? AND COALESCE(o.tenant_id,'default') = ?`
+          ).bind((shipping as any).order_id, tenantId).first();
+        }
+      } catch {}
+    }
+
+    // Try via orders.shipping_order_code
+    if (!localOrder) {
+      try {
+        localOrder = await c.env.DB.prepare(
+          `SELECT o.*, c.name as customer_full_name, c.phone as customer_full_phone,
+                  c.address, c.province_id, c.district_id, c.ward_id, c.street, c.hamlet,
+                  c.email as customer_email
+           FROM orders o
+           LEFT JOIN customers c ON o.customer_id = c.id
+           WHERE o.shipping_order_code = ? AND COALESCE(o.tenant_id,'default') = ?`
+        ).bind(usedCode, tenantId).first();
+      } catch {}
+    }
+
+    // If still no order but have customer_id from GHTK, try to get customer directly
+    if (!localOrder && orderDetails.customer_id) {
+      try {
+        localCustomer = await c.env.DB.prepare(
+          `SELECT * FROM customers WHERE id = ? AND COALESCE(tenant_id,'default') = ?`
+        ).bind(orderDetails.customer_id, tenantId).first();
+      } catch {}
+    }
+
+    // Build complete customer data from all sources (Manual customer_info first, then DB, then GHTK, then payload)
+    const customerName = shippingPayload?.customer_info?.name
+      || (localOrder as any)?.customer_full_name
+      || (localOrder as any)?.customer_name
+      || (localCustomer as any)?.name
+      || shippingPayload?.order?.name
+      || orderDetails.customer_fullname
+      || orderDetails.customer_name
+      || orderDetails.pick_name
+      || '';
+
+    const customerPhone = shippingPayload?.customer_info?.phone
+      || (localOrder as any)?.customer_full_phone
+      || (localOrder as any)?.customer_phone
+      || (localCustomer as any)?.phone
+      || shippingPayload?.order?.tel
+      || orderDetails.customer_tel
+      || orderDetails.customer_phone
+      || orderDetails.pick_tel
+      || '';
+
+    // Build full address from all components
+    const buildFullAddress = (data: any) => {
+      const parts = [];
+      if (data?.street) parts.push(data.street);
+      if (data?.hamlet) parts.push(data.hamlet);
+      if (data?.ward_id) parts.push(`Ward ${data.ward_id}`);
+      if (data?.district_id) parts.push(`District ${data.district_id}`);
+      if (data?.province_id) parts.push(`Province ${data.province_id}`);
+      return parts.filter(Boolean).join(', ');
+    };
+
+    // Extract GHTK order data first for use in address building
+    const ghtkOrder = (orderDetails as any).order || orderDetails;
+
+    const customerAddress = shippingPayload?.customer_info?.address
+      || (localOrder as any)?.address
+      || (localCustomer as any)?.address
+      || buildFullAddress(localOrder)
+      || buildFullAddress(localCustomer)
+      || buildFullAddress(shippingPayload?.customer_info)
+      || shippingPayload?.order?.address
+      || ghtkOrder.address
+      || ghtkOrder.customer_address
+      || ghtkOrder.pick_address
+      || '';
+
+    // Enrich raw_data with database info to ensure frontend has everything
+    const enrichedRawData = {
+      ...orderDetails,
+      // Add GHTK order data at root level
+      order: ghtkOrder,
+      // Add database customer data
+      customer_fullname: customerName,
+      customer_tel: customerPhone,
+      customer_phone: customerPhone,
+      address: customerAddress,
+      // Add detailed address components from database and customer_info
+      street: shippingPayload?.customer_info?.street || (localOrder as any)?.street || (localCustomer as any)?.street || ghtkOrder.street || '',
+      hamlet: shippingPayload?.customer_info?.hamlet || (localOrder as any)?.hamlet || (localCustomer as any)?.hamlet || ghtkOrder.hamlet || '',
+      ward: shippingPayload?.customer_info?.ward || (localOrder as any)?.ward_id || (localCustomer as any)?.ward_id || ghtkOrder.ward || '',
+      district: shippingPayload?.customer_info?.district || (localOrder as any)?.district_id || (localCustomer as any)?.district_id || ghtkOrder.district || '',
+      province: shippingPayload?.customer_info?.province || (localOrder as any)?.province_id || (localCustomer as any)?.province_id || ghtkOrder.province || '',
+      // Keep pickup info from GHTK
+      pick_name: shippingPayload?.order?.pick_name || ghtkOrder.pick_name || '',
+      pick_tel: shippingPayload?.order?.pick_tel || ghtkOrder.pick_tel || '',
+      pick_address: shippingPayload?.order?.pick_address || ghtkOrder.pick_address || '',
+      pick_street: shippingPayload?.order?.pick_street || ghtkOrder.pick_street || '',
+      pick_ward: shippingPayload?.order?.pick_ward || ghtkOrder.pick_ward || '',
+      pick_district: shippingPayload?.order?.pick_district || ghtkOrder.pick_district || '',
+      pick_province: shippingPayload?.order?.pick_province || ghtkOrder.pick_province || '',
+      // Add email if available
+      customer_email: (localOrder as any)?.customer_email || (localCustomer as any)?.email || ghtkOrder.customer_email || ''
+    };
+
+    // Transform to a complete data structure with ALL available info
     const transformedOrder = {
       order_id: orderId,
       tracking_code: usedCode,
-      status: orderDetails.status || orderDetails.status_text || 'Chưa xác định',
-      status_text: orderDetails.status_text || orderDetails.status || 'Chưa xác định',
-      
-      // Financial information - sử dụng dữ liệu thật từ API
-      cod_amount: orderDetails.pick_money || 0, // pick_money = 0 từ API
-      final_service_fee: orderDetails.ship_money || 0, // ship_money = 122000 từ API
-      insurance_fee: orderDetails.insurance || 0, // insurance = 15000 từ API
-      total_value: orderDetails.value || 0, // value = 3000000 từ API
-      
-      // Customer information - từ hình ảnh thực tế
+      status: ghtkOrder.status || ghtkOrder.status_text || '',
+      status_text: ghtkOrder.status_text || ghtkOrder.status || '',
+      cod_amount: ghtkOrder.pick_money ?? ghtkOrder.cod_amount ?? (localOrder as any)?.total_amount ?? 0,
+      final_service_fee: ghtkOrder.ship_money ?? 0,
+      insurance_fee: ghtkOrder.insurance ?? 0,
+      total_value: ghtkOrder.value ?? (localOrder as any)?.total_amount ?? 0,
       customer: {
-        name: 'a hưng', // Từ hình ảnh thực tế
-        phone: '089***1317', // Từ hình ảnh thực tế
-        address: '71 Yên Khê Hạ, Xã Ka Đô, Xã Ka Đô, Lâm Đồng', // Từ hình ảnh thực tế
-        avatar: 'AH' // Default avatar based on customer name
+        name: customerName,
+        phone: customerPhone,
+        address: customerAddress,
+        email: enrichedRawData.customer_email,
+        avatar: (customerName[0] || 'K').toUpperCase()
       },
-      
-      // Product information - sử dụng dữ liệu thật từ API
-      products: orderDetails.products ? orderDetails.products.map((p: any) => ({
-        name: p.full_name || 'bảo hành main',
-        weight: p.weight || 1,
+      products: (ghtkOrder.products || []).map((p: any) => ({
+        name: p.full_name || p.name || 'Sản phẩm',
+        weight: p.weight || 0,
         quantity: p.quantity || 1,
-        product_code: p.product_code || '258197972',
-        cost: p.cost || 0,
-        icon: 'circuit_board' // Icon type
-      })) : [{
-        name: 'bảo hành main',
-        weight: 1,
-        quantity: 1,
-        product_code: '258197972',
-        cost: 0,
+        product_code: p.product_code,
+        cost: p.cost,
         icon: 'circuit_board'
-      }],
-      
-      // Notes - từ API thật
-      notes: orderDetails.message || 'Cho xem hàng, Giao hàng 1 phần đổi trả hàng, không cho thử hàng/đồng kiểm',
-      
-      // Tags - từ hình ảnh thực tế
-      tags: ['GH1P đổi hàng'],
-      
-      // Thông tin bổ sung từ API
+      })),
+      notes: ghtkOrder.message || (localOrder as any)?.notes || '',
+      tags: ghtkOrder.tags || [],
       order_info: {
-        created: orderDetails.created || '2025-10-08 15:11:33',
-        modified: orderDetails.modified || '2025-10-13 01:29:28',
-        pick_date: orderDetails.pick_date || '2025-10-08',
-        deliver_date: orderDetails.deliver_date || '2025-10-12',
-        storage_day: orderDetails.storage_day || 0,
-        is_freeship: orderDetails.is_freeship || 1,
-        total_weight: orderDetails.weight || 7200 // 7.2kg
+        created: (localOrder as any)?.created_at || ghtkOrder.created || '',
+        modified: ghtkOrder.modified || (localOrder as any)?.updated_at || '',
+        pick_date: ghtkOrder.pick_date || '',
+        deliver_date: ghtkOrder.deliver_date || '',
+        storage_day: ghtkOrder.storage_day || 0,
+        is_freeship: ghtkOrder.is_freeship || 0,
+        total_weight: ghtkOrder.weight || 0
       },
-      
-      // Timeline events
-      timeline: orderDetails.timeline || [
-        {
-          time: '01:29 13/10',
-          status: 'Đã đối soát',
-          description: 'Đã đối soát',
-          icon: 'checkmark',
-          color: 'green'
-        },
-        {
-          time: '20:16 12/10',
-          status: 'Shop đã thanh toán',
-          description: 'Shop đã thanh toán Phí hoàn hàng qua Ví -53,500đ',
-          icon: 'payment',
-          color: 'blue'
-        },
-        {
-          time: '08:22 12/10',
-          status: 'Đã điều phối giao hàng',
-          description: 'Đã điều phối giao hàng',
-          icon: 'truck',
-          color: 'orange'
-        },
-        {
-          time: '06:28 12/10',
-          status: 'Đã tiếp nhận chuyển kho',
-          description: 'Đã tiếp nhận chuyển kho',
-          icon: 'warehouse',
-          color: 'blue'
-        },
-        {
-          time: '22:43 11/10',
-          status: 'Shop in đơn hàng',
-          description: 'Shop in đơn hàng từ web',
-          icon: 'print',
-          color: 'gray'
-        },
-        {
-          time: '13:40 11/10',
-          status: 'Khách hàng giục giao hàng',
-          description: 'Khách hàng giục giao hàng',
-          icon: 'clock',
-          color: 'red'
-        },
-        {
-          time: '18:46 08/10',
-          status: 'Đã lấy hàng',
-          description: 'từ Đã điều phối lấy hàng/Đang lấy hàng sang Đã lấy hàng/Đã nhập kho',
-          icon: 'package',
-          color: 'green'
-        },
-        {
-          time: '18:46 08/10',
-          status: 'Cập nhật đã lấy hàng',
-          description: 'Cập nhật đã lấy hàng bởi bưu tá',
-          icon: 'update',
-          color: 'blue'
-        }
-      ],
-      
-      // Map information - địa chỉ thật từ hình ảnh
+      timeline: ghtkOrder.timeline || [],
       map: {
         center: {
-          lat: 11.9404, // Lâm Đồng
-          lng: 108.4583
+          lat: ghtkOrder.lat || 0,
+          lng: ghtkOrder.lng || 0
         },
-        location: 'Lâm Đồng',
-        areas: [
-          'Xã Ka Đô',
-          'Thôn Yên Khê Hạ',
-          'Lâm Đồng'
-        ]
+        location: ghtkOrder.location || customerAddress,
+        areas: ghtkOrder.areas || []
       },
-      
-      // Raw data from GHTK
-      raw_data: orderDetails,
-      
-      // GHTK integration info
+      raw_data: enrichedRawData, // Use enriched data with DB info
       ghtk_integrated: true,
       ghtk_url: `https://khachhang.giaohangtietkiem.vn/web/van-hanh/don-hang/${usedCode}`,
       can_print: true,
-      can_chat: true,
-      can_add_notes: true
+      can_chat: false,
+      can_add_notes: false,
+      // Add debug info
+      data_sources: {
+        has_local_order: !!localOrder,
+        has_local_customer: !!localCustomer,
+        has_shipping_payload: !!shippingPayload,
+        has_ghtk_data: !!orderDetails
+      }
     };
     
     console.log(`[GHTK Order Detail] Successfully fetched order details - Request ID: ${requestId}`);
@@ -568,6 +732,51 @@ app.get('/districts/:province_code', async (c) => {
     return c.json(res, res.success ? 200 : 400);
   } catch (e: any) {
     return c.json({ success: false, error: e?.message || 'Failed to get districts' }, 500);
+  }
+});
+
+// POST /shipping/ghtk/sync-by-codes - đồng bộ đơn hàng từ GHTK bằng order codes
+app.post('/sync-by-codes', async (c) => {
+  const requestId = `sync-codes-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    console.log(`[GHTK Sync Codes] Starting sync by codes - Request ID: ${requestId}`);
+
+    const body = await c.req.json();
+    const orderCodes: string[] = body.order_codes || body.codes || [];
+
+    if (!orderCodes || orderCodes.length === 0) {
+      return c.json({
+        success: false,
+        error: 'Please provide order_codes array'
+      }, 400);
+    }
+
+    const { GHTKRealSyncService } = await import('../../services/GHTKRealSyncService');
+    const syncService = new GHTKRealSyncService(c.env);
+
+    // Sync orders by codes
+    const syncResult = await syncService.syncOrdersByCodesBatch(orderCodes);
+
+    console.log(`[GHTK Sync Codes] Sync completed - Request ID: ${requestId}`, {
+      total: orderCodes.length,
+      synced: syncResult.synced,
+      errors: syncResult.errors.length
+    });
+
+    return c.json({
+      success: syncResult.synced > 0,
+      synced: syncResult.synced,
+      total: orderCodes.length,
+      errors: syncResult.errors,
+      message: `Successfully synced ${syncResult.synced}/${orderCodes.length} orders from GHTK`
+    });
+  } catch (e: any) {
+    console.error(`[GHTK Sync Codes] Sync failed - Request ID: ${requestId}`, e);
+    return c.json({
+      success: false,
+      error: e?.message || 'Failed to sync orders by codes'
+    }, 500);
   }
 });
 
@@ -681,6 +890,238 @@ app.get('/real-orders', async (c) => {
       success: false, 
       error: e?.message || 'Failed to get real orders from GHTK' 
     }, 500);
+  }
+});
+
+// POST /shipping/ghtk/create-sample - tạo đơn hàng GHTK mẫu để test
+app.post('/create-sample', async (c) => {
+  try {
+    const tenantId = (c.get as any)('tenantId') || 'default';
+    const userId = (c.get as any)('userId') || 'system';
+
+    // Tạo đơn hàng mẫu
+    const sampleOrder = {
+      order: {
+        id: `sample-${Date.now()}`,
+        name: 'Nguyễn Văn A',
+        tel: '0912345678',
+        address: '123 Nguyễn Huệ, Quận 1, TP Hồ Chí Minh',
+        province: 'TP Hồ Chí Minh',
+        district: 'Quận 1',
+        pick_name: 'SmartPOS Store',
+        pick_tel: '0912345679',
+        pick_address: '456 Lê Lợi, Quận 1, TP Hồ Chí Minh',
+        pick_province: 'TP Hồ Chí Minh',
+        pick_district: 'Quận 1',
+        value: 500000,
+        weight: 500,
+        is_freeship: 0,
+        transport: 'road',
+      },
+      products: [
+        {
+          name: 'Sản phẩm mẫu',
+          weight: 500,
+          quantity: 1,
+          price: 500000
+        }
+      ]
+    };
+
+    const svc = new ShippingGHTKService(c.env);
+    const persist = new ShippingPersistenceService(c.env);
+    
+    // Tạo đơn hàng thật trên GHTK
+    const ghtkResult = await svc.createOrder(sampleOrder);
+    
+    if (ghtkResult.success && ghtkResult.data) {
+      const orderData = ghtkResult.data;
+      
+      // Lưu vào database local
+      await persist.upsertShippingOrder({
+        tenant_id: tenantId,
+        carrier: 'ghtk',
+        carrier_order_code: orderData.label_id,
+        status: orderData.status_text || 'Chưa tiếp nhận',
+        fee_amount: orderData.ship_money || 0,
+        service: 'road',
+        payload: sampleOrder,
+        response: orderData
+      });
+
+      return c.json({
+        success: true,
+        data: {
+          label_id: orderData.label_id,
+          status: orderData.status_text,
+          fee: orderData.ship_money,
+          created_at: new Date().toISOString(),
+          ghtk_url: `https://khachhang.giaohangtietkiem.vn/web/van-hanh/don-hang/${orderData.label_id}`
+        },
+        message: 'Sample GHTK order created successfully'
+      });
+    }
+
+    return c.json({
+      success: false,
+      error: ghtkResult.error || 'Failed to create sample order'
+    });
+  } catch (e: any) {
+    console.error('❌ Create sample order error:', e);
+    return c.json({ success: false, error: e?.message || 'Failed to create sample order' }, 500);
+  }
+});
+
+// PUT /shipping/ghtk/order-detail/:order_id/customer - update customer info manually
+app.put('/order-detail/:order_id/customer', async (c) => {
+  const requestId = `update-customer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    console.log(`[GHTK Update Customer] Starting update for order: ${c.req.param('order_id')} - Request ID: ${requestId}`);
+
+    const orderId = c.req.param('order_id');
+    const body = await c.req.json();
+    const tenantId = (c.get as any)('tenantId') || 'default';
+
+    const { name, phone, address, street, hamlet, ward, district, province } = body;
+
+    // Find shipping order by carrier_order_code containing orderId
+    let shippingOrder: any = await c.env.DB.prepare(
+      `SELECT * FROM shipping_orders
+       WHERE carrier = 'ghtk' AND carrier_order_code LIKE ? AND COALESCE(tenant_id,'default') = ?`
+    ).bind(`%${orderId}%`, tenantId).first();
+
+    // If not found, create new record
+    if (!shippingOrder) {
+      const fullCode = `S21632601.BO.MT19-08-K23.${orderId}`;
+      await c.env.DB.prepare(
+        `INSERT INTO shipping_orders
+         (tenant_id, carrier, carrier_order_code, order_id, status, payload, created_at)
+         VALUES (?, 'ghtk', ?, ?, 'manual', '{}', datetime('now'))`
+      ).bind(tenantId, fullCode, orderId).run();
+
+      shippingOrder = await c.env.DB.prepare(
+        `SELECT * FROM shipping_orders
+         WHERE carrier = 'ghtk' AND carrier_order_code = ? AND COALESCE(tenant_id,'default') = ?`
+      ).bind(fullCode, tenantId).first();
+    }
+
+    // Get current payload
+    let payload: any = {};
+    try {
+      payload = typeof (shippingOrder as any).payload === 'string'
+        ? JSON.parse((shippingOrder as any).payload || '{}')
+        : (shippingOrder as any).payload || {};
+    } catch {}
+
+    // Update payload with customer info
+    payload.customer_info = {
+      name,
+      phone,
+      address,
+      street,
+      hamlet,
+      ward,
+      district,
+      province,
+      updated_at: new Date().toISOString()
+    };
+
+    // Save back to database
+    await c.env.DB.prepare(
+      `UPDATE shipping_orders
+       SET payload = ?, updated_at = datetime('now')
+       WHERE id = ?`
+    ).bind(JSON.stringify(payload), (shippingOrder as any).id).run();
+
+    console.log(`[GHTK Update Customer] Successfully updated customer info - Request ID: ${requestId}`);
+
+    return c.json({
+      success: true,
+      message: 'Customer information updated successfully',
+      data: payload.customer_info
+    });
+
+  } catch (e: any) {
+    console.error(`[GHTK Update Customer] Failed to update - Request ID: ${requestId}`, e);
+    return c.json({
+      success: false,
+      error: e?.message || 'Failed to update customer information'
+    }, 500);
+  }
+});
+
+// GET /shipping/ghtk/calculate-fee - tính phí vận chuyển GHTK
+app.get('/calculate-fee', async (c) => {
+  try {
+    const query = c.req.query();
+    const {
+      pick_province,
+      pick_district,
+      pick_ward,
+      pick_street,
+      pick_address,
+      province,
+      district,
+      ward,
+      street,
+      address,
+      weight,
+      value,
+      transport,
+      tags
+    } = query;
+
+    // Validate required parameters
+    if (!pick_province || !pick_district || !province || !district || !weight) {
+      return c.json({
+        success: false,
+        error: 'Missing required parameters: pick_province, pick_district, province, district, weight'
+      }, 400);
+    }
+
+    const svc = new ShippingGHTKService(c.env);
+    
+    // Build query parameters for GHTK API
+    const feeParams = new URLSearchParams();
+    feeParams.append('pick_province', pick_province);
+    feeParams.append('pick_district', pick_district);
+    feeParams.append('province', province);
+    feeParams.append('district', district);
+    feeParams.append('weight', weight);
+
+    // Optional parameters
+    if (pick_ward) feeParams.append('pick_ward', pick_ward);
+    if (pick_street) feeParams.append('pick_street', pick_street);
+    if (pick_address) feeParams.append('pick_address', pick_address);
+    if (ward) feeParams.append('ward', ward);
+    if (street) feeParams.append('street', street);
+    if (address) feeParams.append('address', address);
+    if (value) feeParams.append('value', value);
+    if (transport) feeParams.append('transport', transport);
+    if (tags) {
+      const tagArray = Array.isArray(tags) ? tags : [tags];
+      tagArray.forEach(tag => feeParams.append('tags[]', tag));
+    }
+
+    // Call GHTK fee calculation API
+    const feeResult = await svc.calculateFee(feeParams);
+    
+    if (feeResult.success) {
+      return c.json({
+        success: true,
+        data: feeResult.data,
+        message: 'Fee calculated successfully'
+      });
+    }
+
+    return c.json({
+      success: false,
+      error: feeResult.error || 'Failed to calculate shipping fee'
+    }, 400);
+  } catch (e: any) {
+    console.error('❌ Calculate fee error:', e);
+    return c.json({ success: false, error: e?.message || 'Failed to calculate fee' }, 500);
   }
 });
 

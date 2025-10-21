@@ -169,7 +169,6 @@ export class UserHandlers {
       }
 
       const data = await c.req.json<UserCreateData>();
-      
       // Basic validation
       if (!data.username || !data.email || !data.password || !data.full_name || !data.role) {
         return c.json({
@@ -241,7 +240,6 @@ export class UserHandlers {
       }
 
       const data = await c.req.json<UserUpdateData>();
-
       // Validate role change permissions
       if (data.role) {
         const validRoles = ['admin', 'manager', 'cashier', 'staff', 'sales_agent', 'affiliate', 'inventory'];
@@ -327,7 +325,6 @@ export class UserHandlers {
   async getStats(c: Context<{ Bindings: Env }>): Promise<Response> {
     try {
       const stats = await this.service.getStats();
-
       const response: UserResponse = {
         success: true,
         stats
@@ -389,7 +386,6 @@ export class UserHandlers {
       }
 
       const data = await c.req.json<UserUpdateData>();
-      
       // Users cannot change their own role
       delete data.role;
       delete data.is_active;

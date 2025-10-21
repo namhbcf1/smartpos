@@ -1,10 +1,11 @@
+export { default } from '../warranty/reporting'
+
 import { Hono } from 'hono';
 import { Env } from '../../types';
 import { authenticate } from '../../middleware/auth';
 import { ReportingService } from '../../services/ReportingService';
 
 const warrantyReporting = new Hono<{ Bindings: Env }>();
-
 warrantyReporting.use('*', authenticate);
 
 // Simple in-memory templates for demo
@@ -55,7 +56,6 @@ warrantyReporting.post('/report', async (c: any) => {
       FROM warranty_registrations wr
       ${whereClause}
     `).bind(...binds).first();
-
     const claims = await env.DB.prepare(`
       SELECT COUNT(*) as total
       FROM warranty_claims wc
@@ -63,7 +63,6 @@ warrantyReporting.post('/report', async (c: any) => {
       ${filters?.date_from ? ' AND DATE(wc.claim_date) >= DATE(?)' : ''}
       ${filters?.date_to ? ' AND DATE(wc.claim_date) <= DATE(?)' : ''}
     `).bind(...(filters?.date_from ? [filters.date_from] : []), ...(filters?.date_to ? [filters.date_to] : [])).first();
-
     const data = [
       { metric: 'total_registrations', value: Number(registrations?.total || 0) },
       { metric: 'total_claims', value: Number(claims?.total || 0) }
@@ -95,5 +94,4 @@ warrantyReporting.post('/export', async (c: any) => {
 });
 
 export default warrantyReporting;
-
 

@@ -27,8 +27,7 @@ export interface MigrationRecord {
  * FIXED: Simplified and reliable migration manager
  */
 export class FixedMigrationManager {
-  constructor(private env: Env) {}
-
+  constructor(private env: Env) { /* No operation */ }
   /**
    * Initialize migration tracking table
    */
@@ -72,9 +71,7 @@ export class FixedMigrationManager {
    */
   async executeMigration(migration: Migration): Promise<void> {
     const startTime = Date.now();
-    
     try {
-      console.log(`🔄 Executing migration: ${migration.name} (v${migration.version})`);
       
       // Execute all UP statements in a transaction
       await this.env.DB.batch(
@@ -91,8 +88,6 @@ export class FixedMigrationManager {
         `INSERT INTO schema_migrations (id, name, version, execution_time_ms, checksum) 
          VALUES (?, ?, ?, ?, ?)`
       ).bind(migration.id, migration.name, migration.version, executionTime, checksum).run();
-      
-      console.log(`✅ Migration ${migration.name} completed in ${executionTime}ms`);
     } catch (error) {
       console.error(`❌ Migration ${migration.name} failed:`, error);
       throw error;
@@ -104,7 +99,6 @@ export class FixedMigrationManager {
    */
   async runMigrations(migrations: Migration[]): Promise<void> {
     await this.initializeMigrationTable();
-    
     const executedMigrations = await this.getExecutedMigrations();
     const executedIds = new Set(executedMigrations.map(m => m.id));
     
@@ -113,11 +107,8 @@ export class FixedMigrationManager {
     const pendingMigrations = sortedMigrations.filter(m => !executedIds.has(m.id));
 
     if (pendingMigrations.length === 0) {
-      console.log('✅ No pending migrations');
       return;
     }
-
-    console.log(`🔄 Found ${pendingMigrations.length} pending migrations`);
 
     for (const migration of pendingMigrations) {
       // Check dependencies
@@ -133,7 +124,6 @@ export class FixedMigrationManager {
       executedIds.add(migration.id);
     }
 
-    console.log('🎉 All migrations completed successfully');
   }
 
   /**

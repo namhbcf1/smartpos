@@ -1,6 +1,6 @@
 /**
  * Database Schema Types - SmartPOS
- * Matches COMPLETE_DATABASE_SCHEMA_DETAILED.md exactly
+ * Matches D1_SCHEMA_STANDARDIZATION.md exactly
  */
 
 // =============================================================================
@@ -21,132 +21,133 @@ export interface Product {
   cost_price_cents: number; // INTEGER NOT NULL CHECK (cost_price_cents >= 0)
   stock: number; // INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0)
   min_stock: number; // INTEGER NOT NULL DEFAULT 0
-  max_stock: number; // INTEGER NOT NULL DEFAULT 100
+  max_stock: number; // INTEGER NOT NULL DEFAULT 1000
   unit: string; // TEXT NOT NULL DEFAULT 'piece'
-  weight_grams?: number; // INTEGER CHECK (weight_grams > 0)
+  weight_grams?: number; // INTEGER CHECK (weight_grams >= 0)
   dimensions?: string; // TEXT (JSON format)
   image_url?: string; // TEXT
   images?: string; // TEXT (JSON array)
-  is_active: number; // INTEGER NOT NULL DEFAULT 1
-  is_serialized: number; // INTEGER NOT NULL DEFAULT 0
+  is_active: number; // INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1))
+  is_serialized: number; // INTEGER NOT NULL DEFAULT 0 CHECK (is_serialized IN (0, 1))
   category_name?: string; // TEXT (denormalized)
   brand_name?: string; // TEXT (denormalized)
+  supplier_name?: string; // TEXT (denormalized)
   created_at: string; // TEXT DEFAULT (datetime('now'))
   updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 export interface Category {
-  id: string;
-  tenant_id: string;
-  parent_id?: string;
-  name: string;
-  code?: string;
-  description?: string;
-  image_url?: string;
-  sort_order: number;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
+  id: string; // TEXT PRIMARY KEY
+  name: string; // TEXT UNIQUE NOT NULL
+  description?: string; // TEXT
+  color?: string; // TEXT
+  icon?: string; // TEXT
+  parent_id?: string; // TEXT FK → categories.id
+  sort_order: number; // INTEGER DEFAULT 0
+  is_active: number; // INTEGER DEFAULT 1 CHECK (is_active IN (0, 1))
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 export interface Brand {
-  id: string;
-  name: string;
-  name_vi?: string;
-  description?: string;
-  website?: string;
-  logo_url?: string;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
+  id: string; // TEXT PRIMARY KEY
+  name: string; // TEXT NOT NULL UNIQUE
+  description?: string; // TEXT
+  logo_url?: string; // TEXT
+  website?: string; // TEXT
+  contact_email?: string; // TEXT
+  contact_phone?: string; // TEXT
+  is_active: number; // INTEGER DEFAULT 1 CHECK (is_active IN (0, 1))
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 export interface Supplier {
-  id: string;
-  tenant_id: string;
-  code: string;
-  name: string;
-  contact_person?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  tax_number?: string;
-  payment_terms_days: number;
-  lead_time_days: number;
-  default_currency: string;
-  rating: number;
-  notes?: string;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
+  id: string; // TEXT PRIMARY KEY
+  code: string; // TEXT NOT NULL UNIQUE
+  name: string; // TEXT NOT NULL
+  contact_person?: string; // TEXT
+  email?: string; // TEXT
+  phone?: string; // TEXT
+  address?: string; // TEXT
+  tax_number?: string; // TEXT
+  payment_terms?: string; // TEXT
+  credit_limit_cents: number; // INTEGER DEFAULT 0 CHECK (credit_limit_cents >= 0)
+  is_active: number; // INTEGER DEFAULT 1 CHECK (is_active IN (0, 1))
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 export interface Customer {
   id: string; // TEXT PRIMARY KEY
   name: string; // TEXT NOT NULL
-  email?: string; // TEXT UNIQUE
+  email?: string; // TEXT
   phone?: string; // TEXT
   address?: string; // TEXT
-  date_of_birth?: string; // TEXT (ISO 8601)
-  gender?: string; // TEXT
-  customer_type: string; // TEXT NOT NULL DEFAULT 'regular' CHECK (customer_type IN ('regular', 'vip', 'wholesale'))
-  loyalty_points: number; // INTEGER NOT NULL DEFAULT 0 CHECK (loyalty_points >= 0)
-  total_spent_cents: number; // INTEGER NOT NULL DEFAULT 0 CHECK (total_spent_cents >= 0)
-  visit_count: number; // INTEGER NOT NULL DEFAULT 0 CHECK (visit_count >= 0)
-  last_visit?: string; // TEXT (ISO 8601)
-  is_active: number; // INTEGER NOT NULL DEFAULT 1
+  date_of_birth?: string; // TEXT (ISO 8601: '1990-05-15')
+  gender?: string; // TEXT CHECK (gender IN ('male', 'female', 'other'))
+  customer_type: string; // TEXT DEFAULT 'regular' CHECK (customer_type IN ('regular', 'vip', 'wholesale'))
+  company_name?: string; // TEXT
+  tax_number?: string; // TEXT
+  
+  // Loyalty & Statistics
+  loyalty_points: number; // INTEGER DEFAULT 0 CHECK (loyalty_points >= 0)
+  total_spent_cents: number; // INTEGER DEFAULT 0 CHECK (total_spent_cents >= 0)
+  visit_count: number; // INTEGER DEFAULT 0 CHECK (visit_count >= 0)
+  last_visit?: string; // TEXT
+  
+  // Credit management
+  credit_limit_cents: number; // INTEGER DEFAULT 0 CHECK (credit_limit_cents >= 0)
+  current_balance_cents: number; // INTEGER DEFAULT 0
+  
+  // Preferences
+  preferences?: string; // TEXT (JSON)
+  tags?: string; // TEXT (JSON array)
+  
+  is_active: number; // INTEGER DEFAULT 1 CHECK (is_active IN (0, 1))
   created_at: string; // TEXT DEFAULT (datetime('now'))
   updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 export interface User {
-  id: string;
-  tenant_id: string;
-  email: string;
-  username?: string;
-  password_hash: string;
-  full_name: string;
-  phone?: string;
-  avatar_url?: string;
-  is_active: number;
-  email_verified: number;
-  phone_verified: number;
-  last_login_at?: string;
-  failed_login_attempts: number;
-  locked_until?: string;
-  password_reset_token?: string;
-  password_reset_expires?: string;
-  two_factor_secret?: string;
-  two_factor_enabled: number;
-  created_at: string;
-  updated_at: string;
-  role: string;
-  store_id: string;
+  id: string; // TEXT PRIMARY KEY
+  username: string; // TEXT UNIQUE NOT NULL
+  email: string; // TEXT UNIQUE NOT NULL
+  password_hash: string; // TEXT NOT NULL
+  full_name: string; // TEXT NOT NULL
+  phone?: string; // TEXT
+  avatar_url?: string; // TEXT
+  role: string; // TEXT NOT NULL DEFAULT 'cashier' CHECK (role IN ('admin', 'manager', 'cashier', 'employee'))
+  tenant_id: string; // TEXT DEFAULT 'default'
+  store_id?: string; // TEXT FK → stores.id
+  is_active: number; // INTEGER DEFAULT 1 CHECK (is_active IN (0, 1))
+  email_verified: number; // INTEGER DEFAULT 0 CHECK (email_verified IN (0, 1))
+  last_login_at?: string; // TEXT
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 export interface Store {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  tax_number?: string;
-  business_license?: string;
-  website?: string;
-  logo_url?: string;
-  manager_id?: string;
-  timezone: string;
-  currency: string;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
+  id: string; // TEXT PRIMARY KEY
+  name: string; // TEXT NOT NULL
+  code?: string; // TEXT UNIQUE
+  address?: string; // TEXT
+  phone?: string; // TEXT
+  email?: string; // TEXT
+  tax_number?: string; // TEXT
+  currency: string; // TEXT DEFAULT 'VND'
+  timezone: string; // TEXT DEFAULT 'Asia/Ho_Chi_Minh'
+  is_active: number; // INTEGER DEFAULT 1 CHECK (is_active IN (0, 1))
+  settings?: string; // TEXT (JSON configuration)
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 // =============================================================================
 // INVENTORY TYPES
 // =============================================================================
 
-export interface InventoryMovement {
+export interface InventoryMovementBase {
   id: string;
   tenant_id: string;
   product_id: string;
@@ -191,17 +192,23 @@ export interface ProductVariant {
 // =============================================================================
 
 export interface Order {
-  id: string;
-  tenant_id: string;
-  order_code: string;
-  customer_id?: string;
-  status: string;
-  subtotal: number;
-  discount: number;
-  tax: number;
-  total: number;
-  created_at: string;
-  updated_at: string;
+  id: string; // TEXT PRIMARY KEY
+  order_number: string; // TEXT UNIQUE NOT NULL
+  customer_id?: string; // TEXT FK → customers.id
+  user_id: string; // TEXT NOT NULL FK → users.id
+  store_id: string; // TEXT NOT NULL FK → stores.id
+  status: string; // TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('draft', 'pending', 'completed', 'cancelled', 'refunded'))
+  subtotal_cents: number; // INTEGER NOT NULL DEFAULT 0 CHECK (subtotal_cents >= 0)
+  discount_cents: number; // INTEGER DEFAULT 0 CHECK (discount_cents >= 0)
+  tax_cents: number; // INTEGER DEFAULT 0 CHECK (tax_cents >= 0)
+  total_cents: number; // INTEGER NOT NULL DEFAULT 0 CHECK (total_cents >= 0)
+  notes?: string; // TEXT
+  receipt_printed: number; // INTEGER DEFAULT 0 CHECK (receipt_printed IN (0, 1))
+  customer_name?: string; // TEXT (denormalized)
+  customer_phone?: string; // TEXT (denormalized)
+  user_name?: string; // TEXT (denormalized)
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 export interface POSOrder {
@@ -230,19 +237,96 @@ export interface POSOrder {
   updated_at: string;
 }
 
-export interface POSOrderItem {
-  id: string;
-  order_id: string;
-  product_id: string;
-  variant_id?: string;
-  product_name: string;
-  product_sku: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-  discount_amount: number;
-  tax_amount: number;
-  notes?: string;
+export interface OrderItem {
+  id: string; // TEXT PRIMARY KEY
+  order_id: string; // TEXT NOT NULL FK → orders.id
+  product_id: string; // TEXT NOT NULL FK → products.id
+  variant_id?: string; // TEXT FK → product_variants.id
+  quantity: number; // INTEGER NOT NULL CHECK (quantity > 0)
+  unit_price_cents: number; // INTEGER NOT NULL CHECK (unit_price_cents >= 0)
+  total_price_cents: number; // INTEGER NOT NULL CHECK (total_price_cents >= 0)
+  discount_cents: number; // INTEGER DEFAULT 0 CHECK (discount_cents >= 0)
+  product_name: string; // TEXT NOT NULL (denormalized)
+  product_sku: string; // TEXT NOT NULL (denormalized)
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+}
+
+export interface PaymentMethod {
+  id: string; // TEXT PRIMARY KEY
+  name: string; // TEXT NOT NULL
+  code: string; // TEXT UNIQUE NOT NULL
+  description?: string; // TEXT
+  fee_percentage: number; // REAL DEFAULT 0
+  is_active: number; // INTEGER DEFAULT 1 CHECK (is_active IN (0, 1))
+  is_default: number; // INTEGER DEFAULT 0 CHECK (is_default IN (0, 1))
+  sort_order: number; // INTEGER DEFAULT 0
+  configuration?: string; // TEXT (JSON configuration)
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
+}
+
+export interface Payment {
+  id: string; // TEXT PRIMARY KEY
+  order_id: string; // TEXT NOT NULL FK → orders.id
+  payment_method_id: string; // TEXT NOT NULL FK → payment_methods.id
+  amount_cents: number; // INTEGER NOT NULL CHECK (amount_cents > 0)
+  reference?: string; // TEXT (Transaction reference from gateway)
+  status: string; // TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed', 'refunded'))
+  processed_at: string; // TEXT DEFAULT (datetime('now'))
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+}
+
+export interface InventoryMovement {
+  id: string; // TEXT PRIMARY KEY
+  product_id: string; // TEXT NOT NULL FK → products.id
+  variant_id?: string; // TEXT FK → product_variants.id
+  transaction_type: 'in' | 'out' | 'adjustment' | 'transfer'; // TEXT NOT NULL CHECK
+  quantity: number; // INTEGER NOT NULL (Positive/negative quantity)
+  unit_cost_cents?: number; // INTEGER (Cost per unit in cents)
+  reference_id?: string; // TEXT (order_id, purchase_id, etc.)
+  reference_type?: string; // TEXT (order/purchase/adjustment/transfer)
+  reason?: string; // TEXT
+  notes?: string; // TEXT
+  user_id?: string; // TEXT FK → users.id
+  store_id?: string; // TEXT FK → stores.id
+  product_name?: string; // TEXT (denormalized)
+  product_sku?: string; // TEXT (denormalized)
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+}
+
+export interface Role {
+  id: string; // TEXT PRIMARY KEY
+  tenant_id: string; // TEXT NOT NULL DEFAULT 'default'
+  name: string; // TEXT NOT NULL
+  display_name: string; // TEXT NOT NULL
+  description?: string; // TEXT
+  permissions?: string; // TEXT (JSON array of permissions)
+  is_system_role: number; // INTEGER DEFAULT 0 CHECK (is_system_role IN (0, 1))
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
+}
+
+export interface UserRole {
+  id: string; // TEXT PRIMARY KEY
+  user_id: string; // TEXT NOT NULL FK → users.id
+  role_id: string; // TEXT NOT NULL FK → roles.id
+  outlet_id?: string; // TEXT
+  assigned_at: string; // TEXT DEFAULT (datetime('now'))
+  assigned_by?: string; // TEXT FK → users.id
+}
+
+export interface Setting {
+  id: string; // TEXT PRIMARY KEY
+  key: string; // TEXT NOT NULL UNIQUE
+  value?: string; // TEXT
+  type: string; // TEXT DEFAULT 'string' CHECK (type IN ('string', 'number', 'boolean', 'json'))
+  category: string; // TEXT DEFAULT 'general'
+  description?: string; // TEXT
+  is_public: number; // INTEGER DEFAULT 0 CHECK (is_public IN (0, 1))
+  is_editable: number; // INTEGER DEFAULT 1 CHECK (is_editable IN (0, 1))
+  sort_order: number; // INTEGER DEFAULT 0
+  created_at: string; // TEXT DEFAULT (datetime('now'))
+  updated_at: string; // TEXT DEFAULT (datetime('now'))
 }
 
 // =============================================================================

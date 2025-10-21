@@ -1,0 +1,51 @@
+name: Deploy Cloudflare Worker (auto from env)
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Load env variables from repo env file
+        shell: bash
+        run: |
+          if [ -f env ]; then
+            # Export only KEY=VALUE lines
+            grep -E '^[A-Z0-9_]+=' env >> "$GITHUB_ENV"
+            echo "Loaded $(grep -E '^[A-Z0-9_]+=' env | wc -l) variables from env file"
+          else
+            echo "env file not found; using repository/secret envs if any"
+          fi
+
+      - name: Determine Wrangler environment
+        shell: bash
+        run: |
+          ENVIRONMENT_LOWER=$(echo "${ENVIRONMENT:-production}" | tr '[:upper:]' '[:lower:]')
+          if [ "$ENVIRONMENT_LOWER" = "staging" ]; then
+            echo "WRANGLER_ENV_FLAG=--env staging" >> "$GITHUB_ENV"
+          else
+            echo "WRANGLER_ENV_FLAG=--env production" >> "$GITHUB_ENV"
+          fi
+          echo "Using environment: ${ENVIRONMENT_LOWER}"
+
+      - name: Deploy with Wrangler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy $WRANGLER_ENV_FLAG
+
+

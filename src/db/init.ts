@@ -36,7 +36,6 @@ async function cacheInitialData(env: Env): Promise<void> {
   const categories = await env.DB.prepare(`
     SELECT * FROM categories ORDER BY sort_order, name
   `).all();
-  
   await env.CACHE.put('categories:all', JSON.stringify(categories.results));
   
   // Cache active products
@@ -52,14 +51,12 @@ async function cacheInitialData(env: Env): Promise<void> {
     ORDER BY p.name
     LIMIT 100
   `).all();
-  
   await env.CACHE.put('products:active', JSON.stringify(products.results));
   
   // Cache settings
   const settings = await env.DB.prepare(`
     SELECT key, value FROM settings
   `).all();
-  
   const settingsObject = settings.results.reduce((acc: Record<string, string>, setting: any) => {
     acc[setting.key] = setting.value;
     return acc;
@@ -77,7 +74,6 @@ export async function isDatabaseInitialized(env: Env): Promise<boolean> {
     const result = await env.DB.prepare(`
       SELECT name FROM sqlite_master WHERE type='table' AND name='users'
     `).first();
-    
     if (!result) {
       return false;
     }
@@ -103,7 +99,6 @@ export async function resetDatabase(env: Env): Promise<boolean> {
     const tables = await env.DB.prepare(`
       SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'
     `).all();
-    
     // Drop all tables
     for (const table of tables.results) {
       await env.DB.exec(`DROP TABLE IF EXISTS ${table.name}`);

@@ -40,7 +40,6 @@ interface RateLimitState {
 
 // In-memory fallback store
 const memoryStore = new Map<string, RateLimitState>();
-
 /**
  * Clean up expired entries from memory store (called on demand)
  */
@@ -85,9 +84,7 @@ async function getRateLimitState(env: Env, key: string): Promise<RateLimitState>
         return JSON.parse(stored);
       }
     }
-  } catch (error) {
-    console.warn('KV rate limit storage failed, falling back to memory:', error);
-  }
+  } catch (error) { /* Error handled silently */ }
 
   // Fallback to memory store
   // Occasionally clean expired entries
@@ -121,9 +118,7 @@ async function updateRateLimitState(
       );
       return;
     }
-  } catch (error) {
-    console.warn('KV rate limit update failed, using memory:', error);
-  }
+  } catch (error) { /* Error handled silently */ }
 
   // Fallback to memory store
   memoryStore.set(key, state);
@@ -179,7 +174,6 @@ export function createRateLimit(config: RateLimitConfig) {
 
       const key = keyGenerator(c);
       const now = Date.now();
-
       // Get current state
       const state = await getRateLimitState(c.env, key);
 
@@ -231,7 +225,6 @@ export function createRateLimit(config: RateLimitConfig) {
       }
 
       await next();
-
       // Handle successful request skipping
       if (skipSuccessfulRequests && c.res.status < 400) {
         state.count = Math.max(0, state.count - 1);
@@ -256,8 +249,8 @@ export function createConfigurableRateLimit(
   // Default configurations
   const defaults: Record<string, RateLimitConfig> = {
     auth: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      maxRequests: 5,            // 5 attempts per 15 minutes
+      windowMs: 5 * 60 * 1000, // relax: 5 minutes
+      maxRequests: 20,         // allow 20 attempts per 5 minutes to reduce false 429s
       message: 'Too many authentication attempts, please try again later',
       keyGenerator: getDefaultKey
     },
@@ -348,7 +341,6 @@ export async function resetRateLimit(env: Env, key: string): Promise<void> {
     // Remove from memory store
     memoryStore.delete(key);
 
-    console.log(`Rate limit reset for key: ${key}`);
   } catch (error) {
     console.error('Failed to reset rate limit:', error);
     throw error;

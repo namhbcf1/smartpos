@@ -8,7 +8,7 @@ interface ValidationErrors {
 }
 
 // Middleware cho validate request body dựa trên Zod schema
-export const validate = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
+export const validate = (schema: ZodSchema): MiddlewareHandler => {
   return async (c, next) => {
     try {
       // Lấy content-type từ request
@@ -30,7 +30,7 @@ export const validate = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
         try {
           requestData = await c.req.json();
         } catch (e) {
-          requestData = {};
+          requestData = { /* No operation */ }
         }
       }
       
@@ -38,8 +38,7 @@ export const validate = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
       const result = schema.safeParse(requestData);
       
       if (!result.success) {
-        const errors: ValidationErrors = {};
-        
+        const errors: ValidationErrors = { /* No operation */ }
         // Format lỗi validation
         (result.error as any).errors.forEach((err: any) => {
           const path = err.path.join('.');
@@ -76,17 +75,15 @@ export const validate = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
 };
 
 // Middleware cho validate query params
-export const validateQuery = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
+export const validateQuery = (schema: ZodSchema): MiddlewareHandler => {
   return async (c, next) => {
     try {
       const queryParams = c.req.query();
-      
       // Validate query params
       const result = schema.safeParse(queryParams);
       
       if (!result.success) {
-        const errors: ValidationErrors = {};
-        
+        const errors: ValidationErrors = { /* No operation */ }
         // Format lỗi validation
         (result.error as any).errors.forEach((err: any) => {
           const path = err.path.join('.');
@@ -123,11 +120,11 @@ export const validateQuery = <T>(schema: ZodSchema<T>): MiddlewareHandler => {
 };
 
 // Helper để truy cập dữ liệu đã validate
-export function getValidated<T>(c: Context): T {
+export function getValidated(c: Context): T {
   return c.get('validated') as T;
 }
 
 // Helper để truy cập query params đã validate
-export function getValidatedQuery<T>(c: Context): T {
+export function getValidatedQuery(c: Context): T {
   return c.get('validatedQuery') as T;
 } 

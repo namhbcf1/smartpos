@@ -112,7 +112,6 @@ export class AuditLogger {
         entry.error_message || null,
         entry.metadata || null
       ).run();
-
       return true;
     } catch (error) {
       console.error('Failed to write audit log:', error);
@@ -240,7 +239,7 @@ export class AuditLogger {
       success?: boolean;
       limit?: number;
       offset?: number;
-    } = {}
+    } = { /* No operation */ }
   ): Promise<AuditLogEntry[]> {
     try {
       let query = 'SELECT * FROM audit_log WHERE 1=1';
@@ -329,32 +328,26 @@ export class AuditLogger {
       const totalResult = await env.DB.prepare(
         `SELECT COUNT(*) as count FROM audit_log WHERE 1=1${dateFilter}`
       ).bind(...params).first();
-
       // Successful events
       const successResult = await env.DB.prepare(
         `SELECT COUNT(*) as count FROM audit_log WHERE success = 1${dateFilter}`
       ).bind(...params).first();
-
       // Failed events
       const failedResult = await env.DB.prepare(
         `SELECT COUNT(*) as count FROM audit_log WHERE success = 0${dateFilter}`
       ).bind(...params).first();
-
       // Unique users
       const usersResult = await env.DB.prepare(
         `SELECT COUNT(DISTINCT user_id) as count FROM audit_log WHERE user_id > 0${dateFilter}`
       ).bind(...params).first();
-
       // Top actions
       const actionsResult = await env.DB.prepare(
         `SELECT action, COUNT(*) as count FROM audit_log WHERE 1=1${dateFilter} GROUP BY action ORDER BY count DESC LIMIT 10`
       ).bind(...params).all();
-
       // Security events
       const securityResult = await env.DB.prepare(
         `SELECT COUNT(*) as count FROM audit_log WHERE action IN ('unauthorized_access', 'permission_denied', 'suspicious_activity', 'login_failed')${dateFilter}`
       ).bind(...params).first();
-
       return {
         total_events: (totalResult?.count as number) || 0,
         successful_events: (successResult?.count as number) || 0,
@@ -390,8 +383,6 @@ export class AuditLogger {
       const result = await env.DB.prepare(
         'DELETE FROM audit_log WHERE created_at < ?'
       ).bind(cutoffDate.toISOString()).run();
-
-      console.log(`Cleaned ${(result as any).changes} old audit log entries`);
       return (result as any).changes || 0;
     } catch (error) {
       console.error('Failed to clean old audit logs:', error);
@@ -411,7 +402,6 @@ export const auditMiddleware = (action: AuditAction, resourceType: ResourceType)
     
     try {
       await next();
-      
       // Log successful operation
       if (user) {
         await AuditLogger.logCrud(

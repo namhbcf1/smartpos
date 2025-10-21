@@ -29,10 +29,7 @@ export const timezoneMiddleware = async (c: Context, next: Next) => {
     // Test if timezone is valid
     Intl.DateTimeFormat(undefined, { timeZone: clientTimezone });
     validTimezone = clientTimezone;
-  } catch {
-    console.warn(`Invalid timezone: ${clientTimezone}, using default: ${DEFAULT_TIMEZONE}`);
-  }
-
+  } catch { /* No operation */ }
   // Store timezone info in context
   const timezoneInfo: TimezoneInfo = {
     timezone: validTimezone,
@@ -135,7 +132,6 @@ export class TimezoneHelper {
       const year = d.getFullYear();
       const month = d.getMonth();
       const day = d.getDate();
-      
       // Start of day in target timezone
       const start = new Date(year, month, day, 0, 0, 0, 0);
       const startInTimezone = new Date(start.toLocaleString('en-US', { timeZone: timezone }));
@@ -150,7 +146,7 @@ export class TimezoneHelper {
       
       return {
         start: startUTC.toISOString(),
-        end: endUTC.toISOString()
+        end: endUTC.toISOString();
       };
     } catch {
       // Fallback to UTC if timezone calculations fail
@@ -162,7 +158,7 @@ export class TimezoneHelper {
       
       return {
         start: utcStart.toISOString(),
-        end: utcEnd.toISOString()
+        end: utcEnd.toISOString();
       };
     }
   }

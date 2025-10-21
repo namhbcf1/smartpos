@@ -22,6 +22,20 @@ export const PAGINATION_DEFAULTS = {
   MIN_LIMIT: 1
 };
 
+// Simple pagination response formatter
+export function formatPaginationResponse(page: number, limit: number, total: number) {
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNext: page < totalPages,
+    hasPrev: page > 1
+  };
+}
+
 // Pagination parameters interface
 export interface PaginationParams {
   page: number;
@@ -34,7 +48,7 @@ export interface PaginationParams {
 
 // Pagination result interface
 export interface PaginationResult<T> {
-  data: T[];
+  data: any[];
   pagination: {
     page: number;
     limit: number;
@@ -52,7 +66,6 @@ export interface PaginationResult<T> {
  */
 export function getPaginationParams(c: Context): PaginationParams {
   const query = c.req.query();
-  
   // Parse and validate page
   let page = parseInt(query.page || '1');
   if (isNaN(page) || page < 1) {
@@ -92,7 +105,7 @@ export function getPaginationParams(c: Context): PaginationParams {
  * Build pagination metadata
  */
 export function buildPaginationResult<T>(
-  data: T[],
+  data: any[],
   total: number,
   params: PaginationParams
 ): PaginationResult<T> {
@@ -161,13 +174,13 @@ export function buildSearchClause(
 /**
  * Generic paginated query executor
  */
-export async function executePaginatedQuery<T>(
+export async function executePaginatedQuery(
   env: Env,
   baseQuery: string,
   countQuery: string,
   params: PaginationParams,
   bindings: any[] = []
-): Promise<PaginationResult<T>> {
+): Promise<PaginationResult<any>> {
   try {
     // Execute count query
     const countResult = await env.DB.prepare(countQuery).bind(...bindings).first<{ count: number }>();
@@ -176,9 +189,8 @@ export async function executePaginatedQuery<T>(
     // Execute data query with pagination
     const dataQuery = `${baseQuery} ${buildLimitClause(params)}`;
     const dataResult = await env.DB.prepare(dataQuery).bind(...bindings).all();
-    
     return buildPaginationResult(
-      dataResult.results as T[],
+      dataResult.results as unknown as any[],
       total,
       params
     );
@@ -199,7 +211,7 @@ export async function paginateProducts(
     supplierId?: number;
     status?: string;
     is_active?: boolean;
-  } = {}
+  } = { /* No operation */ }
 ): Promise<PaginationResult<any>> {
   const allowedSortFields = ['name', 'price', 'stock', 'created_at', 'updated_at'];
   
@@ -278,7 +290,7 @@ export async function paginateSales(
     paymentMethod?: string;
     dateFrom?: string;
     dateTo?: string;
-  } = {}
+  } = { /* No operation */ }
 ): Promise<PaginationResult<any>> {
   const allowedSortFields = ['sale_number', 'total_amount', 'created_at', 'updated_at'];
   
@@ -366,7 +378,7 @@ export async function paginateCustomers(
   filters: {
     customerType?: string;
     isActive?: boolean;
-  } = {}
+  } = { /* No operation */ }
 ): Promise<PaginationResult<any>> {
   const allowedSortFields = ['name', 'email', 'total_spent', 'loyalty_points', 'created_at'];
   

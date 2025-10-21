@@ -33,7 +33,7 @@ export interface StandardErrorResponse {
 
 export interface StandardSuccessResponse<T = any> {
   success: true;
-  data: T;
+  data: any;
   message?: string;
   timestamp: string;
   requestId?: string;
@@ -130,11 +130,11 @@ export function generateRequestId(): string {
 /**
  * Create a standardized success response
  */
-export function createSuccessResponse<T>(
-  data: T,
+export function createSuccessResponse(
+  data: any,
   message?: string,
-  meta?: StandardSuccessResponse<T>['meta']
-): StandardSuccessResponse<T> {
+  meta?: StandardSuccessResponse['meta']
+): StandardSuccessResponse {
   return {
     success: true,
     data,
@@ -155,7 +155,6 @@ export function createErrorResponse(
 ): StandardErrorResponse {
   const apiError = error as ApiError;
   const requestId = apiError.requestId || generateRequestId();
-  
   // Get client information
   const ip = c.req.header('CF-Connecting-IP') || 
             c.req.header('X-Forwarded-For') || 
@@ -211,7 +210,6 @@ export function handleApiError(
  */
 function getStatusCodeFromError(error: Error): number {
   const message = error.message.toLowerCase();
-  
   if (message.includes('unauthorized') || message.includes('authentication')) {
     return 401;
   }
@@ -269,9 +267,7 @@ function logError(error: Error, c: Context): void {
   };
   
   // Use appropriate log level based on error severity
-  if (apiError.statusCode && apiError.statusCode < 500) {
-    console.warn('Client error:', errorLog);
-  } else {
+  if (apiError.statusCode && apiError.statusCode < 500) { /* No operation */ } else {
     console.error('Server error:', errorLog);
   }
 }
@@ -294,7 +290,6 @@ export function errorHandlingMiddleware() {
  */
 export function handleDatabaseError(error: Error): ApiError {
   const message = error.message.toLowerCase();
-  
   if (message.includes('unique constraint')) {
     return createApiError(
       'Resource already exists',
@@ -408,9 +403,9 @@ export function handleBusinessError(
  * Async error wrapper for route handlers
  */
 export function asyncHandler<T extends any[], R>(
-  fn: (...args: T) => Promise<R>
+  fn: (...args: any) => Promise<R>
 ) {
-  return (...args: T): Promise<R> => {
+  return (...args: any): Promise<R> => {
     const [c] = args as unknown as [any, ...any[]];
     return Promise.resolve(fn(...args)).catch((error) => {
       throw error; // Let the error handling middleware catch it
@@ -421,13 +416,12 @@ export function asyncHandler<T extends any[], R>(
 /**
  * Utility to safely parse JSON and handle errors
  */
-export async function safeJsonParse<T>(
+export async function safeJsonParse(
   c: Context,
   validator?: (data: any) => data is T
-): Promise<T> {
+): Promise {
   try {
     const data = await c.req.json();
-    
     if (validator && !validator(data)) {
       throw createApiError(
         'Invalid JSON structure',

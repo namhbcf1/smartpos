@@ -12,9 +12,9 @@ export function generateRandomSalt(): string {
  * Hashes a password with the given salt using SHA-256
  * @param {string} password - The plain text password
  * @param {string} salt - The salt to use for hashing
- * @returns {Promise<string>} The hashed password
+ * @returns {Promise} The hashed password
  */
-export async function hashPassword(password: string, salt: string): Promise<string> {
+export async function hashPassword(password: string, salt: string): Promise {
   return new Promise((resolve) => {
     // Create a hash using SHA-256
     const hash = crypto.createHash('sha256');

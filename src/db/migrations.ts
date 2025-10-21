@@ -108,9 +108,7 @@ export class MigrationManager {
    */
   async executeMigration(migration: Migration): Promise<void> {
     const startTime = Date.now();
-    
     try {
-      console.log(`Executing migration: ${migration.name} (v${migration.version})`);
       
       // Execute all UP statements
       for (const statement of migration.up) {
@@ -129,7 +127,6 @@ export class MigrationManager {
         [migration.id, migration.name, migration.version, executionTime, checksum]
       );
       
-      console.log(`Migration ${migration.name} completed in ${executionTime}ms`);
     } catch (error) {
       console.error(`Migration ${migration.name} failed:`, error);
       throw error;
@@ -141,9 +138,7 @@ export class MigrationManager {
    */
   async rollbackMigration(migration: Migration): Promise<void> {
     const startTime = Date.now();
-    
     try {
-      console.log(`Rolling back migration: ${migration.name} (v${migration.version})`);
       
       // Execute all DOWN statements in reverse order
       for (const statement of migration.down.reverse()) {
@@ -159,7 +154,6 @@ export class MigrationManager {
       );
       
       const executionTime = Date.now() - startTime;
-      console.log(`Migration ${migration.name} rolled back in ${executionTime}ms`);
     } catch (error) {
       console.error(`Rollback of ${migration.name} failed:`, error);
       throw error;
@@ -171,18 +165,14 @@ export class MigrationManager {
    */
   async runMigrations(): Promise<void> {
     await this.initializeMigrationTable();
-    
     const executedMigrations = await this.getExecutedMigrations();
     const executedIds = new Set(executedMigrations.map(m => m.id));
     
     const pendingMigrations = this.migrations.filter(m => !executedIds.has(m.id));
 
     if (pendingMigrations.length === 0) {
-      console.log('No pending migrations');
       return;
     }
-
-    console.log(`Found ${pendingMigrations.length} pending migrations`);
 
     for (const migration of pendingMigrations) {
       // Check dependencies
@@ -987,25 +977,34 @@ const migrations: Migration[] = [
   }
 ];
 
+// In-memory cache to avoid repeated migration checks
+let migrationsChecked = false;
+
 /**
  * Main migration function
  */
 export async function checkAndRunMigrations(env: Env): Promise<void> {
+  // Skip if already checked in this worker instance
+  if (migrationsChecked) {
+    return;
+  }
+
   try {
     const manager = new MigrationManager(env);
-    
+
     // Register all migrations
     migrations.forEach(migration => manager.addMigration(migration));
-    
+
     // Run migrations
     await manager.runMigrations();
-    
+
+    // Mark as checked
+    migrationsChecked = true;
+
     // Log performance stats
     const stats = DatabaseMonitor.getStats();
-    if (stats.totalQueries > 0) {
-      console.log('Migration performance stats:', stats);
-    }
-    
+    if (stats.totalQueries > 0) { /* No operation */ }
+
   } catch (error) {
     console.error('Migration failed:', error);
     throw error;

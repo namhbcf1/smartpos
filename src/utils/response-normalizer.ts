@@ -5,7 +5,7 @@
 
 export interface StandardResponse<T = any> {
   success: boolean;
-  data?: T;
+  data?: any;
   message?: string;
   error?: string;
   code?: string;
@@ -27,7 +27,7 @@ export class ResponseNormalizer {
   /**
    * Success response
    */
-  static success<T>(data?: T, message?: string, requestId?: string): StandardResponse<T> {
+  static success(data?: any, message?: string, requestId?: string): StandardResponse {
     return {
       success: true,
       data,
@@ -174,14 +174,14 @@ export class ResponseNormalizer {
   /**
    * Paginated response
    */
-  static paginated<T>(
-    items: T[],
+  static paginated(
+    items: any[],
     total: number,
     page: number,
     limit: number,
     requestId?: string
   ): StandardResponse<{
-    items: T[];
+    items: any[];
     pagination: {
       total: number;
       page: number;
@@ -218,7 +218,6 @@ export function responseMiddleware() {
     c.header('X-Request-ID', requestId);
 
     await next();
-
     // Normalize response if not already done
     const response = c.res.body;
     if (response && typeof response === 'string') {

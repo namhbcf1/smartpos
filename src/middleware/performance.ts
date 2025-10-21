@@ -4,18 +4,14 @@ import { Env } from '../types';
 // Performance monitoring middleware
 export const performanceMonitoring = async (c: Context<{ Bindings: Env }>, next: Next) => {
   const start = Date.now();
-  
   try {
     await next();
-    
     const duration = Date.now() - start;
     const url = c.req.url;
     const method = c.req.method;
     
     // Log slow requests (> 1 second)
-    if (duration > 1000) {
-      console.warn(`Slow request detected: ${method} ${url} took ${duration}ms`);
-    }
+    if (duration > 1000) { /* No operation */ }
     
     // Add performance headers
     c.header('X-Response-Time', `${duration}ms`);
@@ -83,10 +79,8 @@ export const optimizeDatabaseQueries = async (c: Context<{ Bindings: Env }>, nex
 // Response compression
 export const responseCompression = async (c: Context<{ Bindings: Env }>, next: Next) => {
   await next();
-  
   const response = c.res;
   const content = await response.text();
-  
   // Only compress if content is large enough and not already compressed
   if (content.length > 1024 && !response.headers.get('Content-Encoding')) {
     // In a real implementation, you would use a compression library like pako
@@ -100,13 +94,11 @@ export const memoryMonitoring = async (c: Context<{ Bindings: Env }>, next: Next
   const startMemory = process.memoryUsage?.() || { heapUsed: 0, heapTotal: 0 };
   
   await next();
-  
   const endMemory = process.memoryUsage?.() || { heapUsed: 0, heapTotal: 0 };
   const memoryDelta = endMemory.heapUsed - startMemory.heapUsed;
   
   // Log high memory usage
   if (memoryDelta > 10 * 1024 * 1024) { // 10MB
-    console.warn(`High memory usage detected: ${memoryDelta / 1024 / 1024}MB`);
   }
   
   c.header('X-Memory-Usage', `${memoryDelta}bytes`);
@@ -114,12 +106,10 @@ export const memoryMonitoring = async (c: Context<{ Bindings: Env }>, next: Next
 
 // Request rate limiting per IP
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
-
 export const rateLimitPerIP = (maxRequests: number = 100, windowMs: number = 60000) => {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
     const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
     const now = Date.now();
-    
     // Clean up expired entries
     for (const [ip, data] of requestCounts.entries()) {
       if (now > data.resetTime) {
@@ -157,7 +147,6 @@ export const databaseOptimization = async (c: Context<{ Bindings: Env }>, next: 
 
 // Response caching
 const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-
 export const responseCaching = (ttl: number = 300000) => { // 5 minutes default
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
     const cacheKey = `${c.req.method}:${c.req.url}`;
@@ -168,7 +157,6 @@ export const responseCaching = (ttl: number = 300000) => { // 5 minutes default
     }
     
     await next();
-    
     // Cache successful responses
     if (c.res.status === 200) {
       const responseData = await c.res.clone().json();

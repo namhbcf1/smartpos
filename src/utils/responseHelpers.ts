@@ -3,19 +3,19 @@ import { ApiResponse } from '../types';
 
 /**
  * Standardized response helpers to ensure consistent API responses
- * All API endpoints should use these helpers instead of directly calling c.json()
+ * All API endpoints should use these helpers instead of directly calling c.json();
  */
 
 /**
  * Send a successful response
  */
-export function sendSuccess<T>(
+export function sendSuccess(
   c: Context,
-  data: T,
+  data: any,
   message?: string,
   statusCode: number = 200
 ): Response {
-  const response: ApiResponse<T> = {
+  const response: ApiResponse = {
     success: true,
     data,
     message: message || 'Operation completed successfully',
@@ -91,9 +91,9 @@ export function sendForbidden(
 /**
  * Send a paginated success response
  */
-export function sendPaginatedSuccess<T>(
+export function sendPaginatedSuccess(
   c: Context,
-  data: T[],
+  data: any[],
   pagination: {
     page: number;
     limit: number;
@@ -103,8 +103,8 @@ export function sendPaginatedSuccess<T>(
   message?: string
 ): Response {
   const response: ApiResponse<{
-    data: T[];
-    pagination: typeof pagination;
+    data: any[];
+    pagination: anyypeof pagination;
   }> = {
     success: true,
     data: {
@@ -121,9 +121,9 @@ export function sendPaginatedSuccess<T>(
 /**
  * Send a created resource response
  */
-export function sendCreated<T>(
+export function sendCreated(
   c: Context,
-  data: T,
+  data: any,
   message?: string
 ): Response {
   return sendSuccess(c, data, message || 'Resource created successfully', 201);
@@ -132,9 +132,9 @@ export function sendCreated<T>(
 /**
  * Send an updated resource response
  */
-export function sendUpdated<T>(
+export function sendUpdated(
   c: Context,
-  data: T,
+  data: any,
   message?: string
 ): Response {
   return sendSuccess(c, data, message || 'Resource updated successfully');
@@ -180,9 +180,9 @@ export function handleDatabaseError(
 /**
  * Handle async operations with proper error handling
  */
-export async function handleAsyncOperation<T>(
+export async function handleAsyncOperation(
   c: Context,
-  operation: () => Promise<T>,
+  operation: () => Promise,
   successMessage?: string,
   errorMessage?: string
 ): Promise<Response> {

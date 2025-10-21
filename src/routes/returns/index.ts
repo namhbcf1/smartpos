@@ -5,7 +5,6 @@ import { ReturnsHandlers } from './handlers';
 
 // Returns routes
 const app = new Hono<{ Bindings: Env }>();
-
 // Initialize handlers
 let handlers: ReturnsHandlers;
 

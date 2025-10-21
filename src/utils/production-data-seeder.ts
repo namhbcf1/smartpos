@@ -8,18 +8,14 @@
 import { Env } from '../types';
 
 export class ProductionDataSeeder {
-  constructor(private env: Env) {}
-
+  constructor(private env: Env) { /* No operation */ }
   async seedAllData(): Promise<void> {
-    console.log('🌱 Starting production data seeding...');
     
     try {
       await this.seedCategories();
       await this.seedProducts();
       await this.seedCustomers();
       await this.seedSuppliers();
-      
-      console.log('✅ Production data seeding completed successfully');
     } catch (error) {
       console.error('❌ Production data seeding failed:', error);
       throw error;
@@ -27,7 +23,6 @@ export class ProductionDataSeeder {
   }
 
   private async seedCategories(): Promise<void> {
-    console.log('📁 Seeding product categories...');
     
     const categories = [
       // Computer Hardware
@@ -72,16 +67,12 @@ export class ProductionDataSeeder {
           INSERT OR IGNORE INTO categories (name, description, parent_id, is_active, created_at, updated_at)
           VALUES (?, ?, ?, 1, datetime('now'), datetime('now'))
         `).bind(category.name, category.description, category.parent_id).run();
-      } catch (error) {
-        console.warn(`Failed to insert category ${category.name}:`, error);
-      }
+      } catch (error) { /* Error handled silently */ }
     }
     
-    console.log(`✅ Seeded ${categories.length} categories`);
   }
 
   private async seedProducts(): Promise<void> {
-    console.log('📦 Seeding products...');
     
     const products = [
       // Laptops
@@ -122,7 +113,6 @@ export class ProductionDataSeeder {
     for (const product of products) {
       const category_id = categoryMap.get(product.category);
       if (!category_id) {
-        console.warn(`Category not found: ${product.category}`);
         continue;
       }
 
@@ -136,16 +126,12 @@ export class ProductionDataSeeder {
           product.name, product.sku, category_id, product.price, 
           product.cost_price, product.stock, product.description
         ).run();
-      } catch (error) {
-        console.warn(`Failed to insert product ${product.name}:`, error);
-      }
+      } catch (error) { /* Error handled silently */ }
     }
     
-    console.log(`✅ Seeded ${products.length} products`);
   }
 
   private async seedCustomers(): Promise<void> {
-    console.log('👥 Seeding customers...');
     
     const customers = [
       { name: 'Công ty TNHH Công nghệ ABC', email: 'contact@abc-tech.vn', phone: '0901234567', address: '123 Nguyễn Văn Linh, Q.7, TP.HCM', type: 'business' },
@@ -167,16 +153,12 @@ export class ProductionDataSeeder {
             name, email, phone, address, customer_type, is_active, created_at, updated_at
           ) VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
         `).bind(customer.name, customer.email, customer.phone, customer.address, customer.type).run();
-      } catch (error) {
-        console.warn(`Failed to insert customer ${customer.name}:`, error);
-      }
+      } catch (error) { /* Error handled silently */ }
     }
     
-    console.log(`✅ Seeded ${customers.length} customers`);
   }
 
   private async seedSuppliers(): Promise<void> {
-    console.log('🏭 Seeding suppliers...');
     
     const suppliers = [
       { name: 'Công ty TNHH Phân phối ASUS Việt Nam', contact: 'Nguyễn Văn A', email: 'sales@asus-vn.com', phone: '0281234567', address: 'Tầng 10, Tòa nhà ABC, Q.1, TP.HCM' },
@@ -193,12 +175,9 @@ export class ProductionDataSeeder {
             name, contact_person, email, phone, address, is_active, created_at, updated_at
           ) VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
         `).bind(supplier.name, supplier.contact, supplier.email, supplier.phone, supplier.address).run();
-      } catch (error) {
-        console.warn(`Failed to insert supplier ${supplier.name}:`, error);
-      }
+      } catch (error) { /* Error handled silently */ }
     }
     
-    console.log(`✅ Seeded ${suppliers.length} suppliers`);
   }
 }
 

@@ -33,59 +33,30 @@ const sanitizeForLogging = (data: any): any => {
   return data;
 };
 
-// CORS middleware with enhanced origin validation
+// CORS middleware - SIMPLIFIED for speed
 export const corsMiddleware: MiddlewareHandler = async (c, next) => {
   const origin = c.req.header('Origin');
-  const allowedOrigins = getEnvVar(c.env, 'CORS_ORIGINS', true)?.split(',').map(o => o.trim()) || ['http://localhost:3000'];
-  
-  console.log('🔍 CORS Check - Origin:', origin);
-  console.log('📋 Allowed Origins:', allowedOrigins);
-  
-  // Validate origin
-  let allowOrigin = false;
-  if (origin) {
-    // Temporary fix: Explicitly allow preview URLs while environment variable propagates
-    if (origin === 'https://9b82c250.namhbcf-uk.pages.dev' ||
-        origin === 'https://37bc827e.namhbcf-uk.pages.dev' ||
-        origin === 'https://95cca7b9.namhbcf-uk.pages.dev' ||
-        origin.includes('.namhbcf-uk.pages.dev')) {
-      allowOrigin = true;
-    } else {
-      allowOrigin = allowedOrigins.some(allowed => {
-        const trimmed = allowed.trim();
-        if (trimmed === '*') return true;
-        if (trimmed.includes('*.')) {
-          const domain = trimmed.replace('https://*.', '');
-          return origin.includes(domain);
-        }
-        return origin === trimmed;
-      });
-    }
-  }
-  
-  console.log('✅ Origin allowed:', allowOrigin);
-  
-  // Always set CORS headers for production domains
-  if (allowOrigin && origin) {
+  const allowedOrigins = [
+    'https://namhbcf-uk.pages.dev',
+    'https://www.namhbcf.uk',
+    'https://namhbcf.uk'
+  ];
+
+  // Allow Pages domain and its preview subdomains; otherwise fallback to '*'
+  const isPagesPreview = origin ? /^https:\/\/[a-z0-9-]+\.namhbcf-uk\.pages\.dev$/.test(origin) : false;
+  if (origin && (allowedOrigins.includes(origin) || isPagesPreview)) {
     c.header('Access-Control-Allow-Origin', origin);
-    console.log('🌐 Set CORS Origin:', origin);
-  } else if (allowedOrigins.includes('*')) {
-    // When credentials are used, wildcard is invalid. Reflect the request origin instead.
-    if (origin) {
-      c.header('Access-Control-Allow-Origin', origin);
-    } else {
-      c.header('Access-Control-Allow-Origin', '*');
-    }
+  } else {
+    c.header('Access-Control-Allow-Origin', '*');
   }
-  
+
   c.header('Access-Control-Allow-Credentials', 'true');
   c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, X-Client-Version, Origin, X-Request-ID, X-Timestamp, X-Timezone');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, X-Client-Version, Origin, X-Request-ID, X-Timestamp, X-Timezone, X-Tenant-ID, X-Store-ID, X-Device-ID, X-Session-ID');
   c.header('Access-Control-Max-Age', '86400');
 
-  // Handle preflight requests
+  // Handle preflight requests early
   if (c.req.method === 'OPTIONS') {
-    console.log('🔄 CORS: Handling preflight request for origin:', origin);
     return c.text('', 204 as any);
   }
 
@@ -136,12 +107,10 @@ export const accessLogger: MiddlewareHandler = async (c, next) => {
   const sanitizedUrl = url.replace(/([?&])(password|token|secret|key)=[^&]*/gi, '$1$2=[REDACTED]');
   
   await next();
-  
   const end = Date.now();
   const responseTime = end - start;
   
   // Log the request with sanitized data
-  console.log(`[${new Date().toISOString()}] ${method} ${sanitizedUrl} ${c.res.status} ${responseTime}ms - ${ip} ${InputValidator.sanitizeString(userAgent, 200)}`);
 }
 
 // Environment validation middleware

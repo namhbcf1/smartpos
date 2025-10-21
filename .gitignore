@@ -1,38 +1,49 @@
 # Dependencies
 node_modules/
 */node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Build outputs
-dist/
-build/
-*/dist/
-*/build/
-
-# Environment files
+# Environment variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-*.env
+.env.deploy
+env
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.vuepress/dist
+
+# Frontend specific
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 lerna-debug.log*
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
+coverage/
 *.lcov
 
 # nyc test coverage
@@ -66,6 +77,10 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
+# dotenv environment variables file
+.env
+.env.test
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -79,48 +94,24 @@ dist
 
 # Gatsby files
 .cache/
+public
 
-# vuepress build output
-.vuepress/dist
+# Storybook build outputs
+.out
+.storybook-out
 
-# Serverless directories
-.serverless/
+# Temporary folders
+tmp/
+temp/
 
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# yarn v2
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
-
-# Vite
-dist/
-dist-ssr/
-*.local
-
-# Wrangler
-.wrangler/
-
-# IDE
+# Editor directories and files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
+# OS generated files
 .DS_Store
 .DS_Store?
 ._*
@@ -129,19 +120,65 @@ dist-ssr/
 ehthumbs.db
 Thumbs.db
 
-# Archive files
-_archive/
-_legacy/
+# Cloudflare Workers
+.wrangler/
+worker/
 
 # Test results
 test-results/
+playwright-report/
 coverage/
 
-# Database
+# Database files
 *.db
 *.sqlite
 *.sqlite3
 
+# Backup files
+*.backup
+*.bak
+
+# Deployment files
+deploy-*.ps1
+deploy-*.sh
+
+# Generated files
+*-generated.json
+*-generated.ts
+provinces-data.json
+districts-generated.json
+wards-generated.json
+
+# Scripts output
+scripts/output/
+
+# Mobile build
+mobile/build/
+mobile/dist/
+
+# IDE
+.cursor/
+.cursorignore
+
+# Husky
+.husky/_
+
+# Wrangler
+.wrangler/
+
+# Test files
+test-results/
+playwright-report/
+
 # Temporary files
-tmp/
-temp/
+nul
+nul_
+link
+prompt
+
+# Deployment reports
+DEPLOYMENT_*.md
+MONITORING_DASHBOARD.md
+
+# Generated data files
+UsersADMINDesktopsmartprovinces-full-data.json

@@ -85,7 +85,6 @@ export const CreateProductSchema = ProductSchema.omit({
 });
 
 export const UpdateProductSchema = CreateProductSchema.partial();
-
 export const ProductsResponseSchema = BaseResponseSchema.extend({
   data: z.object({
     products: z.array(ProductSchema),
@@ -301,7 +300,7 @@ export type Pagination = z.infer<typeof PaginationSchema>;
 // VALIDATION HELPERS
 // ===================================================================
 
-export const validateRequest = <T>(schema: z.ZodSchema<T>, data: unknown, _ctx?: any): T => {
+export const validateRequest = <T>(schema: z.ZodSchema, data: unknown, _ctx?: any): T => {
   const result = schema.safeParse(data);
   if (!result.success) {
     throw new Error(`Validation failed: ${result.error.message}`);
@@ -325,7 +324,7 @@ export const createValidationError = (errors: z.ZodError): ValidationError => ({
 // LEGACY COMPATIBILITY (for existing code)
 // ===================================================================
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T = any> {
   success: boolean;
   data: T;
   message: string;
@@ -339,7 +338,7 @@ export interface PaginationInfo {
   totalPages: number;
 }
 
-export interface PaginatedResponse<T> {
+export interface PaginatedResponse<T = any> {
   data: T[];
   pagination: PaginationInfo;
 }

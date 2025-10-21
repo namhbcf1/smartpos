@@ -7,7 +7,6 @@ export class NotificationManager {
   private state: any;
   private env: any;
   private sessions: Map<string, any> = new Map();
-
   constructor(state: any, env: any) {
     this.state = state;
     this.env = env;
@@ -40,17 +39,15 @@ export class NotificationManager {
     this.sessions.set(sessionId, server);
 
     (server as any).accept();
-
     (server as any).addEventListener('message', (event: any) => {
       try {
         const data = JSON.parse(event.data as string);
-        console.log('WebSocket message received:', data);
         
         // Echo back for now
         server.send(JSON.stringify({
           type: 'echo',
           data: data,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString();
         }));
       } catch (error) {
         console.error('WebSocket message error:', error);
@@ -59,7 +56,6 @@ export class NotificationManager {
 
     (server as any).addEventListener('close', () => {
       this.sessions.delete(sessionId);
-      console.log(`WebSocket session ${sessionId} closed`);
     });
 
     (server as any).addEventListener('error', (error: any) => {
@@ -76,14 +72,13 @@ export class NotificationManager {
   private async handleBroadcast(request: Request): Promise<Response> {
     try {
       const data = await request.json();
-      
       // Broadcast to all connected sessions
       for (const [sessionId, socket] of this.sessions) {
         try {
           socket.send(JSON.stringify({
             type: 'broadcast',
             data: data,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString();
           }));
         } catch (error) {
           console.error(`Failed to send to session ${sessionId}:`, error);

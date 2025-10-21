@@ -228,11 +228,10 @@ export class PermissionChecker {
   private static async getUserPermissions(env: Env, userId: number): Promise<UserPermission[]> {
     try {
       const result = await env.DB.prepare(`
-        SELECT * FROM user_permissions 
+        SELECT * FROM user_permissions
         WHERE user_id = ? AND is_active = 1
       `).bind(userId).all();
-
-      return result.results as UserPermission[] || [];
+      return (result.results || []) as unknown as UserPermission[];
     } catch (error) {
       console.error('Failed to get user permissions:', error);
       return [];
@@ -260,7 +259,6 @@ export class PermissionChecker {
         permission.conditions ? JSON.stringify(permission.conditions) : null,
         grantedBy
       ).run();
-
       return true;
     } catch (error) {
       console.error('Failed to grant permission:', error);
@@ -283,7 +281,6 @@ export class PermissionChecker {
         SET is_active = 0, revoked_at = datetime('now')
         WHERE user_id = ? AND resource = ? AND action = ?
       `).bind(userId, resource, action).run();
-
       return true;
     } catch (error) {
       console.error('Failed to revoke permission:', error);
@@ -314,7 +311,6 @@ export const requirePermissions = (permissions: string[]) => {
 
       // Check if user has required permissions
       if (!hasPermissionCompat(userPermissions, permissions)) {
-        console.warn(`🚨 Permission denied: User ${userId} lacks permissions: ${permissions.join(', ')}`);
         return c.json({
           success: false,
           message: `Insufficient permissions: ${permissions.join(', ')}`,
@@ -381,10 +377,8 @@ async function loadUserPermissionsCompat(db: D1Database, userId: string, tenantI
       WHERE ur.user_id = ? AND r.tenant_id = ?
       ORDER BY r.name
     `).bind(userId, tenantId).all();
-
     const roles = userRoles.results || [];
-    const allPermissions = new Set<string>();
-
+    const allPermissions = new Set();
     // Collect all permissions from all roles
     roles.forEach((role: any) => {
       if (role.permissions) {
@@ -399,7 +393,7 @@ async function loadUserPermissionsCompat(db: D1Database, userId: string, tenantI
       }
     });
 
-    return Array.from(allPermissions);
+    return Array.from(allPermissions) as string[];
   } catch (error) {
     console.error('Error loading user permissions:', error);
     return [];
@@ -415,7 +409,6 @@ async function checkUserPermission(env: Env, userId: number, permissionKey: stri
     const user = await env.DB.prepare(`
       SELECT id, role FROM users WHERE id = ?
     `).bind(userId).first();
-
     if (!user) {
       return false;
     }
@@ -425,7 +418,6 @@ async function checkUserPermission(env: Env, userId: number, permissionKey: stri
     const employee = await env.DB.prepare(`
       SELECT id FROM employees WHERE role = ? LIMIT 1
     `).bind(user.role).first();
-
     if (!employee) {
       return false;
     }
@@ -437,7 +429,6 @@ async function checkUserPermission(env: Env, userId: number, permissionKey: stri
       WHERE employee_id = ? AND permission_key = ? AND has_permission = 1
       LIMIT 1
     `).bind(employee.id, permissionKey).first();
-
     return !!permission;
   } catch (error) {
     console.error('Error checking user permission:', error);
@@ -470,7 +461,6 @@ export const requirePermissionLegacy = (resource: string, action: string, condit
       const hasPermission = await PermissionChecker.checkPermission(c.env, user, permission);
 
       if (!hasPermission) {
-        console.warn(`🚨 RBAC: Permission denied for user ${(user as any).username} (${(user as any).role}) - ${action} on ${resource}`);
         return c.json({
           success: false,
           message: 'Insufficient permissions',

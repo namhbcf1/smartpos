@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { Env } from '../../types';
 
 const router = new Hono<{ Bindings: Env }>();
-
 router.get('/health', (c) => {
   return c.json({
     success: true,
@@ -21,5 +20,4 @@ router.get('/metrics', (c) => {
 });
 
 export default router;
-
 

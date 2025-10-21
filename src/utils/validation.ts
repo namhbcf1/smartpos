@@ -109,7 +109,7 @@ export function validateDate(dateString: string, fieldName: string): ApiError | 
 
 export function validateEnum<T extends string>(
   value: string, 
-  allowedValues: T[], 
+  allowedValues: any[], 
   fieldName: string
 ): ApiError | null {
   if (!value) return null; // Optional field

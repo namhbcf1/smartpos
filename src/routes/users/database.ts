@@ -2,8 +2,7 @@ import { Env } from '../../types';
 import { User, UserCreateData, UserUpdateData, UserQueryParams, UserStats } from './types';
 
 export class UserDatabase {
-  constructor(private env: Env) {}
-
+  constructor(private env: Env) { /* No operation */ }
   // Initialize database tables
   async initializeTables(): Promise<void> {
     try {
@@ -33,7 +32,6 @@ export class UserDatabase {
           FOREIGN KEY (updated_by) REFERENCES users(id)
         )
       `).run();
-
       // Create user sessions table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS user_sessions (
@@ -50,7 +48,6 @@ export class UserDatabase {
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `).run();
-
       // Create user activities table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS user_activities (
@@ -66,7 +63,6 @@ export class UserDatabase {
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `).run();
-
       // Create user permissions table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS user_permissions (
@@ -79,7 +75,6 @@ export class UserDatabase {
           created_at DATETIME NOT NULL DEFAULT (datetime('now'))
         )
       `).run();
-
       // Create roles table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS roles (
@@ -92,7 +87,6 @@ export class UserDatabase {
           updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
         )
       `).run();
-
       // Create user profiles table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS user_profiles (
@@ -113,7 +107,6 @@ export class UserDatabase {
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `).run();
-
       // Create password resets table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS password_resets (
@@ -127,7 +120,6 @@ export class UserDatabase {
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `).run();
-
       // Create login attempts table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS login_attempts (
@@ -140,7 +132,6 @@ export class UserDatabase {
           created_at DATETIME NOT NULL DEFAULT (datetime('now'))
         )
       `).run();
-
       // Create two factor auth table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS two_factor_auth (
@@ -154,7 +145,6 @@ export class UserDatabase {
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `).run();
-
       // Create API keys table
       await this.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS api_keys (
@@ -170,7 +160,6 @@ export class UserDatabase {
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `).run();
-
       // Create indexes for better performance
       await this.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`).run();
       await this.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`).run();
@@ -182,8 +171,6 @@ export class UserDatabase {
       await this.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_activities_user ON user_activities(user_id)`).run();
       await this.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_login_attempts_username ON login_attempts(username)`).run();
       await this.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip_address)`).run();
-
-      console.log('User database tables initialized successfully');
     } catch (error) {
       console.error('Error initializing user database tables:', error);
       throw error;
@@ -195,9 +182,7 @@ export class UserDatabase {
     try {
       // Check if permissions exist
       const permissionCount = await this.env.DB.prepare('SELECT COUNT(*) as count FROM user_permissions').first<{ count: number }>();
-
       if (!permissionCount || permissionCount.count === 0) {
-        console.log('Creating default permissions...');
 
         const permissions = [
           // Product permissions
@@ -255,9 +240,7 @@ export class UserDatabase {
 
       // Check if roles exist
       const roleCount = await this.env.DB.prepare('SELECT COUNT(*) as count FROM roles').first<{ count: number }>();
-
       if (!roleCount || roleCount.count === 0) {
-        console.log('Creating default roles...');
 
         const roles = [
           {
@@ -336,9 +319,7 @@ export class UserDatabase {
 
       // Check if admin user exists
       const adminUser = await this.env.DB.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').bind('admin').first<{ id: number }>();
-
       if (!adminUser) {
-        console.log('Creating default admin user...');
         
         // Create default admin user
         const passwordHash = await this.hashPassword('admin123'); // Default password
@@ -349,7 +330,6 @@ export class UserDatabase {
         `).bind('admin', 'admin@smartpos.com', passwordHash, 'System Administrator', 'admin', 1).run();
       }
 
-      console.log('Default user data created successfully');
     } catch (error) {
       console.error('Error creating default user data:', error);
       throw error;
@@ -380,13 +360,11 @@ export class UserDatabase {
           SUM(CASE WHEN last_login >= datetime('now', '-7 days') THEN 1 ELSE 0 END) as recent_logins
         FROM users
       `).first<any>();
-
       const storesCount = await this.env.DB.prepare(`
         SELECT COUNT(DISTINCT store_id) as count 
         FROM users 
         WHERE store_id IS NOT NULL
       `).first<{ count: number }>();
-
       return {
         total_users: stats?.total_users || 0,
         active_users: stats?.active_users || 0,

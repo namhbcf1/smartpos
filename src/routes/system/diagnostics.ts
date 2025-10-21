@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { Env } from '../../types';
 
 const router = new Hono<{ Bindings: Env }>();
-
 router.get('/db/test', async (c: any) => {
   try {
     const result = await c.env.DB.prepare('SELECT 1 as test').first();
@@ -13,5 +12,4 @@ router.get('/db/test', async (c: any) => {
 });
 
 export default router;
-
 

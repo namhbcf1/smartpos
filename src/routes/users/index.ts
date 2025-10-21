@@ -5,7 +5,6 @@ import { UserHandlers } from './handlers';
 
 // Users routes
 const app = new Hono<{ Bindings: Env }>();
-
 // Initialize handlers
 let handlers: UserHandlers;
 

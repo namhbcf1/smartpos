@@ -53,7 +53,7 @@ export const verifyToken = async (token: string): Promise<any> => {
 };
 
 // Generate JWT token
-export const generateToken = async (user: User): Promise<string> => {
+export const generateToken = async (user: User): Promise => {
   try {
     // In production, implement proper JWT generation
     // For now, return a mock token
@@ -65,7 +65,7 @@ export const generateToken = async (user: User): Promise<string> => {
 };
 
 // Hash password
-export const hashPassword = async (password: string): Promise<string> => {
+export const hashPassword = async (password: string): Promise => {
   try {
     // In production, use proper password hashing (bcrypt, etc.)
     // For now, return a simple hash
@@ -121,7 +121,6 @@ export const getUserById = async (c: Context, userId: number): Promise<User | nu
       FROM users 
       WHERE id = ? AND is_active = 1
     `).bind(userId).first();
-    
     if (!result) {
       return null;
     }
@@ -143,7 +142,6 @@ export const getUserByUsername = async (c: Context, username: string): Promise<U
       FROM users 
       WHERE username = ? AND is_active = 1
     `).bind(username).first();
-    
     if (!result) {
       return null;
     }

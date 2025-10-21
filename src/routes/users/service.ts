@@ -81,7 +81,6 @@ export class UserService {
       const users = await this.env.DB.prepare(query)
         .bind(...bindings, limit, offset)
         .all<User>();
-
       // Get total count
       const countQuery = `
         SELECT COUNT(*) as total
@@ -92,7 +91,6 @@ export class UserService {
       const countResult = await this.env.DB.prepare(countQuery)
         .bind(...bindings)
         .first<{ total: number }>();
-
       const total = countResult?.total || 0;
 
       // Get stats if requested (first page only)
@@ -127,7 +125,6 @@ export class UserService {
         LEFT JOIN stores s ON u.store_id = s.id
         WHERE u.id = ?
       `).bind(id).first<User>();
-
       if (user) {
         // Remove password hash from response
         delete (user as any).password_hash;
@@ -152,7 +149,6 @@ export class UserService {
         LEFT JOIN stores s ON u.store_id = s.id
         WHERE u.username = ?
       `).bind(username).first<User>();
-
       if (user) {
         // Remove password hash from response
         delete (user as any).password_hash;
@@ -176,7 +172,6 @@ export class UserService {
         LEFT JOIN stores s ON u.store_id = s.id
         WHERE u.email = ?
       `).bind(email).first<User>();
-
       if (user) {
         // Remove password hash from response
         delete (user as any).password_hash;
@@ -196,7 +191,6 @@ export class UserService {
       const employee = await this.env.DB.prepare(`
         SELECT email FROM employees WHERE id = ?
       `).bind(employeeId).first();
-
       if (!employee || !employee.email) {
         return null;
       }
@@ -210,7 +204,6 @@ export class UserService {
         LEFT JOIN stores s ON u.store_id = s.id
         WHERE u.email = ?
       `).bind(employee.email).first<User>();
-
       if (user) {
         // Remove password hash from response
         delete (user as any).password_hash;
@@ -242,7 +235,6 @@ export class UserService {
       if (data.store_id) {
         const store = await this.env.DB.prepare('SELECT id FROM stores WHERE id = ?')
           .bind(data.store_id).first<{ id: number }>();
-        
         if (!store) {
           throw new Error('Store not found');
         }
@@ -270,7 +262,6 @@ export class UserService {
         data.settings ? JSON.stringify(data.settings) : null,
         createdBy
       ).run();
-
       const userId = result.meta.last_row_id as number;
 
       // Create user profile
@@ -278,7 +269,6 @@ export class UserService {
         INSERT INTO user_profiles (user_id)
         VALUES (?)
       `).bind(userId).run();
-
       // Clear cache
       await this.cache.delete(this.env, 'users:list');
 
@@ -348,7 +338,6 @@ export class UserService {
         SET ${updateFields.join(', ')}
         WHERE id = ?
       `).bind(...bindings).run();
-
       // Clear cache
       await this.cache.delete(this.env, CacheKeys.user(id));
       await this.cache.delete(this.env, 'users:list');
@@ -378,7 +367,6 @@ export class UserService {
         const adminCount = await this.env.DB.prepare(`
           SELECT COUNT(*) as count FROM users WHERE role = 'admin' AND is_active = 1
         `).first<{ count: number }>();
-
         if (adminCount && adminCount.count <= 1) {
           throw new Error('Cannot delete the last admin user');
         }
@@ -389,7 +377,6 @@ export class UserService {
         SET is_active = 0, updated_by = ?, updated_at = datetime('now')
         WHERE id = ?
       `).bind(deletedBy, id).run();
-
       // Clear cache
       await this.cache.delete(this.env, CacheKeys.user(id));
       await this.cache.delete(this.env, 'users:list');
@@ -422,7 +409,6 @@ export class UserService {
         SET last_login = datetime('now'), login_count = login_count + 1
         WHERE id = ?
       `).bind(userId).run();
-
       // Clear cache
       await this.cache.delete(this.env, CacheKeys.user(userId));
     } catch (error) {
