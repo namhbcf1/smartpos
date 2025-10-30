@@ -107,9 +107,12 @@ app.post('/', async (c) => {
       data.credit_limit_cents = Math.round(creditLimit);
     }
 
+    // Remove tenant_id from data if exists (will be added by service)
+    const { tenant_id, ...supplierData } = data;
+
     const supplierService = new SupplierService(c.env);
     const result = await supplierService.createSupplier(tenantId, {
-      ...data,
+      ...supplierData,
       created_by: userId
     });
 
@@ -154,9 +157,12 @@ app.put('/:id', async (c) => {
       data.credit_limit_cents = Math.round(creditLimit);
     }
 
+    // Remove tenant_id from data if exists (will be added by service)
+    const { tenant_id, ...supplierData } = data;
+
     const supplierService = new SupplierService(c.env);
     const result = await supplierService.updateSupplier(id, tenantId, {
-      ...data,
+      ...supplierData,
       updated_by: userId
     });
 
