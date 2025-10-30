@@ -3,11 +3,7 @@
  * This middleware fixes the Permissions-Policy header to allow camera access
  */
 
-interface Env {
-  ASSETS: { fetch: typeof fetch };
-}
-
-export const onRequest: PagesFunction<Env> = async (context) => {
+export const onRequest = async (context: { next: () => Promise<Response> }) => {
   // Get the response from the asset
   const response = await context.next();
 
