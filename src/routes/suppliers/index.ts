@@ -107,14 +107,11 @@ app.post('/', async (c) => {
       data.credit_limit_cents = Math.round(creditLimit);
     }
 
-    // Remove tenant_id from data if exists (will be added by service)
-    const { tenant_id, ...supplierData } = data;
+    // Remove tenant_id and other non-existent columns from data
+    const { tenant_id, created_by, updated_by, ...supplierData } = data;
 
     const supplierService = new SupplierService(c.env);
-    const result = await supplierService.createSupplier(tenantId, {
-      ...supplierData,
-      created_by: userId
-    });
+    const result = await supplierService.createSupplier(tenantId, supplierData);
 
     if (!result.success) {
       return c.json({ success: false, error: result.error }, 400);
@@ -157,14 +154,11 @@ app.put('/:id', async (c) => {
       data.credit_limit_cents = Math.round(creditLimit);
     }
 
-    // Remove tenant_id from data if exists (will be added by service)
-    const { tenant_id, ...supplierData } = data;
+    // Remove tenant_id and other non-existent columns from data
+    const { tenant_id, created_by, updated_by, ...supplierData } = data;
 
     const supplierService = new SupplierService(c.env);
-    const result = await supplierService.updateSupplier(id, tenantId, {
-      ...supplierData,
-      updated_by: userId
-    });
+    const result = await supplierService.updateSupplier(id, tenantId, supplierData);
 
     if (!result.success) {
       return c.json({ success: false, error: result.error }, 400);
