@@ -141,12 +141,19 @@ app.get('/label/:order_code', async (c) => {
     const original = c.req.query('original') || 'portrait'; // portrait | landscape
     const pageSize = c.req.query('page_size') || 'A6'; // A5 | A6
 
+    console.log(`[GHTK Label] Requesting label for order: ${code}, original: ${original}, pageSize: ${pageSize}`);
+
     const url = new URL(`https://services.giaohangtietkiem.vn/services/label/${encodeURIComponent(code)}`);
     if (original) url.searchParams.set('original', String(original));
     if (pageSize) url.searchParams.set('page_size', String(pageSize));
 
     const token = (c.env as any).GHTK_TOKEN;
-    if (!token) return c.json({ success: false, error: 'Missing GHTK_TOKEN in environment' }, 500);
+    if (!token) {
+      console.error('[GHTK Label] Missing GHTK_TOKEN in environment');
+      return c.json({ success: false, error: 'Missing GHTK_TOKEN in environment' }, 500);
+    }
+
+    console.log(`[GHTK Label] Making request to: ${url.toString()}`);
 
     const resp = await fetch(url.toString(), {
       headers: {
@@ -155,10 +162,15 @@ app.get('/label/:order_code', async (c) => {
       }
     });
 
+    console.log(`[GHTK Label] Response status: ${resp.status}, content-type: ${resp.headers.get('content-type')}`);
+
     // On success GHTK returns PDF or binary stream (sometimes octet-stream)
     if (resp.ok) {
       const buf = await resp.arrayBuffer();
       const upstreamType = resp.headers.get('content-type') || 'application/pdf';
+      
+      console.log(`[GHTK Label] Successfully got PDF, size: ${buf.byteLength} bytes`);
+      
       return new Response(buf, {
         headers: {
           'Content-Type': upstreamType.includes('application/json') ? 'application/pdf' : upstreamType,
@@ -171,9 +183,16 @@ app.get('/label/:order_code', async (c) => {
 
     // Error path: forward JSON from GHTK
     let errJson: any = null;
-    try { errJson = await resp.json(); } catch { errJson = { message: 'Label fetch failed' }; }
+    try { 
+      errJson = await resp.json(); 
+      console.error(`[GHTK Label] Error response:`, errJson);
+    } catch { 
+      errJson = { message: 'Label fetch failed' }; 
+      console.error(`[GHTK Label] Failed to parse error response`);
+    }
     return c.json({ success: false, error: errJson?.message || 'Failed to get label', data: errJson }, resp.status || 400);
   } catch (e: any) {
+    console.error(`[GHTK Label] Exception:`, e);
     return c.json({ success: false, error: e?.message || 'Failed to get label' }, 500);
   }
 });
@@ -329,12 +348,14 @@ app.post('/from-order/:id', async (c) => {
         province: (order as any).province || '',
         district: (order as any).district || '',
         pick_name: 'SmartPOS Store',
+        pick_tel: '0836768597',
         pick_address: (order as any).store_address || '',
         pick_province: (order as any).store_province || '',
         pick_district: (order as any).store_district || '',
         value: (order as any).total_cents ? Math.round((order as any).total_cents / 100) : 0,
+        weight: 0.5, // Default weight
+        transport: 'road' as 'road' | 'fly',
         is_freeship: 0,
-        transport: 'road',
       },
       products: []
     };
@@ -851,7 +872,7 @@ app.get('/real-orders', async (c) => {
         ghtk_url: syncService.createGHTKDeepLink(order.label),
         can_sync: true,
         can_print_label: true,
-        can_cancel: !['delivered', 'cancelled', 'returned'].includes(order.status.toLowerCase()),
+        can_cancel: !['delivered', 'cancelled', 'returned', 'đã giao', 'đã hủy', 'đã trả hàng'].includes(order.status.toLowerCase()),
         // Thông tin chi tiết từ GHTK
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
@@ -913,17 +934,17 @@ app.post('/create-sample', async (c) => {
         pick_address: '456 Lê Lợi, Quận 1, TP Hồ Chí Minh',
         pick_province: 'TP Hồ Chí Minh',
         pick_district: 'Quận 1',
-        value: 500000,
+        value: 0, // COD = 0 (đơn không thu tiền)
         weight: 500,
         is_freeship: 0,
-        transport: 'road',
+        transport: 'road' as 'road' | 'fly',
       },
       products: [
         {
           name: 'Sản phẩm mẫu',
           weight: 500,
           quantity: 1,
-          price: 500000
+          price: 0
         }
       ]
     };

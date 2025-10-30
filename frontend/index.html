@@ -2,42 +2,107 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/icon-192x192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart POS System</title>
+
+    <!-- PWA Primary Meta Tags -->
+    <title>Smart POS System - TPCOMHB</title>
+    <meta name="title" content="Smart POS System - Hệ thống quản lý bán hàng thông minh" />
+    <meta name="description" content="Hệ thống quản lý bán hàng thông minh với trợ lý AI, quản lý kho, đơn hàng, khách hàng và báo cáo chi tiết. Tích hợp vận chuyển GHTK." />
+    <meta name="keywords" content="smart pos, hệ thống bán hàng, quản lý kho, trợ lý AI, GHTK, quản lý đơn hàng" />
+    <meta name="author" content="TPCOMHB" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- PWA Icons -->
+    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+
+    <!-- PWA Theme Colors -->
+    <meta name="theme-color" content="#1976d2" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TPCOMHB" />
+
+    <!-- MS Tile -->
+    <meta name="msapplication-TileColor" content="#1976d2" />
+    <meta name="msapplication-TileImage" content="/icon-192x192.png" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://namhbcf-uk.pages.dev/" />
+    <meta property="og:title" content="Smart POS System - TPCOMHB" />
+    <meta property="og:description" content="Hệ thống quản lý bán hàng thông minh với trợ lý AI, quản lý kho hàng và vận chuyển GHTK" />
+    <meta property="og:image" content="https://namhbcf-uk.pages.dev/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://namhbcf-uk.pages.dev/" />
+    <meta property="twitter:title" content="Smart POS System - TPCOMHB" />
+    <meta property="twitter:description" content="Hệ thống quản lý bán hàng thông minh với trợ lý AI" />
+    <meta property="twitter:image" content="https://namhbcf-uk.pages.dev/og-image.png" />
     <style>
       #root-loading {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         height: 100vh;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        gap: 20px;
       }
-      .loader { font-size: 24px; }
+      .loader-text {
+        font-size: 20px;
+        font-weight: 500;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top: 4px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+      .progress-bar {
+        width: 200px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: white;
+        animation: progress 2s ease-in-out infinite;
+      }
+      @keyframes progress {
+        0% { width: 0%; }
+        50% { width: 70%; }
+        100% { width: 100%; }
+      }
     </style>
   </head>
   <body>
     <div id="root">
       <div id="root-loading">
-        <div class="loader">Đang tải Smart POS...</div>
+        <div class="spinner"></div>
+        <div class="loader-text">Đang tải Smart POS...</div>
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
       </div>
     </div>
-    <script>
-      (async () => {
-        try {
-          if ('serviceWorker' in navigator) {
-            const regs = await navigator.serviceWorker.getRegistrations();
-            for (const r of regs) { try { await r.unregister(); } catch(e){} }
-          }
-          if (window.caches && caches.keys) {
-            const keys = await caches.keys();
-            for (const k of keys) { try { await caches.delete(k); } catch(e){} }
-          }
-        } catch (e) { /* ignore */ }
-      })();
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

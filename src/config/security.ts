@@ -94,7 +94,8 @@ export function createSecurityConfig(env: Env): SecurityConfig {
         'Accept',
         'Origin',
         'X-Api-Key',
-        'X-Client-Version'
+        'X-Client-Version',
+        'x-ai-preset'
       ],
       credentials: true,
     },

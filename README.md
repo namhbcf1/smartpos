@@ -180,6 +180,16 @@ npm run test:e2e
 - [Database Schema](docs/D1_DATABASE_SCHEMA.md)
 - [Frontend Pages](docs/FRONTEND_PAGES_OVERVIEW.md)
 - [VNPay Integration](docs/VNPAY_INTEGRATION.md)
+ - Local AI (free):
+   - Use Ollama one-click: `scripts/ai-oneclick-ollama.ps1`
+   - Or llama.cpp (no Ollama): `scripts/ai-oneclick-llamacpp.ps1` then run generated `C:\ai\ai-start-llamacpp.ps1`
+   - Backend env (for llama.cpp): `AI_PROVIDER=openai`, `OLLAMA_BASE_URL=http://localhost:11434`
+ - Self-hosted Llama 3 (Ollama) Proxy:
+   - Backend endpoints:
+     - `POST /api/ai/chat` – body `{ messages: [{role, content}], model?, stream? }`
+     - `GET /api/ai/models` – list models from Ollama
+   - Env vars: `OLLAMA_BASE_URL`, `OLLAMA_MODEL` (default `llama3:8b`), `OLLAMA_PROXY_KEY` (optional)
+   - Frontend helper: `frontend/src/services/ai.ts`
 
 ## 🤝 Contributing
 

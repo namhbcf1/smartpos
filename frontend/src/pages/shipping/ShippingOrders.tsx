@@ -464,14 +464,61 @@ const ShippingOrders: React.FC = () => {
 
   const handlePrintLabel = async (order: ShippingOrder) => {
     try {
+      console.log(`[Print Label] Attempting to print label for order: ${order.carrier_order_code}`);
+      
       // Open backend proxy that streams PDF directly (per GHTK docs)
       const base = (import.meta as any).env?.VITE_API_BASE_URL || '';
       const url = `${base}/api/shipping/ghtk/label/${encodeURIComponent(order.carrier_order_code)}?original=${labelOrientation}&page_size=${labelPageSize}`;
-      window.open(url, '_blank');
+      
+      console.log(`[Print Label] Opening URL: ${url}`);
+      
+      // Try to open in new window first
+      const printWindow = window.open(url, '_blank');
+      
+      // If window was blocked or failed, try alternative method
+      if (!printWindow || printWindow.closed || typeof printWindow.closed == 'undefined') {
+        console.log(`[Print Label] Window blocked, trying alternative method`);
+        
+        // Create a temporary link and click it
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.download = `${order.carrier_order_code}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setSnackbar({ 
+          open: true, 
+          message: 'Đang tải nhãn vận đơn...', 
+          severity: 'info' 
+        });
+      } else {
+        setSnackbar({ 
+          open: true, 
+          message: 'Đang mở nhãn vận đơn...', 
+          severity: 'info' 
+        });
+      }
+      
     } catch (e) {
+      console.error(`[Print Label] Error:`, e);
+      
       // Fallback to existing JSON call if needed
-      const res = await printLabelMutation.mutateAsync(order).catch(() => null);
-      setSnackbar({ open: true, message: res?.error || 'Không thể in nhãn. Vui lòng thử lại.', severity: 'error' });
+      try {
+        const res = await printLabelMutation.mutateAsync(order).catch(() => null);
+        setSnackbar({ 
+          open: true, 
+          message: res?.error || 'Không thể in nhãn. Vui lòng thử lại.', 
+          severity: 'error' 
+        });
+      } catch (fallbackError) {
+        setSnackbar({ 
+          open: true, 
+          message: 'Không thể in nhãn. Vui lòng kiểm tra mã đơn hàng và thử lại.', 
+          severity: 'error' 
+        });
+      }
     }
   };
 

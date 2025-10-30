@@ -25,7 +25,8 @@ export const createCorsMiddleware = (config: CorsConfig = {}) => {
       'X-Tenant-ID',
       'X-Store-ID',
       'X-Device-ID',
-      'X-Session-ID'
+      'X-Session-ID',
+      'x-ai-preset'
     ],
     exposedHeaders = ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
     credentials = true,

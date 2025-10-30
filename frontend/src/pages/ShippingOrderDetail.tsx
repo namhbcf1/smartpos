@@ -128,7 +128,6 @@ const ShippingOrderDetail: React.FC = () => {
     street: '',
     hamlet: '',
     ward: '',
-    district: '',
     province: ''
   });
 
@@ -315,25 +314,46 @@ const ShippingOrderDetail: React.FC = () => {
   };
 
   const handlePrint = async () => {
-    if (!orderDetail?.tracking_code) return;
+    if (!orderDetail?.tracking_code) {
+      console.error('[Print Label] No tracking code available');
+      return;
+    }
 
     try {
-      // Try to get print label from GHTK API
-      const response = await api.get(`/shipping/ghtk/label/${encodeURIComponent(orderDetail.tracking_code)}`, {
-        responseType: 'blob'
-      });
-
-      if (response.data) {
-        // Create blob URL and open in new tab for printing
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+      console.log(`[Print Label] Attempting to print label for order: ${orderDetail.tracking_code}`);
+      
+      // Use the backend proxy that streams PDF directly (per GHTK docs)
+      const base = (import.meta as any).env?.VITE_API_BASE_URL || '';
+      const url = `${base}/api/shipping/ghtk/label/${encodeURIComponent(orderDetail.tracking_code)}?original=portrait&page_size=A6`;
+      
+      console.log(`[Print Label] Opening URL: ${url}`);
+      
+      // Try to open in new window first
+      const printWindow = window.open(url, '_blank');
+      
+      // If window was blocked or failed, try alternative method
+      if (!printWindow || printWindow.closed || typeof printWindow.closed == 'undefined') {
+        console.log(`[Print Label] Window blocked, trying alternative method`);
+        
+        // Create a temporary link and click it
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.download = `${orderDetail.tracking_code}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
+      
     } catch (error) {
-      console.error('Lỗi khi in nhãn:', error);
+      console.error('[Print Label] Error:', error);
+      
       // Fallback: Open GHTK portal page
       if (orderDetail?.ghtk_url) {
+        console.log(`[Print Label] Fallback to GHTK URL: ${orderDetail.ghtk_url}`);
         window.open(orderDetail.ghtk_url, '_blank');
+      } else {
+        console.error('[Print Label] No fallback URL available');
       }
     }
   };
@@ -367,7 +387,6 @@ const ShippingOrderDetail: React.FC = () => {
       street: (orderDetail as any)?.raw_data?.street || '',
       hamlet: (orderDetail as any)?.raw_data?.hamlet || '',
       ward: (orderDetail as any)?.raw_data?.ward || '',
-      district: (orderDetail as any)?.raw_data?.district || '',
       province: (orderDetail as any)?.raw_data?.province || ''
     });
     setEditCustomerDialogOpen(true);
@@ -1140,14 +1159,13 @@ const ShippingOrderDetail: React.FC = () => {
                           </Typography>
                         </Grid>
                       )}
-                      {(rawData.hamlet || rawData.province || rawData.district) && (
+                      {(rawData.hamlet || rawData.province || rawData.ward) && (
                         <Grid item xs={12}>
                           <Typography variant="body2" color="text.secondary">Khu vực:</Typography>
                           <Typography variant="body1">
                             {[
                               rawData.hamlet,
                               rawData.ward,
-                              rawData.district,
                               rawData.province
                             ].filter(Boolean).join(', ')}
                           </Typography>
@@ -1401,15 +1419,6 @@ const ShippingOrderDetail: React.FC = () => {
                   fullWidth
                   value={customerData.ward}
                   onChange={(e) => setCustomerData({ ...customerData, ward: e.target.value })}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  label="Quận / Huyện"
-                  fullWidth
-                  value={customerData.district}
-                  onChange={(e) => setCustomerData({ ...customerData, district: e.target.value })}
                   variant="outlined"
                 />
               </Grid>

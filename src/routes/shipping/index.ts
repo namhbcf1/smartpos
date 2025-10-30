@@ -106,7 +106,16 @@ app.get('/orders', async (c) => {
         ghtk_url: order.carrier === 'ghtk' ? `https://khachhang.giaohangtietkiem.vn/web/van-hanh/don-hang/${order.carrier_order_code}` : null,
         can_sync: order.carrier === 'ghtk',
         can_print_label: order.carrier === 'ghtk' && order.carrier_order_code,
-        can_cancel: order.carrier === 'ghtk' && !['delivered', 'cancelled'].includes((ghtkData?.status_text || ghtkData?.status || order.status || '').toLowerCase())
+        can_cancel: order.carrier === 'ghtk' && !['delivered', 'cancelled', 'returned', 'đã giao', 'đã hủy', 'đã trả hàng'].includes((ghtkData?.status_text || ghtkData?.status || order.status || '').toLowerCase()),
+        // Debug info for cancel logic
+        debug_cancel: {
+          carrier: order.carrier,
+          status_text: ghtkData?.status_text,
+          status: ghtkData?.status,
+          order_status: order.status,
+          final_status: ghtkData?.status_text || ghtkData?.status || order.status || 'unknown',
+          can_cancel_result: order.carrier === 'ghtk' && !['delivered', 'cancelled', 'returned', 'đã giao', 'đã hủy', 'đã trả hàng'].includes((ghtkData?.status_text || ghtkData?.status || order.status || '').toLowerCase())
+        }
       }
     }))
     

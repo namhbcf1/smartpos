@@ -32,30 +32,37 @@ const CustomerDetailsDrawer: React.FC<Props> = ({ open, onClose, customer }) => 
   const [displayWard, setDisplayWard] = React.useState<string>('-');
   const [displayStreet, setDisplayStreet] = React.useState<string>('-');
 
-  // Auto-parse address to 4 levels for display
+  // Auto-parse address to 3 levels for display (bỏ district theo chuẩn GHTK mới)
   React.useEffect(() => {
     const parse = async () => {
       try {
         const addr = (customer?.address || '').toLowerCase();
         if (!open || !addr) return;
+        
+        // Load provinces
         const pRes = await api.get('/shipping/geo/provinces');
         const provinces = pRes.data?.data || [];
         const p = provinces.find((pr: any) => addr.includes((pr.name || '').toLowerCase()));
         if (p) setDisplayProvince(p.name); else return;
-        const dRes = await api.get(`/shipping/geo/districts/${p.id}`);
-        const districts = dRes.data?.data || [];
-        const d = districts.find((di: any) => addr.includes((di.name || '').toLowerCase()));
-        if (d) setDisplayDistrict(d.name); else return;
-        const wRes = await api.get(`/shipping/geo/wards/${d.id}`);
+        
+        // Load wards directly from province (bỏ district)
+        const wRes = await api.get(`/shipping/geo/wards-by-province/${p.id}`);
         const wards = wRes.data?.data || [];
         const w = wards.find((wa: any) => addr.includes((wa.name || '').toLowerCase()));
-        if (w) setDisplayWard(w.name);
-        try {
-          const sRes = await api.get(`/shipping/geo/streets/${w.id}`);
-          const streets = (sRes.data?.data || []).map((s: any) => typeof s === 'string' ? { name: s } : s);
-          const s = streets.find((st: any) => addr.includes((st.name || '').toLowerCase()));
-          if (s) setDisplayStreet(s.name);
-        } catch {}
+        if (w) {
+          setDisplayWard(w.name);
+          setDisplayDistrict(w.district_name || '-'); // Lấy từ ward.district_name
+        }
+        
+        // Load streets from ward
+        if (w) {
+          try {
+            const sRes = await api.get(`/shipping/geo/streets/${w.id}`);
+            const streets = (sRes.data?.data || []).map((s: any) => typeof s === 'string' ? { name: s } : s);
+            const s = streets.find((st: any) => addr.includes((st.name || '').toLowerCase()));
+            if (s) setDisplayStreet(s.name);
+          } catch {}
+        }
       } catch {}
     };
     // reset
@@ -101,7 +108,6 @@ const CustomerDetailsDrawer: React.FC<Props> = ({ open, onClose, customer }) => 
             <Box sx={{ p: 2, borderRadius: 2, background: 'linear-gradient(135deg,#f8f9ff 0%,#ffffff 100%)', border: '1px solid #eef2ff' }}>
               <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>📍 Địa chỉ nhận hàng</Typography>
               <Typography variant="body2" sx={{ mb: 0.5 }}><strong>Tỉnh/TP:</strong> {customer?.province_name || '-'}</Typography>
-              <Typography variant="body2" sx={{ mb: 0.5 }}><strong>Quận/Huyện:</strong> {customer?.district_name || '-'}</Typography>
               <Typography variant="body2" sx={{ mb: 0.5 }}><strong>Phường/Xã:</strong> {customer?.ward_name || '-'}</Typography>
               <Typography variant="body2"><strong>Đường/Ấp/Khu:</strong> {customer?.street || '-'}</Typography>
               {customer?.address && (

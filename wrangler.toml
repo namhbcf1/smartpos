@@ -4,6 +4,9 @@ compatibility_date = "2024-01-01"
 account_id = "5b62d10947844251d23e0eac532531dd"
 compatibility_flags = ["nodejs_compat"]
 
+# REMOVED: pages_build_output_dir conflicts with Workers deploy
+# pages_build_output_dir = "frontend/dist"
+
 # Cron Triggers
 [triggers]
 crons = ["*/15 * * * *"]  # Every 15 minutes
@@ -35,6 +38,10 @@ id = "eb7da0cbf6e349f39a9c229975daa9b4"
 [[r2_buckets]]
 binding = "UPLOADS"
 bucket_name = "smartpos-uploads"
+
+# Cloudflare AI (Workers AI)
+[ai]
+binding = "AI"
 
 # Environment Variables (Default)
 [vars]
@@ -70,6 +77,9 @@ ENABLE_BACKUP = "true"
 # GHTK Shipping Service
 GHTK_BASE_URL = "https://services.giaohangtietkiem.vn"
 GHTK_TOKEN = "2WUbAdad9bm3CtdgkntvD0gm7tqYVkDjn1zZmGf"
+
+# AI Provider (cloudflare = FREE 10k neurons/day)
+AI_PROVIDER = "cloudflare"
 
 [env.production]
 name = "namhbcf-api"
@@ -162,6 +172,9 @@ ENABLE_MIGRATIONS = "false"
 # GHTK Shipping Service
 GHTK_BASE_URL = "https://services.giaohangtietkiem.vn"
 GHTK_TOKEN = "2WUbAdad9bm3CtdgkntvD0gm7tqYVkDjn1zZmGf"
+
+# AI Provider (cloudflare = FREE 10k neurons/day)
+AI_PROVIDER = "cloudflare"
 
 [env.main]
 name = "namhbcf-api"
@@ -256,6 +269,9 @@ CLOUDFLARE_R2_ACCESS_KEY_ID = "75c8e3a1127fe219646506b804b70537"
 CLOUDFLARE_R2_SECRET_ACCESS_KEY = "6e63a2c4af0d3b395842caef6e1d6d1b1da092188be26d4ba041781373b48091"
 CLOUDFLARE_R2_ENDPOINT = "https://5b62d10947844251d23e0eac532531dd.r2.cloudflarestorage.com"
 CLOUDFLARE_R2_BUCKET_NAME = "smartpos-uploads"
+
+# AI Provider (cloudflare = FREE 10k neurons/day)
+AI_PROVIDER = "cloudflare"
 
 [env.staging]
 name = "smartpos-api-staging"

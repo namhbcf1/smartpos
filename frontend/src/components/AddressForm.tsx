@@ -28,17 +28,14 @@ interface Province {
   type: string;
 }
 
-interface District {
-  id: string;
-  name: string;
-  province_id: string;
-  type: string;
-}
+// REMOVED: District interface - không cần nữa
+// interface District { ... }
 
 interface Ward {
   id: string;
   name: string;
-  district_id: string;
+  district_name: string;
+  display_name?: string; // Hiển thị: "Phường X (Quận Y)"
   type: string;
 }
 
@@ -56,10 +53,11 @@ export interface AddressData {
   house_number?: string;
   hamlet?: string; // tổ/thôn/ấp/xóm
   province: Province | null;
-  district: District | null;
+  // district: District | null; // REMOVED
+  district_name: string; // Lấy từ ward.district_name
   ward: Ward | null;
   province_id: string;
-  district_id: string;
+  // district_id: string; // REMOVED
   ward_id: string;
   full_address: string;
 }
@@ -71,15 +69,14 @@ const AddressForm: React.FC<AddressFormProps> = ({
   showValidation = true
 }) => {
   const [provinces, setProvinces] = useState<Province[]>([]);
-  const [districts, setDistricts] = useState<District[]>([]);
+  // const [districts, setDistricts] = useState<District[]>([]); // REMOVED
   const [wards, setWards] = useState<Ward[]>([]);
-  
+
   const [loading, setLoading] = useState({
     provinces: false,
-    districts: false,
     wards: false
   });
-  
+
   const [addressData, setAddressData] = useState<AddressData>({
     fullName: initialData?.fullName || '',
     phone: initialData?.phone || '',
@@ -87,10 +84,11 @@ const AddressForm: React.FC<AddressFormProps> = ({
     house_number: initialData?.house_number || '',
     hamlet: initialData?.hamlet || '',
     province: initialData?.province || null,
-    district: initialData?.district || null,
+    // district: initialData?.district || null, // REMOVED
+    district_name: initialData?.district_name || '', // Lấy từ ward
     ward: initialData?.ward || null,
     province_id: initialData?.province_id || '',
-    district_id: initialData?.district_id || '',
+    // district_id: initialData?.district_id || '', // REMOVED
     ward_id: initialData?.ward_id || '',
     full_address: ''
   });
@@ -119,7 +117,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
         hamlet,
         addressData.address,
         addressData.ward?.name,
-        addressData.district?.name,
+        addressData.district_name,
         addressData.province?.name
       ].filter((v) => !!(v && String(v).trim())).join(', ');
 
@@ -136,16 +134,15 @@ const AddressForm: React.FC<AddressFormProps> = ({
         onAddressChange(updatedData);
       }
 
-      // Validate address
       validateAddress(updatedData);
-    }, 300); // Debounce 300ms để tránh validate liên tục khi đang gõ
+    }, 300);
 
     setTypingTimer(id);
 
     return () => {
       window.clearTimeout(id);
     };
-  }, [addressData.province, addressData.district, addressData.ward, addressData.address, addressData.fullName, addressData.phone, houseNumber, hamlet]);
+  }, [addressData.province, addressData.district_name, addressData.ward, addressData.address, addressData.fullName, addressData.phone, houseNumber, hamlet]);
 
   const loadProvinces = async () => {
     try {
@@ -181,59 +178,24 @@ const AddressForm: React.FC<AddressFormProps> = ({
     }
   };
 
-  const loadDistricts = async (provinceId: string) => {
+  // REMOVED: loadDistricts - không cần nữa theo chuẩn GHTK mới
+
+  // Load wards trực tiếp từ provinceId (bỏ qua districtId)
+  const loadWards = async (provinceId: string) => {
     if (!provinceId) {
-      setDistricts([]);
-      setWards([]);
-      return;
-    }
-
-    try {
-      setLoading(prev => ({ ...prev, districts: true }));
-      console.log('Loading districts for province:', provinceId);
-      const response = await api.get(`/shipping/geo/districts/${provinceId}`);
-      console.log('Districts response:', response.data);
-
-      if (response.data.success && Array.isArray(response.data.data)) {
-        setDistricts(response.data.data);
-        setWards([]); // Clear wards when province changes
-        console.log('Districts loaded:', response.data.data);
-      } else {
-        console.error('API returned success: false or invalid data format', response.data);
-        setDistricts([]);
-      }
-    } catch (error: any) {
-      console.error('Failed to load districts:', error);
-      const status = error?.response?.status;
-
-      if (status === 401) {
-        console.warn('⚠️ Geo API requires authentication for districts');
-      } else if (status === 404) {
-        console.error('❌ Districts not found for province:', provinceId);
-      } else {
-        console.error('❌ Error loading districts');
-      }
-      setDistricts([]);
-    } finally {
-      setLoading(prev => ({ ...prev, districts: false }));
-    }
-  };
-
-  const loadWards = async (districtId: string) => {
-    if (!districtId) {
       setWards([]);
       return;
     }
 
     try {
       setLoading(prev => ({ ...prev, wards: true }));
-      console.log('Loading wards for district:', districtId);
-      const response = await api.get(`/shipping/geo/wards/${districtId}`);
+      console.log('Loading ALL wards for province:', provinceId);
+      const response = await api.get(`/shipping/geo/wards-by-province/${provinceId}`);
       console.log('Wards response:', response.data);
 
       if (response.data.success && Array.isArray(response.data.data)) {
         setWards(response.data.data);
-        console.log('Wards loaded:', response.data.data);
+        console.log(`✅ Loaded ${response.data.total} wards for province ${provinceId}`);
       } else {
         console.error('Invalid wards data format:', response.data);
         setWards([]);
@@ -245,7 +207,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
       if (status === 401) {
         console.warn('⚠️ Geo API requires authentication for wards');
       } else if (status === 404) {
-        console.error('❌ Wards not found for district:', districtId);
+        console.error('❌ Wards not found for province:', provinceId);
       } else {
         console.error('❌ Error loading wards');
       }
@@ -257,22 +219,20 @@ const AddressForm: React.FC<AddressFormProps> = ({
 
   const validateAddress = async (data: AddressData) => {
     if (!showValidation) return;
-    
+
     const errors: string[] = [];
-    
+
     if (!data.fullName.trim()) errors.push('Vui lòng nhập họ tên');
     if (!data.phone.trim()) errors.push('Vui lòng nhập số điện thoại');
     if (!data.address.trim()) errors.push('Vui lòng nhập địa chỉ chi tiết');
     if (!data.province) errors.push('Vui lòng chọn tỉnh/thành phố');
-    if (!data.district) errors.push('Vui lòng chọn quận/huyện');
     if (!data.ward) errors.push('Vui lòng chọn phường/xã');
-    
-    // Validate phone number
+
     const phoneRegex = /^[0-9]{10,11}$/;
     if (data.phone && !phoneRegex.test(data.phone.replace(/[^\d]/g, ''))) {
       errors.push('Số điện thoại không hợp lệ');
     }
-    
+
     setValidation({
       valid: errors.length === 0,
       errors
@@ -284,31 +244,13 @@ const AddressForm: React.FC<AddressFormProps> = ({
       ...prev,
       province,
       province_id: province?.id || '',
-      district: null,
-      district_id: '',
+      district_name: '',
       ward: null,
       ward_id: ''
     }));
-    
-    if (province) {
-      loadDistricts(province.id);
-    } else {
-      setDistricts([]);
-      setWards([]);
-    }
-  };
 
-  const handleDistrictChange = (district: District | null) => {
-    setAddressData(prev => ({
-      ...prev,
-      district,
-      district_id: district?.id || '',
-      ward: null,
-      ward_id: ''
-    }));
-    
-    if (district) {
-      loadWards(district.id);
+    if (province) {
+      loadWards(province.id);
     } else {
       setWards([]);
     }
@@ -318,7 +260,8 @@ const AddressForm: React.FC<AddressFormProps> = ({
     setAddressData(prev => ({
       ...prev,
       ward,
-      ward_id: ward?.id || ''
+      ward_id: ward?.id || '',
+      district_name: ward?.district_name || ''
     }));
   };
 
@@ -582,74 +525,14 @@ const AddressForm: React.FC<AddressFormProps> = ({
           </FormControl>
         </Grid>
 
-        {/* Quận/Huyện */}
-        <Grid item xs={12} md={4}>
-          <FormControl fullWidth required error={validation.errors.includes('Vui lòng chọn quận/huyện')}>
-            <InputLabel sx={{ 
-              fontSize: '16px', 
-              fontWeight: 600,
-              color: '#64748b',
-              '&.Mui-focused': {
-                color: validation.errors.includes('Vui lòng chọn quận/huyện') ? '#dc2626' : '#3b82f6',
-              }
-            }}>
-              🏘️ Quận/Huyện
-            </InputLabel>
-            <Select
-              value={addressData.district_id}
-              onChange={(e) => {
-                const district = districts.find(d => d.id === e.target.value);
-                handleDistrictChange(district || null);
-              }}
-              label="🏘️ Quận/Huyện"
-              disabled={!addressData.province || loading.districts}
-              sx={{
-                height: '64px',
-                fontSize: '18px',
-                borderRadius: 3,
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderWidth: 2,
-                  borderColor: validation.errors.includes('Vui lòng chọn quận/huyện') ? '#ef4444' : '#e2e8f0',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: validation.errors.includes('Vui lòng chọn quận/huyện') ? '#dc2626' : '#3b82f6',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderWidth: 3,
-                  borderColor: validation.errors.includes('Vui lòng chọn quận/huyện') ? '#dc2626' : '#3b82f6',
-                },
-              }}
-            >
-              {loading.districts ? (
-                <MenuItem disabled sx={{ fontSize: '18px', py: 3 }}>
-                  <CircularProgress size={28} sx={{ mr: 3 }} />
-                  Đang tải...
-                </MenuItem>
-              ) : Array.isArray(districts) && districts.length > 0 ? (
-                districts.map((district) => (
-                  <MenuItem key={district.id} value={district.id} sx={{ fontSize: '18px', py: 3 }}>
-                    {district.name}
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem disabled sx={{ fontSize: '18px', py: 3 }}>
-                  {addressData.province ? 'Chọn tỉnh/thành phố trước' : 'Chưa chọn tỉnh/thành phố'}
-                </MenuItem>
-              )}
-            </Select>
-          </FormControl>
-        </Grid>
-
         {/* Phường/Xã */}
-        <Grid item xs={12} md={4}>
-          {(!loading.wards && Array.isArray(wards) && wards.length === 0 && addressData.district) ? (
-            // Fallback: allow manual ward input when list is empty
+        <Grid item xs={12} md={6}>
+          {(!loading.wards && Array.isArray(wards) && wards.length === 0 && addressData.province) ? (
             <TextField
               fullWidth
-              label="🏠 Phường/Xã (nhập tay khi không có danh sách)"
+              label="🏠 Phường/Xã (nhập tay)"
               value={addressData.ward?.name || ''}
-              onChange={(e) => handleWardChange({ id: 'manual', name: e.target.value, district_id: addressData.district_id, type: 'Ward' })}
+              onChange={(e) => handleWardChange({ id: 'manual', name: e.target.value, district_name: '', type: 'Ward' })}
               placeholder="Ví dụ: Phường Hồng Bàng"
               required
               error={validation.errors.includes('Vui lòng chọn phường/xã')}
@@ -674,7 +557,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
                   handleWardChange(ward || null);
                 }}
                 label="🏠 Phường/Xã"
-                disabled={!addressData.district || loading.wards}
+                disabled={!addressData.province || loading.wards}
                 sx={{
                   height: '64px',
                   fontSize: '18px',
@@ -700,13 +583,13 @@ const AddressForm: React.FC<AddressFormProps> = ({
                   </MenuItem>
                 ) : Array.isArray(wards) && wards.length > 0 ? (
                   wards.map((ward) => (
-                    <MenuItem key={ward.id} value={ward.id} sx={{ fontSize: '18px', py: 3 }}>
+                    <MenuItem key={ward.id} value={ward.id} sx={{ fontSize: '16px', py: 2 }}>
                       {ward.name}
                     </MenuItem>
                   ))
                 ) : (
                   <MenuItem disabled sx={{ fontSize: '18px', py: 3 }}>
-                    {addressData.district ? 'Chọn quận/huyện trước' : 'Chưa chọn quận/huyện'}
+                    {addressData.province ? 'Chọn tỉnh/thành phố trước' : 'Chưa chọn tỉnh/thành phố'}
                   </MenuItem>
                 )}
               </Select>

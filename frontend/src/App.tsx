@@ -33,7 +33,6 @@ const SerialNumbersManagement = lazy(() => import('./pages/inventory/SerialNumbe
 const SupportTicketsManagement = lazy(() => import('./pages/support/SupportTicketsManagement'));
 const TaxManagement = lazy(() => import('./pages/taxes/TaxManagement'));
 const SystemHealth = lazy(() => import('./pages/system/SystemHealth'));
-const ShippingManagement = lazy(() => import('./pages/shipping/ShippingManagement'));
 const ShippingOrders = lazy(() => import('./pages/shipping/ShippingOrders'));
 const ShippingOrderDetail = lazy(() => import('./pages/ShippingOrderDetail'));
 const GHTKOrderCreate = lazy(() => import('./pages/shipping/GHTKOrderCreate'));
@@ -57,6 +56,7 @@ const ProductsServices = lazy(() => import('./pages/public/ProductsServices'));
 const ContactSupport = lazy(() => import('./pages/public/ContactSupport'));
 const Policies = lazy(() => import('./pages/public/Policies'));
 const AIChatAssistant = lazy(() => import('./pages/public/AIChatAssistant'));
+const AIChatPage = lazy(() => import('./pages/public/AIChatPage'));
 
 // Create a client
 const queryClient = new QueryClient({
@@ -200,10 +200,10 @@ const AppContent: React.FC = () => {
           element={<Policies />}
         />
 
-        {/* Public AI Chat Assistant - SEO accessible */}
+        {/* Public AI Chat Assistant - Full Page */}
         <Route
           path="/tro-ly-ao"
-          element={<div style={{ height: '80vh' }}><AIChatAssistant /></div>}
+          element={<AIChatPage />}
         />
 
         {/* Public Home - About Store */}
@@ -448,7 +448,7 @@ const AppContent: React.FC = () => {
           element={
             <ProtectedRoute>
               <MainLayout themeMode={useThemeMode().mode} onThemeToggle={useThemeMode().toggleThemeMode}>
-                <ShippingManagement />
+                <ShippingOrders />
               </MainLayout>
             </ProtectedRoute>
           }

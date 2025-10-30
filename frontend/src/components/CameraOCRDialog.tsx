@@ -42,39 +42,74 @@ export default function CameraOCRDialog({
   const startCamera = async () => {
     try {
       setError('');
+      setHasCamera(true);
 
       // Check if camera is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setHasCamera(false);
-        setError('Trình duyệt không hỗ trợ camera. Vui lòng sử dụng trình duyệt hiện đại hơn.');
+        setError('⚠️ Trình duyệt không hỗ trợ camera. Vui lòng sử dụng trình duyệt hiện đại hơn (Chrome, Safari, Firefox).');
         return;
       }
 
-      // Request camera access
+      // Check if on HTTPS or localhost
+      const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+      if (!isSecure) {
+        setHasCamera(false);
+        setError('⚠️ Camera chỉ hoạt động trên HTTPS. Vui lòng truy cập trang web qua HTTPS.');
+        return;
+      }
+
+      // Request camera access with proper error handling
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment', // Use back camera on mobile
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         }
       });
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        await videoRef.current.play();
         setStreaming(true);
+        setHasCamera(true);
       }
     } catch (err: any) {
       console.error('Camera error:', err);
       setHasCamera(false);
-      if (err.name === 'NotAllowedError') {
-        setError('Bạn đã từ chối quyền truy cập camera. Vui lòng cho phép quyền truy cập camera trong cài đặt trình duyệt.');
-      } else if (err.name === 'NotFoundError') {
-        setError('Không tìm thấy camera. Vui lòng kiểm tra lại thiết bị của bạn.');
-      } else {
-        setError('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập và thử lại.');
-      }
       setStreaming(false);
+
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError(`🚫 Bạn đã từ chối quyền truy cập camera.\n\n📱 Cách khắc phục:\n• Chrome/Android: Vào Settings → Site Settings → Camera → Cho phép\n• Safari/iOS: Vào Settings → Safari → Camera → Ask hoặc Allow\n• Sau đó tải lại trang và thử lại`);
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setError('📷 Không tìm thấy camera. Vui lòng kiểm tra:\n• Thiết bị có camera không?\n• Camera có bị ứng dụng khác sử dụng không?\n• Thử đóng các ứng dụng camera khác và thử lại');
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        setError('⚠️ Camera đang được sử dụng bởi ứng dụng khác.\n\nVui lòng đóng các ứng dụng camera khác và thử lại.');
+      } else if (err.name === 'OverconstrainedError') {
+        // Try fallback with lower quality
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: 'environment',
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            }
+          });
+          if (videoRef.current) {
+            videoRef.current.srcObject = fallbackStream;
+            await videoRef.current.play();
+            setStreaming(true);
+            setHasCamera(true);
+            return;
+          }
+        } catch (fallbackErr) {
+          setError('⚠️ Không thể khởi động camera với cấu hình hiện tại.\n\nThử sử dụng nút "Chọn ảnh từ thiết bị" thay thế.');
+        }
+      } else if (err.name === 'SecurityError') {
+        setError('🔒 Lỗi bảo mật. Camera chỉ hoạt động trên:\n• HTTPS (https://...)\n• Localhost (http://localhost)\n\nVui lòng đảm bảo bạn đang truy cập qua HTTPS.');
+      } else {
+        setError(`❌ Không thể truy cập camera: ${err.message || 'Lỗi không xác định'}\n\n💡 Thử các bước sau:\n1. Tải lại trang (F5)\n2. Kiểm tra quyền camera trong Settings\n3. Thử trình duyệt khác\n4. Hoặc dùng nút "Chọn ảnh từ thiết bị"`);
+      }
     }
   };
 
@@ -160,8 +195,23 @@ export default function CameraOCRDialog({
       <DialogContent>
         <Stack spacing={2}>
           {error && (
-            <Alert severity="error">
-              <Typography variant="body2">{error}</Typography>
+            <Alert severity="error" sx={{ whiteSpace: 'pre-line' }}>
+              <Typography variant="body2" component="div" sx={{ lineHeight: 1.6 }}>
+                {error}
+              </Typography>
+              {error.includes('từ chối') && (
+                <Box sx={{ mt: 2, p: 1.5, bgcolor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    🔧 Hướng dẫn chi tiết:
+                  </Typography>
+                  <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                    1. Nhấn vào biểu tượng 🔒 hoặc ⓘ bên cạnh URL trên thanh địa chỉ<br />
+                    2. Tìm mục "Camera" hoặc "Permissions"<br />
+                    3. Chọn "Allow" hoặc "Cho phép"<br />
+                    4. Tải lại trang (F5) và thử lại
+                  </Typography>
+                </Box>
+              )}
             </Alert>
           )}
 
@@ -346,6 +396,17 @@ export default function CameraOCRDialog({
         <Button onClick={handleClose} disabled={isProcessing}>
           Hủy
         </Button>
+
+        {error && !capturedImage && (
+          <Button
+            onClick={startCamera}
+            startIcon={<Refresh />}
+            color="primary"
+            variant="outlined"
+          >
+            Thử lại
+          </Button>
+        )}
 
         {capturedImage ? (
           <>

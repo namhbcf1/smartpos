@@ -468,7 +468,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ open, onClose, customer }) 
     phone: '',
     address: '',
     provinceId: '',
-    districtId: '',
+    // districtId: '', // REMOVED - theo chuẩn GHTK mới
+    districtName: '', // Thêm districtName - lấy từ ward.district_name
     wardId: '',
     street: '',
     date_of_birth: '',
@@ -478,11 +479,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ open, onClose, customer }) 
     is_active: 1
   });
   const [formError, setFormError] = useState<string>('');
-  // 4-level geo state
+  // 3-level geo state (bỏ districts)
   const [provinces, setProvinces] = useState<any[]>([]);
-  const [districts, setDistricts] = useState<any[]>([]);
+  // const [districts, setDistricts] = useState<any[]>([]); // REMOVED
   const [wards, setWards] = useState<any[]>([]);
   const [streets, setStreets] = useState<any[]>([]);
+  const [loadingWards, setLoadingWards] = useState(false);
   const [loadingStreets, setLoadingStreets] = useState(false);
 
   // Prefill when editing
@@ -495,7 +497,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ open, onClose, customer }) 
           phone: customer.phone || '',
           address: customer.address || '',
           provinceId: customer.province_id || '',
-          districtId: customer.district_id || '',
+          // districtId: customer.district_id || '', // REMOVED
+          districtName: customer.district_name || '', // Lấy từ DB
           wardId: customer.ward_id || '',
           street: customer.street || '',
           date_of_birth: customer.date_of_birth || '',
@@ -511,7 +514,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ open, onClose, customer }) 
           phone: '',
           address: '',
           provinceId: '',
-          districtId: '',
+          // districtId: '', // REMOVED
+          districtName: '',
           wardId: '',
           street: '',
           date_of_birth: '',
@@ -530,49 +534,25 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ open, onClose, customer }) 
     api.get('/shipping/geo/provinces').then(res => setProvinces(res.data.data || [])).catch(() => setProvinces([]));
   }, [open]);
 
-  // Auto-parse existing address when editing to preselect 4 cấp
+  // REMOVED: Auto-parse address - logic cũ dùng 4 cấp
+  // Giờ user chọn thủ công: Tỉnh/TP -> Phường/Xã (hiển thị district trong tên)
+
+  // REMOVED: Load districts
+  // Load wards trực tiếp từ provinceId
   useEffect(() => {
-    const addr = (customer?.address || '').toLowerCase();
-    if (!open || !customer || !addr || provinces.length === 0) return;
-    (async () => {
-      try {
-        // Province
-        const p = provinces.find((pr: any) => addr.includes((pr.name || '').toLowerCase()));
-        if (!p) return;
-        setFormData(prev => ({ ...prev, provinceId: String(p.id) }));
-        const dRes = await api.get(`/shipping/geo/districts/${p.id}`);
-        const dList = dRes.data.data || [];
-        setDistricts(dList);
-        const d = dList.find((di: any) => addr.includes((di.name || '').toLowerCase()));
-        if (!d) return;
-        setFormData(prev => ({ ...prev, districtId: String(d.id) }));
-        const wRes = await api.get(`/shipping/geo/wards/${d.id}`);
-        const wList = wRes.data.data || [];
-        setWards(wList);
-        const w = wList.find((wa: any) => addr.includes((wa.name || '').toLowerCase()));
-        if (w) setFormData(prev => ({ ...prev, wardId: String(w.id) }));
-        if (w?.id) {
-          const sRes = await api.get(`/shipping/geo/streets/${w.id}`);
-          const sList = (sRes.data.data || []).map((s: any) => typeof s === 'string' ? { name: s } : s);
-          setStreets(sList);
-          const s = sList.find((st: any) => addr.includes((st.name || '').toLowerCase()));
-          if (s) setFormData(prev => ({ ...prev, street: s.name }));
-        }
-      } catch {
-        // ignore
-      }
-    })();
-  }, [open, customer, provinces]);
-  useEffect(() => {
-    if (!formData.provinceId) { setDistricts([]); setWards([]); setStreets([]); return; }
-    api.get(`/shipping/geo/districts/${formData.provinceId}`).then(res => setDistricts(res.data.data || [])).catch(() => setDistricts([]));
-    setFormData(prev => ({ ...prev, districtId: '', wardId: '', street: '' }));
+    if (!formData.provinceId) {
+      setWards([]);
+      setStreets([]);
+      return;
+    }
+    setLoadingWards(true);
+    api.get(`/shipping/geo/wards-by-province/${formData.provinceId}`)
+      .then(res => setWards(res.data.data || []))
+      .catch(() => setWards([]))
+      .finally(() => setLoadingWards(false));
+    setFormData(prev => ({ ...prev, wardId: '', districtName: '', street: '' }));
   }, [formData.provinceId]);
-  useEffect(() => {
-    if (!formData.districtId) { setWards([]); setStreets([]); return; }
-    api.get(`/shipping/geo/wards/${formData.districtId}`).then(res => setWards(res.data.data || [])).catch(() => setWards([]));
-    setFormData(prev => ({ ...prev, wardId: '', street: '' }));
-  }, [formData.districtId]);
+
   useEffect(() => {
     if (!formData.wardId) { setStreets([]); return; }
     setLoadingStreets(true);
@@ -939,7 +919,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ open, onClose, customer }) 
               />
             </Box>
 
-            {/* Địa chỉ nhận hàng - 4 cấp giống GHTK */}
+            {/* Địa chỉ nhận hàng - 3 cấp theo GHTK mới (bỏ Quận/Huyện) */}
             <Box sx={{ gridColumn: '1 / -1' }}>
               <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>📍 Địa chỉ nhận hàng</Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
@@ -949,20 +929,42 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ open, onClose, customer }) 
                     {provinces.map((p: any) => (<MenuItem key={String(p.id)} value={String(p.id)}>{p.name}</MenuItem>))}
                   </Select>
                 </FormControl>
+                {/* REMOVED: Quận/Huyện dropdown - theo chuẩn GHTK mới */}
                 <FormControl fullWidth>
-                  <InputLabel>Quận/Huyện</InputLabel>
-                  <Select label="Quận/Huyện" value={formData.districtId} onChange={(e) => setFormData(prev => ({ ...prev, districtId: String(e.target.value) }))}>
-                    {districts.map((d: any) => (<MenuItem key={String(d.id)} value={String(d.id)}>{d.name}</MenuItem>))}
+                  <InputLabel>{loadingWards ? 'Đang tải...' : 'Phường/Xã'}</InputLabel>
+                  <Select
+                    label={loadingWards ? 'Đang tải...' : 'Phường/Xã'}
+                    value={formData.wardId}
+                    onChange={(e) => {
+                      const selectedWard = wards.find((w: any) => String(w.id) === String(e.target.value));
+                      setFormData(prev => ({
+                        ...prev,
+                        wardId: String(e.target.value),
+                        districtName: selectedWard?.district_name || ''
+                      }));
+                    }}
+                    disabled={!formData.provinceId || loadingWards}
+                  >
+                    {loadingWards ? (
+                      <MenuItem disabled>Đang tải phường/xã...</MenuItem>
+                    ) : wards.length === 0 ? (
+                      <MenuItem disabled>{formData.provinceId ? 'Không có dữ liệu' : 'Chọn Tỉnh/TP trước'}</MenuItem>
+                    ) : (
+                      wards.map((w: any) => (
+                        <MenuItem key={String(w.id)} value={String(w.id)}>
+                          {w.name}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Box>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Phường/Xã</InputLabel>
-                  <Select label="Phường/Xã" value={formData.wardId} onChange={(e) => setFormData(prev => ({ ...prev, wardId: String(e.target.value) }))}>
-                    {wards.map((w: any) => (<MenuItem key={String(w.id)} value={String(w.id)}>{w.name}</MenuItem>))}
-                  </Select>
-                </FormControl>
+              {wards.length > 0 && !loadingWards && (
+                <Typography variant="caption" sx={{ mb: 1, color: '#4caf50', fontSize: 12, display: 'block' }}>
+                  ✅ {wards.length} phường/xã trong tỉnh
+                </Typography>
+              )}
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2, mb: 2 }}>
                 <Autocomplete options={streets} loading={loadingStreets} getOptionLabel={(o: any) => typeof o === 'string' ? o : (o?.name || '')} isOptionEqualToValue={(a: any, b: any) => (a?.name || a) === (b?.name || b)} value={streets.find((s: any) => (s?.name || s) === formData.street) || null} onChange={(_, v: any) => setFormData(prev => ({ ...prev, street: v?.name || v || '' }))} renderInput={(params) => <TextField {...params} label="Đường/Ấp/Khu" />} />
               </Box>
               <TextField fullWidth label="Số nhà, tên đường" value={formData.address} onChange={handleChange('address')} InputProps={{ startAdornment: (<InputAdornment position="start"><LocationOn sx={{ color: 'primary.main' }} /></InputAdornment>) }} />
@@ -1180,7 +1182,8 @@ const CustomersManagement: React.FC = () => {
       address: customer.address,
       // Include individual address components for better form population
       provinceId: customer.province_id,
-      districtId: customer.district_id,
+      // districtId: customer.district_id, // REMOVED
+      districtName: customer.district_name, // Lấy từ DB
       wardId: customer.ward_id,
       street: customer.street,
       hamlet: customer.hamlet || ''

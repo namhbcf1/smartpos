@@ -10877,24 +10877,87 @@ app.get('/wards/:district_id', async (c) => {
   }
 });
 
+// GET /api/shipping/geo/wards-by-province/:province_id - Lấy TẤT CẢ phường/xã theo tỉnh (bỏ qua quận/huyện)
+// Endpoint mới theo chuẩn GHTK 2025 - không cần chọn quận/huyện nữa
+app.get('/wards-by-province/:province_id', async (c) => {
+  try {
+    const provinceId = c.req.param('province_id');
+
+    // Lấy tất cả districts của province
+    const districts = DISTRICTS.filter(d => d.province_id === provinceId);
+    const districtIds = districts.map(d => d.id);
+
+    // Tạo map district_id -> district_name để lookup nhanh
+    const districtMap = new Map(districts.map(d => [d.id, d.name]));
+
+    // Lấy tất cả wards của các districts đó và thêm district_name
+    const wards = WARDS
+      .filter(w => districtIds.includes(w.district_id))
+      .map(w => ({
+        ...w,
+        district_name: districtMap.get(w.district_id) || '', // Thêm district_name cho mỗi ward
+        display_name: `${w.name} (${districtMap.get(w.district_id) || ''})` // Hiển thị: "Phường X (Quận Y)"
+      }));
+
+    console.log(`📍 Province ${provinceId}: ${districts.length} districts, ${wards.length} wards with district_name`);
+
+    return c.json({
+      success: true,
+      data: wards,
+      total: wards.length,
+      province_id: provinceId,
+      note: 'All wards in province with district_name (no district filtering needed)'
+    });
+  } catch (e: any) {
+    return c.json({ success: false, error: e?.message || 'Failed to get wards by province' }, 500);
+  }
+});
+
 // GET /api/shipping/geo/streets/:ward_id - Lấy danh sách đường/ấp/khu theo phường/xã
 app.get('/streets/:ward_id', async (c) => {
   try {
     const wardId = c.req.param('ward_id');
     const ghtkToken = c.env.GHTK_TOKEN;
 
-    // Tìm ward để lấy thông tin
-    const ward = WARDS.find(w => w.id === wardId);
-    if (!ward) {
-      return c.json({ success: false, error: 'Ward not found' }, 404);
+    console.log(`📍 Streets API called for ward_id: ${wardId}`);
+
+    // Tìm ward từ data động thay vì WARDS tĩnh
+    let ward: any = null;
+    let district: any = null;
+    let province: any = null;
+
+    // Tìm trong WARDS data
+    ward = WARDS.find(w => w.id === wardId);
+
+    if (ward) {
+      district = DISTRICTS.find(d => d.id === ward.district_id);
+      province = PROVINCES.find(p => p.id === district?.province_id);
     }
 
-    // Tìm district và province tương ứng
-    const district = DISTRICTS.find(d => d.id === ward.district_id);
-    const province = PROVINCES.find(p => p.id === district?.province_id);
+    // Nếu không tìm thấy trong data tĩnh, trả về fallback luôn
+    if (!ward || !district || !province) {
+      console.warn(`⚠️ Ward ${wardId} not found in static data, using fallback`);
 
-    if (!district || !province) {
-      return c.json({ success: false, error: 'District or Province not found' }, 404);
+      const fallbackStreets = [
+        'Trần Hưng Đạo', 'Lê Lợi', 'Nguyễn Huệ', 'Hai Bà Trưng', 'Lý Thường Kiệt',
+        'Điện Biên Phủ', 'Lê Duẩn', 'Cách Mạng Tháng Tám', 'Nguyễn Thị Minh Khai',
+        'Võ Văn Tần', 'Trần Phú', 'Phan Đình Phùng', 'Nguyễn Văn Cừ', 'Lê Thánh Tông',
+        'Hoàng Diệu', 'Trường Chinh', 'Nguyễn Trãi', 'Quang Trung', 'Lạc Long Quân',
+        'Âu Cơ', 'Nguyễn Du', 'Bà Triệu', 'Phan Chu Trinh', 'Hùng Vương', 'Lý Tự Trọng',
+        'Võ Thị Sáu', 'Trần Quốc Toản', 'Lê Văn Sỹ', 'Nguyễn Đình Chiểu', 'Hoàng Văn Thụ',
+        'Ấp 1', 'Ấp 2', 'Ấp 3', 'Ấp 4', 'Ấp 5',
+        'Khu 1', 'Khu 2', 'Khu 3', 'Khu phố 1', 'Khu phố 2',
+        'Đường số 1', 'Đường số 2', 'Đường số 3'
+      ];
+
+      return c.json({
+        success: true,
+        data: fallbackStreets,
+        total: fallbackStreets.length,
+        ward_id: wardId,
+        source: 'fallback_direct',
+        warning: 'Ward not found in static data - using fallback'
+      });
     }
 
     // Gọi GHTK Level-4 API để lấy danh sách địa chỉ cụ thể
@@ -10949,14 +11012,17 @@ app.get('/streets/:ward_id', async (c) => {
     } catch (ghtkError: any) {
       console.warn('⚠️ GHTK Level-4 API failed, using fallback:', ghtkError.message);
 
-      // Fallback: Danh sách đường/ấp/khu phổ biến
+      // Fallback: Danh sách đường/ấp/khu phổ biến (thêm Ấp, Khu)
       const fallbackStreets = [
         'Trần Hưng Đạo', 'Lê Lợi', 'Nguyễn Huệ', 'Hai Bà Trưng', 'Lý Thường Kiệt',
         'Điện Biên Phủ', 'Lê Duẩn', 'Cách Mạng Tháng Tám', 'Nguyễn Thị Minh Khai',
         'Võ Văn Tần', 'Trần Phú', 'Phan Đình Phùng', 'Nguyễn Văn Cừ', 'Lê Thánh Tông',
         'Hoàng Diệu', 'Trường Chinh', 'Nguyễn Trãi', 'Quang Trung', 'Lạc Long Quân',
         'Âu Cơ', 'Nguyễn Du', 'Bà Triệu', 'Phan Chu Trinh', 'Hùng Vương', 'Lý Tự Trọng',
-        'Võ Thị Sáu', 'Trần Quốc Toản', 'Lê Văn Sỹ', 'Nguyễn Đình Chiểu', 'Hoàng Văn Thụ'
+        'Võ Thị Sáu', 'Trần Quốc Toản', 'Lê Văn Sỹ', 'Nguyễn Đình Chiểu', 'Hoàng Văn Thụ',
+        'Ấp 1', 'Ấp 2', 'Ấp 3', 'Ấp 4', 'Ấp 5',
+        'Khu 1', 'Khu 2', 'Khu 3', 'Khu phố 1', 'Khu phố 2',
+        'Đường số 1', 'Đường số 2', 'Đường số 3'
       ];
 
       return c.json({

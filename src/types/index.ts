@@ -24,6 +24,7 @@ export interface Env {
   CONFIG: KVNamespace;
   ANALYTICS: KVNamespace;
   R2_BUCKET: any; // R2Bucket;
+  AI: any; // Cloudflare Workers AI
 
   // Durable Objects - Match wrangler.toml bindings
   INVENTORY: DurableObjectNamespace;
@@ -39,4 +40,11 @@ export interface Env {
   ENVIRONMENT: string;
   RATE_LIMIT_ENABLED: string;
   ENABLE_REAL_TIME: string;
+
+  // AI / Ollama proxy (Legacy - now using Cloudflare AI)
+  OLLAMA_BASE_URL?: string; // e.g. http://your-vm:11434
+  OLLAMA_MODEL?: string;    // default: llama3:8b
+  OLLAMA_PROXY_KEY?: string; // optional x-api-key to protect the proxy
+  AI_PROVIDER?: 'cloudflare' | 'ollama' | 'openai'; // 'cloudflare' (default) or 'ollama' or 'openai'
+  OLLAMA_DEFAULT_OPTIONS_JSON?: string; // JSON string for default options (ollama only)
 }

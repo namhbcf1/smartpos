@@ -52,7 +52,7 @@ export const corsMiddleware: MiddlewareHandler = async (c, next) => {
 
   c.header('Access-Control-Allow-Credentials', 'true');
   c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, X-Client-Version, Origin, X-Request-ID, X-Timestamp, X-Timezone, X-Tenant-ID, X-Store-ID, X-Device-ID, X-Session-ID');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, X-Client-Version, Origin, X-Request-ID, X-Timestamp, X-Timezone, X-Tenant-ID, X-Store-ID, X-Device-ID, X-Session-ID, x-ai-preset');
   c.header('Access-Control-Max-Age', '86400');
 
   // Handle preflight requests early

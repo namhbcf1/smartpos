@@ -13,27 +13,31 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            // Core React
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
               return 'vendor'
             }
-            // Let Vite auto-split MUI to avoid circular dependencies
-            // if (id.includes('@mui')) {
-            //   return 'mui'
-            // }
+            // Data fetching
             if (id.includes('@tanstack')) {
               return 'tanstack'
             }
+            // HTTP client
             if (id.includes('axios')) {
               return 'axios'
             }
+            // Charts
             if (id.includes('recharts')) {
               return 'charts'
             }
+            // Let Vite auto-split MUI completely to avoid circular dependencies
+            // Both @mui/material and @mui/icons-material have interdependencies
           }
         }
       }
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 600,
+    cssCodeSplit: true,
+    sourcemap: false
   },
   optimizeDeps: {
     include: [

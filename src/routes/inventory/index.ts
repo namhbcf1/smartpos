@@ -7,8 +7,12 @@ import { Hono } from 'hono'
 import { Env } from '../../types'
 import { InventoryService } from '../../services/InventoryService'
 import { auditLog } from '../../services/AuditLogService'
+import forecastRouter from './forecast'
 
 const app = new Hono<{ Bindings: Env }>()
+
+// Mount forecast routes
+app.route('/forecast', forecastRouter)
 
 // GET /api/inventory
 app.get('/', async (c) => {

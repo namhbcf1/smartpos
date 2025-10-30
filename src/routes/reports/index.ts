@@ -1,8 +1,12 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { ReportService } from '../../services/ReportService';
+import advancedReportsRouter from './advanced';
 
 const reportsRouter = new Hono();
+
+// Mount advanced reports
+reportsRouter.route('/advanced', advancedReportsRouter);
 
 // Validation schemas
 const CreateReportSchema = z.object({

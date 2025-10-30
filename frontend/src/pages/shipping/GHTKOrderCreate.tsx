@@ -54,7 +54,8 @@ const GHTKOrderCreate: React.FC = () => {
     street: '', // Tên đường (VD: Trần Hưng Đạo)
     hamlet: '', // Tổ/Thôn/Ấp/Xóm
     provinceId: '',
-    districtId: '',
+    // districtId: '', // REMOVED - theo chuẩn GHTK mới không cần ID của Quận/Huyện
+    districtName: '', // Thêm districtName - lấy từ ward.district_name
     wardId: ''
   });
 
@@ -69,16 +70,17 @@ const GHTKOrderCreate: React.FC = () => {
   const [shippingOptions, setShippingOptions] = useState({
     transport: 'express',
     pickupOption: 'pickup',
-    pickupLocation: '415 Trần Hưng Đạo, Tổ 10, Phường Phượng Lâm, Hòa Bình'
+    pickupLocation: '407 Trần Hưng Đạo, Tổ 10, Phường Phương Lâm, Hòa Bình'
   });
 
   const [pickAddresses, setPickAddresses] = useState<any[]>([]);
   const [defaultPickId, setDefaultPickId] = useState<string | null>(null);
 
   const [provinces, setProvinces] = useState<any[]>([]);
-  const [districts, setDistricts] = useState<any[]>([]);
+  // const [districts, setDistricts] = useState<any[]>([]); // REMOVED - không cần Quận/Huyện
   const [wards, setWards] = useState<any[]>([]);
   const [streets, setStreets] = useState<string[]>([]);
+  const [loadingWards, setLoadingWards] = useState(false);
   const [loadingStreets, setLoadingStreets] = useState(false);
   const [feeEstimate, setFeeEstimate] = useState<any>(null);
   const [loadingFee, setLoadingFee] = useState(false);
@@ -91,27 +93,19 @@ const GHTKOrderCreate: React.FC = () => {
   const [productSearch, setProductSearch] = useState('');
   const streetPickTimer = React.useRef<any>(null);
   const provincePickTimer = React.useRef<any>(null);
-  const districtPickTimer = React.useRef<any>(null);
+  // const districtPickTimer = React.useRef<any>(null); // REMOVED - không cần auto-pick district
   const wardPickTimer = React.useRef<any>(null);
   const housePickTimer = React.useRef<any>(null);
 
-  // Fallback auto-select after lists load (district)
-  useEffect(() => {
-    const addr = (receiverData as any).address || '';
-    if (districtPickTimer.current) { clearTimeout(districtPickTimer.current); districtPickTimer.current = null; }
-    if (!addr || !receiverData.provinceId || receiverData.districtId || districts.length === 0) return;
-    const lower = (addr as string).toLowerCase();
-    districtPickTimer.current = setTimeout(() => {
-      const match = districts.find((d: any) => lower.includes((d.name || '').toLowerCase()));
-      if (match) setReceiverData(prev => ({ ...prev, districtId: String(match.id) }));
-    }, 2000);
-  }, [districts]);
+  // REMOVED: Fallback auto-select district - không cần nữa vì bỏ Quận/Huyện
+  // useEffect(() => { ... }, [districts]);
 
   // Fallback auto-select after lists load (ward)
+  // Sửa: Check provinceId thay vì districtId
   useEffect(() => {
     const addr = (receiverData as any).address || '';
     if (wardPickTimer.current) { clearTimeout(wardPickTimer.current); wardPickTimer.current = null; }
-    if (!addr || !receiverData.districtId || receiverData.wardId || wards.length === 0) return;
+    if (!addr || !receiverData.provinceId || receiverData.wardId || wards.length === 0) return;
     const lower = (addr as string).toLowerCase();
     wardPickTimer.current = setTimeout(() => {
       const match = wards.find((w: any) => lower.includes((w.name || '').toLowerCase()));
@@ -425,7 +419,7 @@ const GHTKOrderCreate: React.FC = () => {
       setReceiverData(prev => ({
         ...prev,
         provinceId: String(province.id),
-        districtId: String(district.id),
+        districtName: district.name,
         wardId: String(ward.id),
         street: streetName,
         address: houseNumber ? `Số nhà ${houseNumber}` : '',
@@ -465,7 +459,7 @@ const GHTKOrderCreate: React.FC = () => {
         setSourceAddress(parsed.address || '');
 
         // If individual address components are available, use them directly
-        if (parsed.provinceId && parsed.districtId && parsed.wardId) {
+        if (parsed.provinceId && parsed.wardId) {
           setReceiverData(prev => ({
             ...prev,
             phone: parsed.phone || '',
@@ -473,7 +467,7 @@ const GHTKOrderCreate: React.FC = () => {
             street: parsed.street || '',
             hamlet: parsed.hamlet || '',
             provinceId: String(parsed.provinceId),
-            districtId: String(parsed.districtId),
+            districtName: parsed.districtName || '',
             wardId: String(parsed.wardId)
           }));
           console.log('✅ Loaded customer data with address components:', parsed);
@@ -553,8 +547,8 @@ const GHTKOrderCreate: React.FC = () => {
 
   // Calculate shipping fee
   const calculateShippingFee = async () => {
-    if (!receiverData.provinceId || !receiverData.districtId || !receiverData.wardId || !receiverData.street) {
-      alert('Vui lòng chọn đầy đủ Tỉnh/TP, Quận/Huyện, Phường/Xã và Đường/Ấp/Khu trước khi tính phí');
+    if (!receiverData.provinceId || !receiverData.districtName || !receiverData.wardId || !receiverData.street) {
+      alert('Vui lòng chọn đầy đủ Tỉnh/TP, Phường/Xã và Đường/Ấp/Khu trước khi tính phí');
       return;
     }
 
@@ -563,8 +557,9 @@ const GHTKOrderCreate: React.FC = () => {
       const params = new URLSearchParams();
       params.append('pick_province', 'Hòa Bình');
       params.append('pick_district', 'Thành phố Hòa Bình');
+      params.append('pick_address', '407 Trần Hưng Đạo, Tổ 10, Phường Phương Lâm');
       params.append('province', receiverData.provinceId);
-      params.append('district', receiverData.districtId);
+      params.append('district', receiverData.districtName);
       params.append('weight', productData.weight.toString());
       
       if (receiverData.wardId) params.append('ward', receiverData.wardId);
@@ -599,38 +594,45 @@ const GHTKOrderCreate: React.FC = () => {
   }).catch(() => setPickAddresses([]));
   }, []);
 
-  useEffect(() => {
-    if (!receiverData.provinceId) return;
-    api.get(`/shipping/geo/districts/${receiverData.provinceId}`).then(res => {
-      if (res.data.success) {
-        setDistricts(res.data.data || []);
-        if (!isAutoFilling) {
-          setWards([]);
-          setReceiverData(prev => ({
-            ...prev,
-            districtId: prev.districtId ? prev.districtId : '',
-            wardId: prev.wardId ? prev.wardId : ''
-          }));
-        }
-      }
-    });
-  }, [receiverData.provinceId, isAutoFilling]);
+  // REMOVED: Load districts - không cần nữa
+  // useEffect(() => { ... }, [receiverData.provinceId]);
 
+  // Load wards trực tiếp từ provinceId (bỏ qua districtId)
   useEffect(() => {
-    if (!receiverData.districtId) return;
-    api.get(`/shipping/geo/wards/${receiverData.districtId}`).then(res => {
-      if (res.data.success) {
-        setWards(res.data.data || []);
-        if (!isAutoFilling) {
-          setReceiverData(prev => ({
-            ...prev,
-            wardId: prev.wardId ? prev.wardId : '',
-            street: prev.street ? prev.street : ''
-          }));
+    if (!receiverData.provinceId) {
+      setWards([]);
+      return;
+    }
+
+    console.log('📍 Loading ALL wards for province:', receiverData.provinceId);
+    setLoadingWards(true);
+
+    api.get(`/shipping/geo/wards-by-province/${receiverData.provinceId}`)
+      .then(res => {
+        if (res.data.success) {
+          const wardsData = res.data.data || [];
+          console.log(`✅ Loaded ${res.data.total} wards for province ${receiverData.provinceId}`);
+          console.log('Sample ward:', wardsData[0]); // Debug: xem ward có district_name không
+          setWards(wardsData);
+
+          if (!isAutoFilling) {
+            setReceiverData(prev => ({
+              ...prev,
+              wardId: prev.wardId ? prev.wardId : '',
+              districtName: prev.districtName ? prev.districtName : '',
+              street: prev.street ? prev.street : ''
+            }));
+          }
         }
-      }
-    });
-  }, [receiverData.districtId, isAutoFilling]);
+      })
+      .catch(err => {
+        console.error('❌ Failed to load wards:', err);
+        setWards([]);
+      })
+      .finally(() => {
+        setLoadingWards(false);
+      });
+  }, [receiverData.provinceId, isAutoFilling]);
 
   useEffect(() => {
     if (receiverData.wardId) {
@@ -680,16 +682,15 @@ const GHTKOrderCreate: React.FC = () => {
   }, [receiverData.wardId]);
 
   useEffect(() => {
-    if (receiverData.provinceId && receiverData.districtId && productData.weight > 0) {
+    if (receiverData.provinceId && receiverData.districtName && productData.weight > 0) {
       const timer = setTimeout(() => calculateFee(), 500);
       return () => clearTimeout(timer);
     }
-  }, [receiverData.provinceId, receiverData.districtId, productData.weight, shippingOptions.transport, productData.codAmount]);
+  }, [receiverData.provinceId, receiverData.districtName, productData.weight, shippingOptions.transport, productData.codAmount]);
 
   const calculateFee = () => {
     const province = provinces.find(p => p.id === receiverData.provinceId);
-    const district = districts.find(d => d.id === receiverData.districtId);
-    if (!province || !district) return;
+    if (!province || !receiverData.districtName) return;
 
     const transport = shippingOptions.transport === 'express' || shippingOptions.transport === 'bbs' ? 'road' : shippingOptions.transport;
 
@@ -697,7 +698,7 @@ const GHTKOrderCreate: React.FC = () => {
       pick_province: 'Ha Noi',
       pick_district: 'Quan Hoan Kiem',
       province: province.name,
-      district: district.name,
+      district: receiverData.districtName, // Dùng districtName từ ward
       weight: productData.weight * 1000,
       value: productData.codAmount,
       transport
@@ -709,10 +710,11 @@ const GHTKOrderCreate: React.FC = () => {
   const createOrderMutation = useMutation({
     mutationFn: async () => {
       const province = provinces.find(p => p.id === receiverData.provinceId);
-      const district = districts.find(d => d.id === receiverData.districtId);
       const ward = wards.find(w => w.id === receiverData.wardId);
 
-      if (!province || !district || !ward) throw new Error('Vui lòng chọn đầy đủ địa chỉ');
+      if (!province || !receiverData.districtName || !ward) {
+        throw new Error('Vui lòng chọn đầy đủ địa chỉ');
+      }
 
       const transport = shippingOptions.transport === 'express' || shippingOptions.transport === 'bbs' ? 'road' : shippingOptions.transport;
 
@@ -724,15 +726,15 @@ const GHTKOrderCreate: React.FC = () => {
           address: receiverData.street, // Chỉ tên đường
           hamlet: receiverData.hamlet || 'Khu dân cư', // Tổ/Thôn/Ấp (bắt buộc theo GHTK)
           province: province.name,
-          district: district.name,
+          district: receiverData.districtName, // Lấy từ ward.district_name
           ward: ward.name,
-          pick_name: 'SmartPOS Store',
+          pick_name: 'TRƯỜNG PHÁT COMPUTER',
           pick_tel: '0836768597',
-          pick_address: '415 Tran Hung Dao',
-          pick_province: 'Ha Noi',
-          pick_district: 'Quan Hoan Kiem',
+          pick_address: '407 Trần Hưng Đạo, Tổ 10, Phường Phương Lâm',
+          pick_province: 'Hòa Bình',
+          pick_district: 'Thành phố Hòa Bình',
           value: Math.max(1, productData.productValue),
-          pick_money: productData.codAmount || 0,
+          pick_money: 0, // Đơn không thu tiền - COD = 0
           weight: productData.weight,
           transport,
           note: '',
@@ -742,7 +744,7 @@ const GHTKOrderCreate: React.FC = () => {
           name: productData.name,
           weight: productData.weight,
           quantity: productData.quantity,
-          value: productData.productValue
+          value: Math.max(1, productData.productValue) // GHTK yêu cầu value >= 1 đồng
         }]
       };
 
@@ -756,7 +758,11 @@ const GHTKOrderCreate: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('❌ Failed:', error);
-      alert('❌ Lỗi: ' + (error?.response?.data?.error || 'Không thể tạo đơn'));
+      console.error('❌ Response data:', error?.response?.data);
+      const errorMsg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Không thể tạo đơn';
+      const ghtkError = error?.response?.data?.data?.message || '';
+      const fullError = ghtkError ? `${errorMsg}\nGHTK: ${ghtkError}` : errorMsg;
+      alert('❌ Lỗi: ' + fullError);
     }
   });
 
@@ -810,17 +816,33 @@ const GHTKOrderCreate: React.FC = () => {
   }, [openProductSelector]);
 
   const isFormValid = () => {
-    return (
+    const isValid = (
       receiverData.phone &&
       receiverData.fullName &&
       receiverData.provinceId &&
-      receiverData.districtId &&
+      receiverData.districtName &&
       receiverData.wardId &&
       receiverData.street &&
-      receiverData.hamlet &&
+      // hamlet không bắt buộc - có thể để trống
       productData.name &&
       productData.weight > 0
     );
+    
+    // Debug log để kiểm tra validation
+    console.log('🔍 Form Validation Debug:', {
+      phone: receiverData.phone,
+      fullName: receiverData.fullName,
+      provinceId: receiverData.provinceId,
+      districtName: receiverData.districtName,
+      wardId: receiverData.wardId,
+      street: receiverData.street,
+      hamlet: receiverData.hamlet,
+      productName: productData.name,
+      productWeight: productData.weight,
+      isValid
+    });
+    
+    return isValid;
   };
 
   const totalWeight = productData.weight * productData.quantity;
@@ -828,9 +850,8 @@ const GHTKOrderCreate: React.FC = () => {
 
   // Build a lightweight customer object for the details drawer (to mirror registration view)
   const selectedProvince = provinces.find((p: any) => String(p.id) === String(receiverData.provinceId));
-  const selectedDistrict = districts.find((d: any) => String(d.id) === String(receiverData.districtId));
   const selectedWard = wards.find((w: any) => String(w.id) === String(receiverData.wardId));
-  const composedAddress = [receiverData.address, receiverData.street, selectedWard?.name, selectedDistrict?.name, selectedProvince?.name]
+  const composedAddress = [receiverData.address, receiverData.street, selectedWard?.name, receiverData.districtName, selectedProvince?.name]
     .filter(Boolean)
     .join(', ');
   const drawerCustomer = {
@@ -840,7 +861,7 @@ const GHTKOrderCreate: React.FC = () => {
     customer_type: 'regular',
     is_active: true,
     province_name: selectedProvince?.name,
-    district_name: selectedDistrict?.name,
+    district_name: receiverData.districtName, // Lấy từ ward.district_name
     ward_name: selectedWard?.name,
     street: receiverData.street,
     address: composedAddress,
@@ -1160,54 +1181,84 @@ const GHTKOrderCreate: React.FC = () => {
                   </Typography>
                 )}
 
-                {/* Hàng 2 - Cột 1: Phường/Xã */}
-                <FormControl fullWidth>
-                  <InputLabel sx={{ 
-                    fontSize: 16, 
-                    fontWeight: 500, 
-                    '&.Mui-focused': { color: '#667eea' } 
-                  }}>
-                    Phường/Xã
-                  </InputLabel>
-                  <Select
-                    value={receiverData.wardId}
-                    label="Phường/Xã"
-                    onChange={(e) => setReceiverData({ ...receiverData, wardId: e.target.value })}
-                    disabled={!receiverData.districtId}
-                    sx={{
+                {/* Hàng 2 - Cột 1: Phường/Xã - Hiển thị "Phường X (Quận Y)" */}
+                <Box>
+                  <FormControl fullWidth>
+                    <InputLabel sx={{
                       fontSize: 16,
-                      height: 56,
-                      bgcolor: '#f8f9ff',
-                      '&:hover': { bgcolor: '#f0f2ff' },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#667eea',
-                        borderWidth: 2
-                      },
-                      '& .MuiSelect-icon': {
-                        fontSize: 20,
-                        color: '#667eea'
-                      }
-                    }}
-                    MenuProps={{
-                      PaperProps: {
-                        sx: {
-                          maxHeight: 300,
-                          '& .MuiMenuItem-root': {
-                            fontSize: 16,
-                            padding: '8px 16px'
+                      fontWeight: 500,
+                      '&.Mui-focused': { color: '#667eea' }
+                    }}>
+                      {loadingWards ? 'Đang tải...' : 'Phường/Xã'}
+                    </InputLabel>
+                    <Select
+                      value={receiverData.wardId}
+                      label={loadingWards ? 'Đang tải...' : 'Phường/Xã'}
+                      onChange={(e) => {
+                        const selectedWard = wards.find(w => w.id === e.target.value);
+                        console.log('🔍 Ward selected:', selectedWard);
+                        setReceiverData({
+                          ...receiverData,
+                          wardId: e.target.value,
+                          districtName: selectedWard?.district_name || '' // Lưu district_name từ ward
+                        });
+                      }}
+                      disabled={!receiverData.provinceId || loadingWards}
+                      sx={{
+                        fontSize: 16,
+                        height: 56,
+                        bgcolor: receiverData.provinceId && !loadingWards ? '#f8f9ff' : '#f5f5f5',
+                        '&:hover': { bgcolor: receiverData.provinceId && !loadingWards ? '#f0f2ff' : '#f5f5f5' },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                          borderWidth: 2
+                        },
+                        '& .MuiSelect-icon': {
+                          fontSize: 20,
+                          color: '#667eea'
+                        }
+                      }}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            maxHeight: 400,
+                            '& .MuiMenuItem-root': {
+                              fontSize: 15,
+                              padding: '10px 16px',
+                              whiteSpace: 'normal',
+                              wordWrap: 'break-word'
+                            }
                           }
                         }
-                      }
-                    }}
-                  >
-                    <MenuItem value="" sx={{ fontSize: 16 }}>
-                      <em>-- Chọn Phường/Xã --</em>
-                    </MenuItem>
-                    {wards.map(w => (
-                      <MenuItem key={w.id} value={w.id} sx={{ fontSize: 16 }}>{w.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                      }}
+                    >
+                      <MenuItem value="" sx={{ fontSize: 16 }}>
+                        <em>-- Chọn Phường/Xã --</em>
+                      </MenuItem>
+                      {loadingWards ? (
+                        <MenuItem disabled sx={{ fontSize: 16 }}>
+                          <CircularProgress size={20} sx={{ mr: 2 }} />
+                          Đang tải phường/xã...
+                        </MenuItem>
+                      ) : wards.length === 0 ? (
+                        <MenuItem disabled sx={{ fontSize: 16 }}>
+                          <em>{receiverData.provinceId ? 'Không có dữ liệu' : 'Chọn Tỉnh/TP trước'}</em>
+                        </MenuItem>
+                      ) : (
+                        wards.map(w => (
+                          <MenuItem key={w.id} value={w.id} sx={{ fontSize: 15 }}>
+                            {w.name}
+                          </MenuItem>
+                        ))
+                      )}
+                    </Select>
+                  </FormControl>
+                  {wards.length > 0 && !loadingWards && (
+                    <Typography variant="caption" sx={{ mt: 0.5, ml: 1, color: '#4caf50', fontSize: 12, display: 'block' }}>
+                      ✅ {wards.length} phường/xã trong tỉnh
+                    </Typography>
+                  )}
+                </Box>
 
                 {/* Hàng 2 - Cột 2: Tỉnh/TP */}
                 <FormControl fullWidth>
@@ -1258,54 +1309,8 @@ const GHTKOrderCreate: React.FC = () => {
                 </FormControl>
               </Box>
 
-              {/* QUẬN/HUYỆN - Full width */}
-              <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel sx={{ 
-                  fontSize: 16, 
-                  fontWeight: 500, 
-                  '&.Mui-focused': { color: '#667eea' } 
-                }}>
-                  Quận/Huyện
-                </InputLabel>
-                <Select
-                  value={receiverData.districtId}
-                  label="Quận/Huyện"
-                  onChange={(e) => setReceiverData({ ...receiverData, districtId: e.target.value })}
-                  disabled={!receiverData.provinceId}
-                  sx={{
-                    fontSize: 16,
-                    height: 56,
-                    bgcolor: '#f8f9ff',
-                    '&:hover': { bgcolor: '#f0f2ff' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#667eea',
-                      borderWidth: 2
-                    },
-                    '& .MuiSelect-icon': {
-                      fontSize: 20,
-                      color: '#667eea'
-                    }
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        maxHeight: 300,
-                        '& .MuiMenuItem-root': {
-                          fontSize: 16,
-                          padding: '8px 16px'
-                        }
-                      }
-                    }
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: 16 }}>
-                    <em>-- Chọn Quận/Huyện --</em>
-                  </MenuItem>
-                  {districts.map(d => (
-                    <MenuItem key={d.id} value={d.id} sx={{ fontSize: 16 }}>{d.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              {/* QUẬN/HUYỆN - REMOVED theo chuẩn GHTK mới */}
+              {/* Phường/Xã sẽ load trực tiếp từ Tỉnh/TP */}
             </Paper>
 
             {/* LẤY & GIAO TẬN NƠI */}
@@ -1754,7 +1759,7 @@ const GHTKOrderCreate: React.FC = () => {
                   <Button
                     variant="outlined"
                     onClick={calculateShippingFee}
-                    disabled={loadingFee || !receiverData.provinceId || !receiverData.districtId || !productData.weight}
+                    disabled={loadingFee || !receiverData.provinceId || !receiverData.districtName || !productData.weight}
                     startIcon={loadingFee ? <CircularProgress size={20} /> : <LocalShipping />}
                     sx={{ 
                       borderColor: '#667eea',

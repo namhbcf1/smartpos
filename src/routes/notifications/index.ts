@@ -5,6 +5,7 @@
 
 import { Hono } from 'hono';
 import type { Env } from '../../types';
+import { SmartNotificationService } from '../../services/SmartNotificationService';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -111,6 +112,50 @@ app.delete('/:id', async (c) => {
       success: true,
       message: 'Notification deleted'
     });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+app.get('/smart-alerts', async (c) => {
+  try {
+    const tenantId = c.get('tenantId') || 'default';
+    const service = new SmartNotificationService(c.env.DB);
+    const alerts = await service.getAllAlerts(tenantId);
+    return c.json({ success: true, data: alerts });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+app.get('/smart-alerts/low-stock', async (c) => {
+  try {
+    const tenantId = c.get('tenantId') || 'default';
+    const service = new SmartNotificationService(c.env.DB);
+    const alerts = await service.checkLowStockAlerts(tenantId);
+    return c.json({ success: true, data: alerts });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+app.get('/smart-alerts/birthdays', async (c) => {
+  try {
+    const tenantId = c.get('tenantId') || 'default';
+    const service = new SmartNotificationService(c.env.DB);
+    const alerts = await service.checkBirthdayReminders(tenantId);
+    return c.json({ success: true, data: alerts });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+app.get('/smart-alerts/churn-risk', async (c) => {
+  try {
+    const tenantId = c.get('tenantId') || 'default';
+    const service = new SmartNotificationService(c.env.DB);
+    const alerts = await service.checkChurnRiskCustomers(tenantId);
+    return c.json({ success: true, data: alerts });
   } catch (e: any) {
     return c.json({ success: false, error: e.message }, 500);
   }

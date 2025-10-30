@@ -682,4 +682,8 @@ app.get('/:id/warranties', async (c) => {
   })
 })
 
+// Import segmentation routes
+import segmentationRoutes from './segmentation';
+app.route('/segmentation', segmentationRoutes);
+
 export default app

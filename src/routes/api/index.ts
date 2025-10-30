@@ -41,6 +41,10 @@ import notificationsRouter from '../notifications'
 import shippingRouter from '../shipping'
 import adminRouter from '../admin'
 // (duplicates removed)
+import aiRouter from '../ai'
+import loyaltyRouter from '../loyalty'
+import analyticsRouter from '../analytics'
+import recommendationsRouter from '../recommendations'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -159,6 +163,10 @@ app.route('/shipping', shippingRouter)   // /api/shipping - shipping methods and
 app.route('/admin', adminRouter)          // /api/admin - administrative endpoints
 app.route('/alerts', alertsRouter)       // /api/alerts, /api/alerts/dashboard - MUST be before generic routes
 app.route('/pos', posRouter)             // /api/pos/cart, /api/pos/checkout
+app.route('/ai', aiRouter)               // /api/ai/chat, /api/ai/models
+app.route('/loyalty', loyaltyRouter)     // /api/loyalty/award, /api/loyalty/redeem
+app.route('/analytics', analyticsRouter) // /api/analytics/clv, /api/analytics/cohort
+app.route('/recommendations', recommendationsRouter) // /api/recommendations - product recommendations
 app.route('/', catalogRouter)            // /api/products, /api/categories, /api/brands
 app.route('/', ordersRouter)             // /api/orders, /api/pos
 app.route('/', financialsRouter)         // /api/invoices, /api/payments, /api/debts

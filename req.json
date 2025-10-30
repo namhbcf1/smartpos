@@ -1,0 +1,7 @@
+﻿{
+  "model": "C:\\ai\\models\\Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
+  "messages": [{ "role": "user", "content": "Xin chào!" }],
+  "temperature": 0.2,
+  "max_tokens": 128,
+  "stream": false
+}

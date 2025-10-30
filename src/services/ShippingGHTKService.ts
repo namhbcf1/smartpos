@@ -517,8 +517,18 @@ export class ShippingGHTKService {
   // Cancel order
   async cancelOrder(orderCode: string, reason?: string): Promise<GhtkResponse> {
     // Official GHTK API: POST /services/shipment/cancel/:order_label
+    // Support both GHTK tracking code and partner ID format
+    let endpoint = `/services/shipment/cancel/${encodeURIComponent(orderCode)}`;
+    
+    // If orderCode looks like a partner ID (not GHTK format), use partner_id prefix
+    // GHTK tracking codes typically have format like "S21632601.HNP71-P78.1078509648"
+    // Partner IDs are usually shorter and don't have this format
+    if (!orderCode.includes('.') && !orderCode.includes('-')) {
+      endpoint = `/services/shipment/cancel/partner_id:${encodeURIComponent(orderCode)}`;
+    }
+    
     const body = reason ? { reason } : undefined;
-    return this.request(`/services/shipment/cancel/${encodeURIComponent(orderCode)}`, 'POST', body);
+    return this.request(endpoint, 'POST', body);
   }
 
   // List pick addresses (warehouses) configured in GHTK account
